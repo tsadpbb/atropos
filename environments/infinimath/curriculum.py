@@ -1,5 +1,5 @@
 import random
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import mathgenerator
 
@@ -16,137 +16,150 @@ class MathCurriculum:
     # Define difficulty levels and map generator IDs to each level
     DIFFICULTY_LEVELS = {
         # Level 1: Basic arithmetic operations
+        # Addition, Subtraction, Multiplication, 
+        # Division, Square, Factorial, Absolute difference, Percentage, IsPrime
         1: [
-            0,
-            1,
-            2,
-            3,
-            8,
-            31,
-            71,
-            80,
-            90,
-        ],  # Addition, Subtraction, Multiplication, Division, Square, Factorial, Absolute difference, Percentage, IsPrime
+            0,  # Addition
+            1,  # Subtraction
+            2,  # Multiplication
+            3,  # Division
+            8,  # Square
+            31, # Factorial
+            71, # Absolute difference between two numbers
+            80, # Percentage of a number
+            90, # isprime
+        ],  
         # Level 2: Basic operations with fractions and pre-algebra
+        # Square Root, Basic Algebra, Fraction to Decimal, Fraction Division, 
+        # Fraction Multiplication, Compare Fractions, Cube Root, Exponentiation, 
+        # Power of Powers, Percentage difference/error, Is Composite
         2: [
-            6,
-            11,
-            13,
-            16,
-            28,
-            44,
-            47,
-            53,
-            97,
-            118,
-            119,
-            124,
-        ],  # Square Root, Basic Algebra, Fraction to Decimal, Fraction Division, Fraction Multiplication, Compare Fractions, Cube Root, Exponentiation, Power of Powers, Percentage difference/error, Is Composite
+            6,  # Square Root
+            11, # Basic Algebra
+            13, # Fraction to Decimal
+            16, # Fraction Division
+            28, # Fraction Multiplication
+            44, # Compare Fractions
+            47, # Cube Root
+            53, # Exponentiation
+            97, # Power of Powers
+            118,# Percentage difference
+            119,# Percentage error
+            124,# Is Composite
+        ],
         # Level 3: Basic geometry and more algebra
+        # Area of Triangle, Triangle exists check, Third Angle of Triangle,
+        # Distance between 2 points, Pythagorean Theorem, 
+        # Fourth Angle of Quadrilateral, Sum of Angles of Polygon, 
+        # Area of a Sector, Perimeter of Polygons, Circumference, Arc length, 
+        # Area of Circle
         3: [
-            18,
-            19,
-            22,
-            24,
-            25,
-            49,
-            58,
-            75,
-            96,
-            104,
-            108,
-            112,
-            115,
-        ],  # Area of Triangle, Triangle exists check, Third Angle of Triangle, Distance between 2 points, Pythagorean Theorem, Fourth Angle of Quadrilateral, Sum of Angles of Polygon, Area of a Sector, Perimeter of Polygons, Circumference, Arc length, Area of Circle
+            18, # Area of Triangle
+            19, # Triangle exists check
+            22, # Third Angle of Triangle
+            24, # Distance between 2 points
+            25, # Pythagorean Theorem
+            49, # Fourth Angle of Quadrilateral
+            58, # Sum of Angles of Polygon
+            75, # Area of a Sector
+            96, # Perimeter of Polygons
+            104,# Circumference
+            108,# Arc length of Angle
+            112,# Area of Circle
+            115,# Area of Circle given center and a point on circle
+        ],  
         # Level 4: More advanced algebra and basic statistics
+        # LCM, GCD, Midpoint, Factoring Quadratic, System of Equations, 
+        # Linear Equations, Common Factors, Intersection of Two Lines, Simple Interest, 
+        # Quadratic Equation, Mean and Median, Compound Interest, Combine Like terms
         4: [
-            9,
-            10,
-            20,
-            21,
-            23,
-            26,
-            40,
-            41,
-            45,
-            50,
-            76,
-            78,
-            105,
-        ],  # LCM, GCD, Midpoint, Factoring Quadratic, System of Equations, Linear Equations, Common Factors, Intersection of Two Lines, Simple Interest, Quadratic Equation, Mean and Median, Compound Interest, Combine Like terms
+            9,  # LCM (Least Common Multiple)
+            10, # GCD (Greatest Common Denominator)
+            20, # Midpoint of the two point
+            21, # Factoring Quadratic
+            23, # Solve a System of Equations in R^2
+            26, # Linear Equations
+            40, # Common Factors
+            41, # Intersection of Two Lines
+            45, # Simple Interest
+            50, # Quadratic Equation
+            76, # Mean and Median
+            78, # Compound Interest
+            105,# Combine Like terms
+        ],
         # Level 5: Vectors, matrices, and solid geometry
         5: [
-            17,
-            32,
-            33,
-            34,
-            35,
-            36,
-            37,
-            38,
-            39,
-            43,
-            46,
-            60,
-            61,
-            70,
-            72,
-            77,
-            95,
-            113,
-            117,
-            122,
-            123,
+            17, # Integer Multiplication with 2x2 Matrix
+            32, # Surface Area of Cube
+            33, # Surface Area of Cuboid
+            34, # Surface Area of Cylinder
+            35, # Volume of Cube
+            36, # Volume of Cuboid
+            37, # Volume of cylinder
+            38, # Surface Area of cone
+            39, # Volume of cone
+            43, # Cross Product of 2 Vectors
+            46, # Multiplication of two matrices
+            60, # Surface Area of Sphere
+            61, # Volume of Sphere
+            70, # Angle between 2 vectors
+            72, # Dot Product of 2 Vectors
+            77, # Determinant to 2x2 Matrix
+            95, # Curved surface area of a cylinder
+            113,# Volume of frustum
+            117,# Volume of Hemisphere
+            122,# Volume of pyramid
+            123,# Surface area of pyramid
         ],  # Matrix Multiplication, Surface Areas, Volumes, Vector operations, etc.
         # Level 6: Advanced topics (calculus, statistics, computer science)
         6: [
-            4,
-            5,
-            7,
-            12,
-            14,
-            15,
-            27,
-            30,
-            42,
-            48,
-            52,
-            54,
-            55,
-            56,
-            59,
-            62,
-            64,
-            73,
-            79,
-            84,
-            88,
-            89,
-            91,
-            103,
-            107,
-            110,
+            4,  # Binary Complement 1s
+            5,  # Modulo Division
+            7,  # Power Rule Differentiation
+            12, # Logarithm
+            14, # Decimal to Binary
+            15, # Binary to Decimal
+            27, # Prime Factorisation
+            30, # Combinations of Objects
+            42, # Permutations
+            48, # Power Rule Integration
+            52, # Probability of a certain sum appearing on faces of dice
+            54, # Confidence interval For sample S
+            55, # Comparing surds
+            56, # Fibonacci Series
+            59, # Mean,Standard Deviation,Variance
+            62, # nth Fibonacci number
+            64, # Binary to Hexidecimal
+            73, # Binary 2's Complement
+            79, # Decimal to Hexadecimal
+            84, # Converts decimal to octal
+            88, # Trigonometric Differentiation
+            89, # Definite Integral of Quadratic Equation
+            91, # Binary Coded Decimal to Integer
+            103,# Decimal to Binary Coded Decimal
+            107,# Conditional Probability
+            110,# Stationary Points
         ],  # Binary operations, Calculus, Combinatorics, Probability, etc.
         # Level 7: Most complex topics
         7: [
-            65,
-            66,
-            67,
-            68,
-            69,
-            74,
-            85,
-            92,
-            93,
-            94,
-            98,
-            99,
-            100,
-            101,
-            106,
-            109,
-            111,
-            121,
+            65, # Multiplication of 2 complex numbers
+            66, # Geometric Progression
+            67, # Geometric Mean of N Numbers
+            68, # Harmonic Mean of N Numbers
+            69, # Euclidian norm or L2 norm of a vector
+            74, # Inverse of a Matrix
+            85, # Converts decimal to Roman Numerals
+            92, # Complex To Polar Form
+            93, # Union,Intersection,Difference of Two Sets
+            94, # Base Conversion
+            98, # Quotient of Powers with Same Base
+            99, # Quotient of Powers with Same Power
+            100,# complex Quadratic Equation
+            101,# Leap Year or Not
+            106,# signum function
+            109,# Binomial distribution
+            111,# Expanding Factored Binomial
+            121,# Product of scientific notations
         ],  # Complex numbers, Advanced operations, etc.
     }
 

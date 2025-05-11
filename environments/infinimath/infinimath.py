@@ -4,8 +4,7 @@ Infinite Math - A reinforcement learning environment for math practice
 using the mathgenerator library with curriculum-based advancement.
 """
 
-import random
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 from .curriculum import MathCurriculum
 
