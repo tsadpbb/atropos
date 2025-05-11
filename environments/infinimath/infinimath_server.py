@@ -86,10 +86,6 @@ async def main():
         length_threshold_ratio=raw_config.get("infinimath", {}).get("length_threshold_ratio", 0.6),
         temperature=raw_config.get("infinimath", {}).get("temperature", 0.7),
         top_p=raw_config.get("infinimath", {}).get("top_p", 0.9),
-        reward_functions=raw_config.get("infinimath", {}).get("reward_functions", ["accuracy", "format", "boxed"]),
-        accuracy_reward_weight=raw_config.get("infinimath", {}).get("accuracy_reward_weight", 1.0),
-        format_reward_weight=raw_config.get("infinimath", {}).get("format_reward_weight", 0.2),
-        boxed_reward_weight=raw_config.get("infinimath", {}).get("boxed_reward_weight", 0.3),
     )
 
     # Server configuration from config file or defaults
