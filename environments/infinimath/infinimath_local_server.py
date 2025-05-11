@@ -172,11 +172,13 @@ async def main():
                 recent_history = history[-env.curriculum.min_evaluations :]
                 success_rate = sum(recent_history) / len(recent_history)
                 logger.info(
-                    f"Current success rate for level {current_level_desc}: {success_rate:.2f} (need {env.curriculum.progress_threshold} to advance)"
+                    f"Current success rate for level {current_level_desc}: {success_rate:.2f} "
+                    f"(need {env.curriculum.progress_threshold} to advance)"
                 )
             else:
                 logger.info(
-                    f"Need more evaluations for level {current_level_desc}: {len(history)}/{env.curriculum.min_evaluations}"
+                    f"Need more evaluations for level {current_level_desc}: "
+                    f"{len(history)}/{env.curriculum.min_evaluations}"
                 )
 
     # Show all levels and their performance history after evaluation
@@ -216,7 +218,7 @@ async def main():
         did_advance = env.curriculum.advance_difficulty()
         new_level_manual_adv = env.curriculum.get_current_level()
 
-        logger.info(f"Curriculum advancement test results:")
+        logger.info("Curriculum advancement test results:")
         logger.info(f"  - Level before manual simulation: {initial_level_manual_adv}")
         logger.info(f"  - Recorded {config.min_evaluations} correct answers manually.")
         logger.info(f"  - Did advance: {did_advance}")
@@ -225,7 +227,8 @@ async def main():
         )
     else:
         logger.info(
-            f"Skipping manual advancement simulation as current level {initial_level_manual_adv} is already max level {max_level_possible}."
+            "Skipping manual advancement simulation as current level "
+            f"{initial_level_manual_adv} is already max level {max_level_possible}."
         )
 
     logger.info("InfiniteMath local runner completed successfully.")

@@ -7,7 +7,7 @@ import re
 from typing import Dict, List, Optional, Tuple, Union
 
 from dotenv import load_dotenv
-from openai import AsyncOpenAI, NotGiven
+from openai import AsyncOpenAI
 
 from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
@@ -19,28 +19,31 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-system_prompt = """You are an expert mathematician that can use extremely long chains of thought to deeply consider the problem and deliberate with yourself via systematic reasoning processes to help come to a correct solution prior to answering.
-You should enclose your thoughts and internal monologue inside <think> </think> tags, and then provide your final answer in a LaTeX format using \\boxed{your answer here}.
-
-The problems will be given in a LaTeX format, so be sure to follow the LaTeX syntax when writing your answer (although no $ delimiters are necessary).
-
-Follow these steps:
-1. Understand the problem carefully
-2. Plan your approach
-3. Execute the calculations step-by-step
-4. Verify your solution
-5. Express the final answer as \\boxed{your answer here}
-
-You may use extremely long chains of thought to deeply consider the problem and deliberate with yourself via systematic reasoning processes to help come to a correct solution prior to answering.
-
-Your answer format should be:
-<think>
-[Your detailed step-by-step reasoning process here]
-</think>
-
-\\boxed{your final answer here}
-
-Remember to format your final answer correctly as this is important for evaluation. Do not apply any rounding to your final answer, be as exact as possible."""
+system_prompt = (
+    "You are an expert mathematician that can use extremely long chains of thought "
+    "to deeply consider the problem and deliberate with yourself via systematic "
+    "reasoning processes to help come to a correct solution prior to answering.\n"
+    "You should enclose your thoughts and internal monologue inside <think> </think> "
+    "tags, and then provide your final answer in a LaTeX format using \\boxed{your answer here}.\n\n"
+    "The problems will be given in a LaTeX format, so be sure to follow the LaTeX "
+    "syntax when writing your answer (although no $ delimiters are necessary).\n\n"
+    "Follow these steps:\n"
+    "1. Understand the problem carefully\n"
+    "2. Plan your approach\n"
+    "3. Execute the calculations step-by-step\n"
+    "4. Verify your solution\n"
+    "5. Express the final answer as \\boxed{your answer here}\n\n"
+    "You may use extremely long chains of thought to deeply consider the problem "
+    "and deliberate with yourself via systematic reasoning processes to help come "
+    "to a correct solution prior to answering.\n\n"
+    "Your answer format should be:\n"
+    "<think>\n"
+    "[Your detailed step-by-step reasoning process here]\n"
+    "</think>\n\n"
+    "\\boxed{your final answer here}\n\n"
+    "Remember to format your final answer correctly as this is important for evaluation. "
+    "Do not apply any rounding to your final answer, be as exact as possible."
+)
 
 
 class InfiniteMathEnvConfig(BaseEnvConfig):
@@ -62,10 +65,9 @@ class InfiniteMathEnvConfig(BaseEnvConfig):
     temperature: float = 0.7
     top_p: float = 0.9
 
-    # Model for word problem generation
     word_problem_model_name: Optional[str] = "gpt-4.1-mini"
     word_problem_openai_api_key: Optional[str] = os.environ.get("OPENAI_API_KEY")
-    word_problem_openai_base_url: Optional[str] = None  # Add for custom server
+    word_problem_openai_base_url: Optional[str] = None
 
 
 class InfiniteMathEnv(BaseEnv):
@@ -258,36 +260,44 @@ class InfiniteMathEnv(BaseEnv):
 
     async def _convert_to_word_problem(self, raw_problem_text: str) -> str:
         """Converts a raw math problem string into a word problem using an LLM."""
-        system_prompt_word_problem = """You are an expert creative writer. Your task is to transform a given raw mathematical expression into an engaging and imaginative word problem.
-
-**Critical Instructions:**
-1.  **Strict Preservation:** The core mathematical question, ALL numbers, and ALL operations from the raw problem MUST be EXACTLY preserved in the word problem. Do NOT change the calculation required. For example, if the raw problem is 'A - B', the word problem must represent subtraction of B from A, not any other operation.
-2.  **Clarity:** The word problem must clearly and unambiguously lead to solving the original mathematical expression.
-3.  **Conciseness:** Keep the word problem relatively short and to the point.
-4.  **Output Format:** Output ONLY the word problem text. Do NOT include any preambles, self-references (like 'Here is a word problem:'), special tokens (like '<|start_header_id|>'), or any text other than the word problem itself.
-
-**Examples of Correct Transformation:**
-Raw Problem: 5 * 3
-Word Problem: Sarah is baking cookies, and each batch requires 3 eggs. If Sarah wants to bake 5 batches, how many eggs will she need in total?
-
-Raw Problem: |10 - 15|
-Word Problem: A submarine is 10 meters below sea level. Another submarine is 15 meters below sea level. What is the absolute difference in their depths in meters?
-
-Raw Problem: sqrt(16)
-Word Problem: A square piece of land has an area of 16 square units. What is the length of one of its sides in units?
-
-**Example of Incorrect Transformation (Operation Changed):**
-Raw Problem: |3 - (-67)|  (This is 3 + 67)
-Incorrect Word Problem: In a magical forest, there are 3 enchanted trees, and each tree has 67 glowing fruits. How many glowing fruits are there in total? (This became 3 * 67)
-Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bird 67 meters below ground level in a cave. What is the total vertical distance between the bird watcher and the rare bird in meters?
-"""
+        system_prompt_word_problem = (
+            "You are an expert creative writer. Your task is to transform a given raw "
+            "mathematical expression into an engaging and imaginative word problem.\n\n"
+            "**Critical Instructions:**\n"
+            "1.  **Strict Preservation:** The core mathematical question, ALL numbers, and ALL operations "
+            "from the raw problem MUST be EXACTLY preserved in the word problem. Do NOT change the calculation "
+            "required. For example, if the raw problem is 'A - B', the word problem must represent subtraction "
+            "of B from A, not any other operation.\n"
+            "2.  **Clarity:** The word problem must clearly and unambiguously lead to solving the original "
+            "mathematical expression.\n"
+            "3.  **Conciseness:** Keep the word problem relatively short and to the point.\n"
+            "4.  **Output Format:** Output ONLY the word problem text. Do NOT include any preambles, "
+            "self-references (like 'Here is a word problem:'), special tokens (like '<|start_header_id|>'), "
+            "or any text other than the word problem itself.\n\n"
+            "**Examples of Correct Transformation:**\n"
+            "Raw Problem: 5 * 3\n"
+            "Word Problem: Sarah is baking cookies, and each batch requires 3 eggs. If Sarah wants to bake 5 batches, "
+            "how many eggs will she need in total?\n\n"
+            "Raw Problem: |10 - 15|\n"
+            "Word Problem: A submarine is 10 meters below sea level. Another submarine is 15 meters below sea level. "
+            "What is the absolute difference in their depths in meters?\n\n"
+            "Raw Problem: sqrt(16)\n"
+            "Word Problem: A square piece of land has an area of 16 square units. What is the length of one of its "
+            "sides in units?\n\n"
+            "**Example of Incorrect Transformation (Operation Changed):**\n"
+            "Raw Problem: |3 - (-67)|  (This is 3 + 67)\n"
+            "Incorrect Word Problem: In a magical forest, there are 3 enchanted trees,"
+            " and each tree has 67 glowing fruits. "
+            "How many glowing fruits are there in total? (This became 3 * 67)\n"
+            "Correct Word Problem: A bird watcher is 3 meters up a tree. "
+            "She spots a rare bird 67 meters below ground level "
+            "in a cave. What is the total vertical distance between the bird watcher and the rare bird in meters?"
+        )
 
         messages = [
             {"role": "system", "content": system_prompt_word_problem},
             {"role": "user", "content": f"Raw Problem: {raw_problem_text}"},
         ]
-
-        prompt_for_llm = self.tokenizer.apply_chat_template(messages, tokenize=False)
 
         try:
             api_key_to_use = self.config.word_problem_openai_api_key or os.environ.get(
@@ -296,17 +306,18 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
             base_url_to_use = self.config.word_problem_openai_base_url
             model_to_use = (
                 self.config.word_problem_model_name or "gpt-4.1-mini"
-            )  # Fallback if not set in config somehow
+            )
 
             if not api_key_to_use:
                 logger.error(
-                    "OpenAI API key for word problem generation is not configured (checked config and OPENAI_API_KEY env var)."
+                    "OpenAI API key for word problem generation is not configured "
+                    "(checked config and OPENAI_API_KEY env var)."
                 )
-                return raw_problem_text  # Fallback if no API key
+                return raw_problem_text
 
             client = AsyncOpenAI(
                 api_key=api_key_to_use,
-                base_url=base_url_to_use,  # If base_url_to_use is None, client uses default. No need for NotGiven here.
+                base_url=base_url_to_use,
             )
 
             chat_completions = await client.chat.completions.create(
@@ -320,18 +331,14 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
 
             generated_text = chat_completions.choices[0].message.content
 
-            original_llm_output = (
-                generated_text  # Store raw LLM output for logging if cleaning fails
-            )
+            original_llm_output = generated_text
 
-            # Simplified Cleaning: Only strip whitespace now
             cleaned_text = original_llm_output.strip()
 
-            if (
-                not cleaned_text
-            ):  # If cleaning (now just stripping) results in an empty string, fallback
+            if not cleaned_text:
                 logger.warning(
-                    f"Word problem conversion for '{raw_problem_text}' resulted in empty string after stripping. Original LLM output was: '{original_llm_output}'. Falling back to raw problem."
+                    f"Word problem conversion for '{raw_problem_text}' resulted in empty string after stripping. "
+                    f"Original LLM output was: '{original_llm_output}'. Falling back to raw problem."
                 )
                 return raw_problem_text
 
@@ -350,21 +357,15 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
         """Get the next problem based on current curriculum level."""
         raw_problem, solution, generator_id = self.curriculum.get_problem()
 
-        # Strip LaTeX delimiters from the raw problem before converting to word problem
         raw_problem_stripped = self._strip_latex_delimiters(raw_problem)
-        # Also strip from solution for consistency, though solution isn't used in word problem conversion
         solution_stripped = self._strip_latex_delimiters(solution)
 
-        # Convert the stripped raw problem to a word problem
         word_problem_text = await self._convert_to_word_problem(raw_problem_stripped)
 
-        # Create a message with the word problem
-        # The agent will solve this word problem, which should map back to the original solution.
         prompt = tuple(
             [frozenset({"role": "user", "content": word_problem_text}.items())]
         )
 
-        # Return the word problem with the original (stripped) solution and generator_id
         return (prompt, solution_stripped, generator_id)
 
     async def evaluate(self, *args, **kwargs):
@@ -427,21 +428,18 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
     ) -> Tuple[int, bool]:
         """Evaluate a single problem."""
         try:
-            # Problem here is already stripped of LaTeX by the setup method
-            # Convert the raw problem to a word problem for evaluation
             word_problem_text = await self._convert_to_word_problem(problem)
             logger.debug(
-                f"Evaluating level {level} word problem: {word_problem_text[:50]}... (Original raw: {problem[:30]}...)"
+                f"Evaluating level {level} word problem: {word_problem_text[:50]}... "
+                f"(Original raw: {problem[:30]}...)"
             )
 
-            # Convert messages to a single prompt using the tokenizer
             messages = [
                 {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": word_problem_text},  # Use word problem here
+                {"role": "user", "content": word_problem_text},
             ]
             prompt = self.tokenizer.apply_chat_template(messages, tokenize=False)
 
-            # Add prefilled thinking starter
             prefill = "\n<think>\n"
             prefilled_prompt = prompt + prefill
 
@@ -593,7 +591,10 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
                 current_score += self.config.boxed_answer_bonus
 
             logger.info(
-                f"Item {i}: Correct: {is_correct}, Think Bonus: {self.config.think_block_bonus if think_match and think_match.group(1).strip() else 0}, Boxed Bonus: {self.config.boxed_answer_bonus if boxed_answer_content is not None else 0}, Final Score: {current_score}"
+                f"Item {i}: Correct: {is_correct}, "
+                f"Think Bonus: {self.config.think_block_bonus if think_match and think_match.group(1).strip() else 0}, "
+                f"Boxed Bonus: {self.config.boxed_answer_bonus if boxed_answer_content is not None else 0}, "
+                f"Final Score: {current_score}"
             )
 
             tokens_dict = tokenize_for_trainer(
@@ -615,7 +616,6 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
     def config_init(cls) -> Tuple[InfiniteMathEnvConfig, List[OpenaiConfig]]:
         """Initialize environment and OpenAI configurations with default values."""
         env_config = InfiniteMathEnvConfig(
-            # BaseEnvConfig fields
             tokenizer_name="NousResearch/Nous-Hermes-2-Yi-34B",
             group_size=8,
             use_wandb=True,
@@ -628,7 +628,6 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
             inference_weight=1.0,
             wandb_name="infinite_math",
             data_path_to_save_groups="data/infinite_math_groups.jsonl",
-            # InfiniteMathEnvConfig specific fields
             starting_level=1,
             progress_threshold=0.8,
             min_evaluations=10,
@@ -641,10 +640,9 @@ Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bir
             length_threshold_ratio=0.6,
             temperature=0.7,
             top_p=0.9,
-            # Specify the model and connection details for word problem generation
             word_problem_model_name="gpt-4.1-mini",
-            word_problem_openai_api_key=None,  # Default to None (uses OPENAI_API_KEY env var)
-            word_problem_openai_base_url=None,  # Default to None (uses official OpenAI endpoint)
+            word_problem_openai_api_key=None,
+            word_problem_openai_base_url=None,
         )
 
         server_configs = [
