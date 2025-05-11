@@ -304,9 +304,7 @@ class InfiniteMathEnv(BaseEnv):
                 "OPENAI_API_KEY"
             )
             base_url_to_use = self.config.word_problem_openai_base_url
-            model_to_use = (
-                self.config.word_problem_model_name or "gpt-4.1-mini"
-            )
+            model_to_use = self.config.word_problem_model_name or "gpt-4.1-mini"
 
             if not api_key_to_use:
                 logger.error(
