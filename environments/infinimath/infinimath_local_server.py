@@ -21,7 +21,7 @@ async def main():
     logger.info("Starting InfiniteMath environment local runner")
 
     config = InfiniteMathEnvConfig(
-        tokenizer_name="NousResearch/Nous-Hermes-2-Yi-34B",
+        tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
         group_size=1,
         use_wandb=False,
         max_num_workers=1,
@@ -47,10 +47,10 @@ async def main():
 
     server_configs = [
         OpenaiConfig(
-            model_name="NousResearch/Nous-Hermes-2-Yi-34B",
-            base_url=os.getenv("OPENAI_BASE_URL", "http://localhost:9004/v1"),
-            api_key=os.getenv("OPENAI_API_KEY", "dummy-key"),
-            num_requests_for_eval=0,
+            model_name="gpt-4.1-nano",
+            base_url=None,
+            api_key=os.environ.get("OPENAI_API_KEY"),
+            timeout=600,
         )
     ]
     
