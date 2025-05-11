@@ -626,7 +626,7 @@ class InfiniteMathEnv(BaseEnv):
             steps_per_eval=25,
             max_token_length=4096,
             inference_weight=1.0,
-            wandb_name="infinite_math",
+            wandb_name="infinimath",
             data_path_to_save_groups="data/infinite_math_groups.jsonl",
             starting_level=1,
             progress_threshold=0.8,
