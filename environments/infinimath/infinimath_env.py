@@ -1,14 +1,20 @@
 import asyncio
 import json
 import logging
+import os
 import random
 import re
 from typing import Dict, List, Optional, Tuple, Union
+
+from dotenv import load_dotenv
+from openai import AsyncOpenAI, NotGiven
 
 from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 from .curriculum import MathCurriculum
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -34,7 +40,7 @@ Your answer format should be:
 
 \\boxed{your final answer here}
 
-Remember to format your final answer correctly as this is important for evaluation."""
+Remember to format your final answer correctly as this is important for evaluation. Do not apply any rounding to your final answer, be as exact as possible."""
 
 
 class InfiniteMathEnvConfig(BaseEnvConfig):
@@ -55,6 +61,11 @@ class InfiniteMathEnvConfig(BaseEnvConfig):
 
     temperature: float = 0.7
     top_p: float = 0.9
+
+    # Model for word problem generation
+    word_problem_model_name: Optional[str] = "gpt-4.1-mini"
+    word_problem_openai_api_key: Optional[str] = os.environ.get("OPENAI_API_KEY")
+    word_problem_openai_base_url: Optional[str] = None  # Add for custom server
 
 
 class InfiniteMathEnv(BaseEnv):
@@ -245,16 +256,116 @@ class InfiniteMathEnv(BaseEnv):
 
         await super().wandb_log(wandb_metrics)
 
+    async def _convert_to_word_problem(self, raw_problem_text: str) -> str:
+        """Converts a raw math problem string into a word problem using an LLM."""
+        system_prompt_word_problem = """You are an expert creative writer. Your task is to transform a given raw mathematical expression into an engaging and imaginative word problem.
+
+**Critical Instructions:**
+1.  **Strict Preservation:** The core mathematical question, ALL numbers, and ALL operations from the raw problem MUST be EXACTLY preserved in the word problem. Do NOT change the calculation required. For example, if the raw problem is 'A - B', the word problem must represent subtraction of B from A, not any other operation.
+2.  **Clarity:** The word problem must clearly and unambiguously lead to solving the original mathematical expression.
+3.  **Conciseness:** Keep the word problem relatively short and to the point.
+4.  **Output Format:** Output ONLY the word problem text. Do NOT include any preambles, self-references (like 'Here is a word problem:'), special tokens (like '<|start_header_id|>'), or any text other than the word problem itself.
+
+**Examples of Correct Transformation:**
+Raw Problem: 5 * 3
+Word Problem: Sarah is baking cookies, and each batch requires 3 eggs. If Sarah wants to bake 5 batches, how many eggs will she need in total?
+
+Raw Problem: |10 - 15|
+Word Problem: A submarine is 10 meters below sea level. Another submarine is 15 meters below sea level. What is the absolute difference in their depths in meters?
+
+Raw Problem: sqrt(16)
+Word Problem: A square piece of land has an area of 16 square units. What is the length of one of its sides in units?
+
+**Example of Incorrect Transformation (Operation Changed):**
+Raw Problem: |3 - (-67)|  (This is 3 + 67)
+Incorrect Word Problem: In a magical forest, there are 3 enchanted trees, and each tree has 67 glowing fruits. How many glowing fruits are there in total? (This became 3 * 67)
+Correct Word Problem: A bird watcher is 3 meters up a tree. She spots a rare bird 67 meters below ground level in a cave. What is the total vertical distance between the bird watcher and the rare bird in meters?
+"""
+
+        messages = [
+            {"role": "system", "content": system_prompt_word_problem},
+            {"role": "user", "content": f"Raw Problem: {raw_problem_text}"},
+        ]
+
+        prompt_for_llm = self.tokenizer.apply_chat_template(messages, tokenize=False)
+
+        try:
+            api_key_to_use = self.config.word_problem_openai_api_key or os.environ.get(
+                "OPENAI_API_KEY"
+            )
+            base_url_to_use = self.config.word_problem_openai_base_url
+            model_to_use = (
+                self.config.word_problem_model_name or "gpt-4.1-mini"
+            )  # Fallback if not set in config somehow
+
+            if not api_key_to_use:
+                logger.error(
+                    "OpenAI API key for word problem generation is not configured (checked config and OPENAI_API_KEY env var)."
+                )
+                return raw_problem_text  # Fallback if no API key
+
+            client = AsyncOpenAI(
+                api_key=api_key_to_use,
+                base_url=base_url_to_use,  # If base_url_to_use is None, client uses default. No need for NotGiven here.
+            )
+
+            chat_completions = await client.chat.completions.create(
+                model=model_to_use,
+                messages=messages,
+                n=1,
+                max_tokens=512,
+                temperature=0.7,
+                top_p=1.0,
+            )
+
+            generated_text = chat_completions.choices[0].message.content
+
+            original_llm_output = (
+                generated_text  # Store raw LLM output for logging if cleaning fails
+            )
+
+            # Simplified Cleaning: Only strip whitespace now
+            cleaned_text = original_llm_output.strip()
+
+            if (
+                not cleaned_text
+            ):  # If cleaning (now just stripping) results in an empty string, fallback
+                logger.warning(
+                    f"Word problem conversion for '{raw_problem_text}' resulted in empty string after stripping. Original LLM output was: '{original_llm_output}'. Falling back to raw problem."
+                )
+                return raw_problem_text
+
+            logger.info(
+                f"Converted raw problem '{raw_problem_text}' to word problem: '{cleaned_text}'"
+            )
+            return cleaned_text
+        except Exception as e:
+            log_message_error = (
+                f"Error converting to word problem for '{raw_problem_text}': {e}"
+            )
+            logger.error(log_message_error)
+            return raw_problem_text
+
     async def get_next_item(self):
         """Get the next problem based on current curriculum level."""
-        problem, solution, generator_id = self.curriculum.get_problem()
+        raw_problem, solution, generator_id = self.curriculum.get_problem()
 
-        problem = self._strip_latex_delimiters(problem)
-        solution = self._strip_latex_delimiters(solution)
+        # Strip LaTeX delimiters from the raw problem before converting to word problem
+        raw_problem_stripped = self._strip_latex_delimiters(raw_problem)
+        # Also strip from solution for consistency, though solution isn't used in word problem conversion
+        solution_stripped = self._strip_latex_delimiters(solution)
 
-        prompt = tuple([frozenset({"role": "user", "content": problem}.items())])
+        # Convert the stripped raw problem to a word problem
+        word_problem_text = await self._convert_to_word_problem(raw_problem_stripped)
 
-        return (prompt, solution, generator_id)
+        # Create a message with the word problem
+        # The agent will solve this word problem, which should map back to the original solution.
+        prompt = tuple(
+            [frozenset({"role": "user", "content": word_problem_text}.items())]
+        )
+
+        # Return the word problem with the original (stripped) solution and generator_id
+        return (prompt, solution_stripped, generator_id)
 
     async def evaluate(self, *args, **kwargs):
         """Evaluate the model on test problems at the current curriculum level."""
@@ -316,14 +427,21 @@ class InfiniteMathEnv(BaseEnv):
     ) -> Tuple[int, bool]:
         """Evaluate a single problem."""
         try:
-            logger.debug(f"Evaluating level {level} problem: {problem[:30]}...")
+            # Problem here is already stripped of LaTeX by the setup method
+            # Convert the raw problem to a word problem for evaluation
+            word_problem_text = await self._convert_to_word_problem(problem)
+            logger.debug(
+                f"Evaluating level {level} word problem: {word_problem_text[:50]}... (Original raw: {problem[:30]}...)"
+            )
 
+            # Convert messages to a single prompt using the tokenizer
             messages = [
                 {"role": "system", "content": self.system_prompt},
-                {"role": "user", "content": problem},
+                {"role": "user", "content": word_problem_text},  # Use word problem here
             ]
             prompt = self.tokenizer.apply_chat_template(messages, tokenize=False)
 
+            # Add prefilled thinking starter
             prefill = "\n<think>\n"
             prefilled_prompt = prompt + prefill
 
@@ -514,15 +632,19 @@ class InfiniteMathEnv(BaseEnv):
             starting_level=1,
             progress_threshold=0.8,
             min_evaluations=10,
-            max_attempts_per_problem=3,  # Default from class, not in old main
-            correct_reward=1.0,  # As in old main
-            incorrect_reward=-0.5,  # As in old main (class default was -1.0)
-            think_block_bonus=0.2,  # As per previous update
-            boxed_answer_bonus=0.2,  # As per previous update
-            apply_length_penalty=True,  # As in old main
-            length_threshold_ratio=0.6,  # As in old main (class default was 0.5)
-            temperature=0.7,  # As in old main
-            top_p=0.9,  # As in old main
+            max_attempts_per_problem=3,
+            correct_reward=1.0,
+            incorrect_reward=-0.5,
+            think_block_bonus=0.2,
+            boxed_answer_bonus=0.2,
+            apply_length_penalty=True,
+            length_threshold_ratio=0.6,
+            temperature=0.7,
+            top_p=0.9,
+            # Specify the model and connection details for word problem generation
+            word_problem_model_name="gpt-4.1-mini",
+            word_problem_openai_api_key=None,  # Default to None (uses OPENAI_API_KEY env var)
+            word_problem_openai_base_url=None,  # Default to None (uses official OpenAI endpoint)
         )
 
         server_configs = [
