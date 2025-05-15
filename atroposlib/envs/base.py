@@ -40,7 +40,8 @@ from atroposlib.utils.metrics import get_std_min_max_avg
 
 from ..type_definitions import Item, Message
 from .server_handling.server_manager import (
-    OpenaiConfig,
+    APIServer,
+    APIServerConfig,
     ServerBaseline,
     ServerManager,
     ServerManagerConfig,
@@ -59,6 +60,17 @@ class ScoredDataGroup(TypedDict):
     messages: Optional[List[List[Message]]]
     group_overrides: Optional[Dict]
     overrides: Optional[List[Dict]]
+
+
+class ScoredDataItem(TypedDict):
+    tokens: List[int]
+    masks: List[int]
+    scores: float
+    advantages: Optional[List[float]]
+    ref_logprobs: Optional[List[float]]
+    messages: Optional[List[Message]]
+    group_overrides: Optional[Dict]
+    overrides: Optional[Dict]
 
 
 class EvalHandlingEnum(Enum):
@@ -152,13 +164,14 @@ class BaseEnvConfig(BaseModel):
 
 class BaseEnv(ABC):
 
-    name = None
-    env_config_cls = BaseEnvConfig
+    name: Optional[str] = None
+    env_config_cls: BaseEnvConfig = BaseEnvConfig
+    server_cls: APIServer = APIServer
 
     def __init__(
         self,
         config: BaseEnvConfig,
-        server_configs: Union[ServerBaseline, List[OpenaiConfig]],
+        server_configs: Union[ServerBaseline, List[APIServerConfig]],
         slurm=False,
         testing=False,
     ):
@@ -173,7 +186,9 @@ class BaseEnv(ABC):
         self.last_loop_time = None
         self.last_completed_item = None
         self.config = config
-        self.server = ServerManager(server_configs, slurm=slurm, testing=testing)
+        self.server = ServerManager(
+            server_configs, slurm=slurm, testing=testing, server_class=self.server_cls
+        )
         self.workers = set()
         self.eval_workers = set()
         self.backlog = []
@@ -223,13 +238,15 @@ class BaseEnv(ABC):
     @classmethod
     def config_init(
         cls,
-    ) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[OpenaiConfig]]]:
+    ) -> Tuple[BaseEnvConfig, Union[ServerBaseline, List[APIServerConfig]]]:
         """
         Initialize the config
         """
         return cls.env_config_cls(), ServerBaseline()
 
-    async def collect_trajectory(self, item: Item) -> Tuple[Any | None, List[Item]]:
+    async def collect_trajectory(
+        self, item: Item
+    ) -> Tuple[Optional[Union[ScoredDataItem, Any]], List[Item]]:
         raise NotImplementedError(
             "Handle env single method must be implemented in subclass "
         )
@@ -249,13 +266,38 @@ class BaseEnv(ABC):
         for _ in range(self.config.group_size):
             tasks.append(self.collect_trajectory(item))
         results = await asyncio.gather(*tasks)
+        if any(not isinstance(result[0], dict) for result in results):
+            logging.error("something wasn't a ScoredDataItem")
+            raise ValueError(
+                "collect_trajectory must return a ScoredDataItem or None to use the default "
+                "collect_trajectories method"
+            )
         backlog = []
-        to_postprocess = []
+        to_postprocess = ScoredDataGroup()
+        to_postprocess["tokens"] = []
+        to_postprocess["masks"] = []
+        to_postprocess["scores"] = []
+        to_postprocess["advantages"] = []
+        to_postprocess["ref_logprobs"] = []
+        to_postprocess["messages"] = []
+        to_postprocess["group_overrides"] = {}
+        to_postprocess["overrides"] = []
+        print("Processing results")
         for result in results:
-            if result[0] is not None:
-                to_postprocess.append(result[0])
+            to_postprocess["tokens"].append(result[0]["tokens"])
+            to_postprocess["masks"].append(result[0]["masks"])
+            to_postprocess["scores"].append(result[0]["scores"])
+            if result[0].get("advantages", None) is not None:
+                to_postprocess["advantages"].append(result[0]["advantages"])
+            if result[0].get("ref_logprobs", None) is not None:
+                to_postprocess["ref_logprobs"].append(result[0]["ref_logprobs"])
+            if result[0].get("messages", None) is not None:
+                to_postprocess["messages"].append(result[0]["messages"])
+            if result[0].get("group_overrides", None) is not None:
+                to_postprocess["group_overrides"].update(result[0]["group_overrides"])
+            if result[0].get("overrides", None) is not None:
+                to_postprocess["overrides"].append(result[0]["overrides"])
             backlog.extend(result[1])
-        random.shuffle(backlog)
         return to_postprocess, backlog
 
     async def postprocess_histories(
@@ -982,7 +1024,6 @@ class BaseEnv(ABC):
         Returns:
             type: The CliServeConfig class for serving commands.
         """
-
         # Get the default configurations defined by the specific environment class
         default_env_config, default_server_configs = cls.config_init()
 
@@ -994,8 +1035,8 @@ class BaseEnv(ABC):
         class CliServeConfig(
             get_prefixed_pydantic_model(type(default_env_config), env_full_prefix),
             get_prefixed_pydantic_model(
-                OpenaiConfig, openai_full_prefix
-            ),  # Use OpenaiConfig for CLI args
+                APIServerConfig, openai_full_prefix
+            ),  # Use APIServerConfig for CLI args
             ServerManagerConfig,  # ServerManager args are not namespaced by default
             Cmd,
         ):
@@ -1051,7 +1092,7 @@ class BaseEnv(ABC):
                     oai_cli_passed_args or yaml_oai_config
                 ):
                     raise ValueError(
-                        "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
+                        "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use APIServerConfig."  # noqa: E501
                     )
                 if (
                     isinstance(default_server_configs, list)
@@ -1063,11 +1104,11 @@ class BaseEnv(ABC):
                     default_openai_config_ = default_server_configs
                 if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
                     yaml_oai_config = yaml_oai_config[0]
-                if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
+                if isinstance(default_openai_config_, APIServerConfig) and isinstance(
                     yaml_oai_config, dict
                 ):
                     openai_config_dict = merge_dicts(
-                        default_openai_config_.model_dump(),  # Default OpenaiConfig (or from class init)
+                        default_openai_config_.model_dump(),  # Default APIServerConfig (or from class init)
                         yaml_oai_config,
                         oai_cli_passed_args,
                     )
@@ -1151,7 +1192,7 @@ class BaseEnv(ABC):
             data_path_to_save_groups=f"data/{cls.name or 'groups'}.jsonl",
             use_wandb=True,
         )
-        PROCESS_MODE_OPENAI_DEFAULT_CONFIG = OpenaiConfig(
+        PROCESS_MODE_OPENAI_DEFAULT_CONFIG = APIServerConfig(
             model_name="gpt-4.1-nano",
             base_url=None,
             api_key=None,
@@ -1162,10 +1203,7 @@ class BaseEnv(ABC):
         )
 
         # Get the base default configurations from the specific environment class
-        (
-            default_env_config,
-            default_server_configs,
-        ) = cls.config_init()
+        default_env_config, default_server_configs = cls.config_init()
 
         # Define namespace prefixes
         env_full_prefix = f"{ENV_NAMESPACE}{NAMESPACE_SEP}"
@@ -1177,8 +1215,7 @@ class BaseEnv(ABC):
             type(default_env_config), PROCESS_MODE_ENV_DEFAULT_CONFIG
         )
         openai_config_cls_new_defaults = adjust_model_defaults(
-            OpenaiConfig,
-            PROCESS_MODE_OPENAI_DEFAULT_CONFIG,
+            APIServerConfig, PROCESS_MODE_OPENAI_DEFAULT_CONFIG
         )
         server_manager_config_cls_new_defaults = adjust_model_defaults(
             ServerManagerConfig,
@@ -1245,7 +1282,7 @@ class BaseEnv(ABC):
                     oai_cli_passed_args or yaml_oai_config
                 ):
                     raise ValueError(
-                        "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use OpenaiConfig."  # noqa: E501
+                        "ServerBaseline is not compatible with OpenAI-namespaced CLI arguments. Please edit `config_init` directly or use APIServerConfig."  # noqa: E501
                     )
 
                 if (
@@ -1258,11 +1295,11 @@ class BaseEnv(ABC):
                     default_openai_config_ = default_server_configs
                 if isinstance(yaml_oai_config, list) and len(yaml_oai_config) == 1:
                     yaml_oai_config = yaml_oai_config[0]
-                if isinstance(default_openai_config_, OpenaiConfig) and isinstance(
+                if isinstance(default_openai_config_, APIServerConfig) and isinstance(
                     yaml_oai_config, dict
                 ):
                     openai_config_dict = merge_dicts(
-                        default_openai_config_.model_dump(),  # Default OpenaiConfig (or from class init)
+                        default_openai_config_.model_dump(),  # Default APIServerConfig (or from class init)
                         PROCESS_MODE_OPENAI_DEFAULT_CONFIG.model_dump(),  # Process Mode Defaults
                         yaml_oai_config,
                         oai_cli_passed_args,

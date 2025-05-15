@@ -22,16 +22,17 @@
   </a>
 </div>
 
-Atropos is a Language Model Reinforcement Learning Environments framework for collecting and evaluating LLM trajectories through diverse environments including:
+---
 
+## What is Atropos?
+Atropos is an environment microservice framework for async RL with LLMs.
+
+Atropos encompasses both environments, which are set up as services, and a trajectory API for the environments to send data to and for the trainer to pull batches from.
+
+![image](https://github.com/user-attachments/assets/8ce52994-b219-49d6-970c-58a477f36151)
 <div align="center">
 
-| Environment Type          | Examples                                   | Purpose                                            |
-|---------------------------|--------------------------------------------|----------------------------------------------------|
-| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
-| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
-| 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
-| 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+  *Here is a diagram of how Atropos' components can interact with a trainer & inference server to complete the RL loop (trainer & inference engine not included with the atropos package)*
 
 </div>
 
@@ -44,6 +45,19 @@ Atropos is a robust, scalable framework for **Reinforcement Learning Environment
 - **Diverse Environment Integration:** Manages many varied environment types concurrently for heterogeneous, multi-modal training.
 
 The goal: provide a flexible, scalable, and standardized platform to accelerate LLM-based RL research across diverse, interactive settings.
+
+The framework supports collecting, distributing and evaluating LLM trajectories through diverse environments including:
+
+<div align="center">
+
+| Environment Type          | Examples                                   | Purpose                                            |
+|---------------------------|--------------------------------------------|----------------------------------------------------|
+| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
+| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
+| 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
+| 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+
+</div>
 
 ## 🎉 Upcoming Atropos Hackathon: LLM RL Environments
 
@@ -197,6 +211,29 @@ Environments come with detailed logging and reporting support, runs track comple
 
 ---
 
+# Trainer Integrations
+## Axolotl
+<a href="https://github.com/axolotl-ai-cloud/plugin-atropos">
+  <img
+    src="https://github.com/user-attachments/assets/be629253-a8b1-4354-b6da-5e404e9c854d"
+    alt="Atropos plugin logo"
+    width="50%">
+</a>
+
+Axolotl is a powerful tool for fine-tuning a wide range of AI models, supporting techniques like LoRA and QLoRA through simple YAML configurations.
+
+The [Atropos plugin for Axolotl](https://github.com/axolotl-ai-cloud/plugin-atropos) seamlessly integrates Atropos' RL environments into Axolotl's training pipelines.
+This allows you to leverage Atropos for reinforcement learning while utilizing Axolotl's extensive features for model fine-tuning.
+
+To use, follow the readme on the [plugin repository](https://github.com/axolotl-ai-cloud/plugin-atropos).
+
+## Atropos' Example Trainer
+Atropos repo contains an example trainer that should primarily be used as a reference example to show how a trainer and inference provider can be integrated with Atropos to complete the RL Training Loop.
+
+To use the example trainer, see this page: [training example guide](example_trainer/README.md)
+
+---
+
 ## Testing and Debugging Tools
 
 The trajectory-handler provides several debugging tools to help environment developers test and understand their environments locally without requiring the full distributed infrastructure.
@@ -213,7 +250,14 @@ After launching the API and your selected environments (e.g. `run-api & python e
 python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl
 ```
 
-would save data to `gsm8k.jsonl` and also generate a corresponding `gsm8k.html` which can be opened in a browser.
+would save data to `gsm8k.jsonl` and also generate a corresponding `gsm8k.html` which can be opened in a browser. By default this uses OpenAI deployment of `gpt-4.1` if the `OPENAI_API_KEY` environment variable is defined, but this behavior can be customized for example as follows
+
+```sh
+python gsm8k_server.py process --env.data_path_to_save_groups gsm8k.jsonl \
+  --openai.base_url https://generativelanguage.googleapis.com/v1beta/openai/ \
+  --openai.api_key $GEMINI_API_KEY \
+  --openai.model_name gemini-2.0-flash  
+```
 
 See `python gsm8k_server.py process --help` for more detailed usage.
 
@@ -234,7 +278,7 @@ Rejection sampling can be controlled via `--save-top-n-per-group`, `--allow-nega
 If you would like to use OpenAI models, please edit your `config_init` to something like the following:
 ```python
     @classmethod
-    def config_init(cls) -> Tuple[BaseEnvConfig, List[OpenaiConfig]]:
+    def config_init(cls) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
         env_config = BaseEnvConfig(
             tokenizer_name="Qwen/Qwen2.5-1.5B-Instruct",
             group_size=8,
@@ -247,7 +291,7 @@ If you would like to use OpenAI models, please edit your `config_init` to someth
             wandb_name="gsm8k",
         )
         server_configs = [
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="gpt-4.1-nano",
                 base_url=None,
                 api_key=os.environ.get("OPENAI_API_KEY"),
