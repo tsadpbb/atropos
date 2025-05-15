@@ -9,7 +9,12 @@ from typing import Dict, List, Optional, Tuple, Union
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, APIServerConfig, ScoredDataGroup
+from atroposlib.envs.base import (
+    APIServerConfig,
+    BaseEnv,
+    BaseEnvConfig,
+    ScoredDataGroup,
+)
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 from .curriculum import MathCurriculum
