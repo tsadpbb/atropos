@@ -5,7 +5,7 @@ import os
 
 from dotenv import load_dotenv
 
-from atroposlib.envs.base import APIServerConfig
+from atroposlib.envs.base import OpenaiConfig
 from environments.infinimath.infinimath_env import (
     InfiniteMathEnv,
     InfiniteMathEnvConfig,
@@ -50,7 +50,7 @@ async def main():
     )
 
     server_configs = [
-        APIServerConfig(
+        OpenaiConfig(
             model_name="gpt-4.1-nano",
             base_url=None,
             api_key=os.environ.get("OPENAI_API_KEY"),
