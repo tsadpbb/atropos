@@ -59,6 +59,7 @@ class InstructionFollowingEnv(BaseEnv):
             eval_limit_ratio=0.1,
             dataset_name="allenai/RLVR-IFeval", # Default dataset
             dataset_config_name=None, # RLVR-IFeval doesn't have a specific config name, uses 'default'
+            test_set_ratio=0.05  # The ratio of the selelcted dataset in %
         )
         # Server configurations can be similar to SingleToolCallingEnv or adjusted
         server_configs = [
@@ -68,14 +69,7 @@ class InstructionFollowingEnv(BaseEnv):
                 api_key="x",
                 num_max_requests_at_once=32,
                 num_requests_for_eval=256,
-            ),
-            APIServerConfig(
-                model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-                base_url="http://localhost:9005/v1",
-                api_key="x",
-                num_max_requests_at_once=32,
-                num_requests_for_eval=256,
-            ),
+            )
         ]
         return env_config, server_configs
 
@@ -214,7 +208,7 @@ class InstructionFollowingEnv(BaseEnv):
             
         full_dataset = full_dataset.shuffle(seed=42)
         
-        actual_test_size = 0.2
+        actual_test_size = self.config.test_set_ratio # Read from config
         num_items = len(full_dataset)
 
         if num_items == 0:
@@ -812,8 +806,6 @@ def validate_quotation(text: str) -> bool:
 # No Commas: In your entire response, refrain from the use of any commas.
 def validate_no_commas(text: str) -> bool:
     return "," not in text
-
-
 
 IF_FUNCTIONS_MAP = {
     "verify_keywords": verify_keywords,
