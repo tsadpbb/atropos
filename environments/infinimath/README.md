@@ -25,81 +25,11 @@ This environment provides procedurally generated math problems with curriculum-b
 
 ## Usage
 
-### Running with Default Configuration
-
-To run the InfiniteMath environment with the default configuration:
+To run the InfiniteMath environment for local testing of the curriculum advancement:
 
 ```bash
-python environments/infinite_math/infinimath_local_server.py
+python environments/infinimath/infinimath_local_server.py
 ```
 
-This will use the default configuration from `configs/envs/infinimath.yaml`.
-
-### Custom Configuration
-
-You can specify a custom configuration file:
-
-```bash
-python environments/infinite_math/infinimath_local_server.py --config my_custom_config
-```
-
-The `--config` parameter can be:
-
-1. A name (without `.yaml` extension) which will be looked up in `configs/envs/`
-2. A relative or absolute path to a YAML file
-
-For example:
-```bash
-# Using a config in configs/envs/
-python environments/infinite_math/infinimath_local_server.py --config infinimath_hard
-
-# Using a config with full path
-python environments/infinite_math/infinimath_local_server.py --config /path/to/my/config.yaml
-```
-
-## Configuration Structure
-
-The configuration file follows this structure:
-
-```yaml
-# Base environment parameters
-tokenizer_name: "NousResearch/DeepHermes-3-Llama-3-8B-Preview"
-group_size: 1
-use_wandb: false
-# ... other base parameters
-
-# InfiniteMath specific configuration
-infinimath:
-  # Curriculum parameters
-  starting_level: 1
-  progress_threshold: 0.7
-  # ... other InfiniteMath specific parameters
-
-# Server configuration
-server_configs:
-  - model_name: "gpt-4.1-nano"
-    api_key: ${OPENAI_API_KEY}
-    num_requests_for_eval: 70
-```
-
-### Important Configuration Parameters
-
-#### Base Parameters
-
-- `tokenizer_name`: The tokenizer to use for encoding/decoding text
-- `group_size`: Number of responses to collect per prompt
-- `max_token_length`: Maximum token length for generation
-- `steps_per_eval`: How often to run evaluations
-
-#### InfiniteMath Specific Parameters
-
-- `starting_level`: Initial difficulty level (1-7)
-- `progress_threshold`: Success rate needed to advance levels
-- `min_evaluations`: Minimum number of evaluations before level advancement
-- `reward_functions`: List of reward functions to apply
-
-#### Server Configuration
-
-- `model_name`: LLM model to use
-- `api_key`: API key for the model (can use environment variables with ${VAR_NAME} syntax)
-- `num_requests_for_eval`: Number of evaluation requests to allocate
+The `infinimath_local_server.py` script contains the primary configuration for the environment when run in this standalone mode. You can modify this script directly to change parameters such as the model used, API keys (via environment variables), and various curriculum or reward settings.
+The script is designed for local debugging and testing of the environment's capabilities.
