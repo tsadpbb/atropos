@@ -93,6 +93,7 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
 ### Instruction Following Environment (`instruction_following_algorithm_environment.py`)
 
 Environment for training models to follow natural language instructions and constraints, based on the `allenai/RLVR-IFeval` dataset and environment.
+*This environment has unique dependencies: `datasets` (from Hugging Face) and `langdetect`.*
 
 **Input Format:**
 - Each item from the processed `allenai/RLVR-IFeval` dataset contains:
