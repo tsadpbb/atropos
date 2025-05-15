@@ -32,4 +32,4 @@ python environments/infinimath/infinimath_local_server.py
 ```
 
 The `infinimath_local_server.py` script contains the primary configuration for the environment when run in this standalone mode. You can modify this script directly to change parameters such as the model used, API keys (via environment variables), and various curriculum or reward settings.
-The script is designed for local debugging and testing of the environment's capabilities.
+The script is designed for local debugging and demonstration of the environment's capabilities.

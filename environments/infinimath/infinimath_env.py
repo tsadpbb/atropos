@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 from dotenv import load_dotenv
 from openai import AsyncOpenAI
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig, OpenaiConfig, ScoredDataGroup
+from atroposlib.envs.base import BaseEnv, BaseEnvConfig, APIServerConfig, ScoredDataGroup
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 from .curriculum import MathCurriculum
@@ -76,7 +76,7 @@ class InfiniteMathEnv(BaseEnv):
     def __init__(
         self,
         config: InfiniteMathEnvConfig,
-        server_configs: Union[List[OpenaiConfig], OpenaiConfig],
+        server_configs: Union[List[APIServerConfig], APIServerConfig],
         slurm=True,
         testing=False,
     ):
@@ -611,7 +611,7 @@ class InfiniteMathEnv(BaseEnv):
         return scored_data
 
     @classmethod
-    def config_init(cls) -> Tuple[InfiniteMathEnvConfig, List[OpenaiConfig]]:
+    def config_init(cls) -> Tuple[InfiniteMathEnvConfig, List[APIServerConfig]]:
         """Initialize environment and OpenAI configurations with default values."""
         env_config = InfiniteMathEnvConfig(
             tokenizer_name="NousResearch/Nous-Hermes-2-Yi-34B",
@@ -644,7 +644,7 @@ class InfiniteMathEnv(BaseEnv):
         )
 
         server_configs = [
-            OpenaiConfig(
+            APIServerConfig(
                 model_name="NousResearch/Nous-Hermes-2-Yi-34B",
                 base_url="http://localhost:9004/v1",
                 api_key="x",
@@ -652,11 +652,6 @@ class InfiniteMathEnv(BaseEnv):
             )
         ]
         return env_config, server_configs
-
-    @classmethod
-    def cli(cls):
-        """Command Line Interface runner for the environment."""
-        super().cli()
 
 
 if __name__ == "__main__":
