@@ -677,7 +677,7 @@ class InstructionFollowingEnv(BaseEnv):
         rollout_batch = []
         for i in range(min(num_keep, len(scored_data["tokens"]))):
             decoded_text = self.tokenizer.decode(
-                scored_data["tokens"][i], skip_special_tokens=True
+                scored_data["tokens"][i], skip_special_tokens=False
             )
             score = scored_data["scores"][i]
             rollout_batch.append((decoded_text, score, constraint_details_for_log))
@@ -785,7 +785,7 @@ def validate_word_constraint(text: str, N: int, quantifier: str) -> bool:
 def verify_sentence_constraint(text: str, N: int, quantifier: str) -> bool:
     # Basic sentence splitting, might need more robust NLP for complex cases
     sentences = re.split(
-        r"(?<!\\w\\.\\w.)(?<![A-Z][a-z]\\.)(?<=\\.|\\?|!)\\s", text.strip()
+        r"(?<![a-zA-Z0-9_]\.[a-zA-Z0-9_]\.)(?<![A-Z][a-z]\.)(?<=\.|\?|!)\s", text.strip()
     )
     # Filter out empty strings that might result from splitting
     sentences = [s for s in sentences if s.strip()]
@@ -885,8 +885,8 @@ def validate_highlighted_sections(text: str, N: int) -> bool:
     # Markdown italics/bold *highlight* or **highlight**
     # This regex looks for single asterisks: *content*
     matches = re.findall(
-        r"\\*(.*?)\\*(?<!\\*)", text
-    )  # Non-greedy match inside single asterisks
+        r"\*(.*?)(?<!\\)\*", text  # Ensure the closing * is not escaped
+    )
     # Filter out empty matches or those that are just whitespace if needed.
     # matches = [m for m in matches if m.strip()]
     return len(matches) >= N
