@@ -52,10 +52,12 @@ The framework supports collecting, distributing and evaluating LLM trajectories 
 
 | Environment Type          | Examples                                   | Purpose                                            |
 |---------------------------|--------------------------------------------|----------------------------------------------------|
-| 📚 Dataset environments   | GSM8K, MMLU                                | Evaluate and improve LLM performance on static data|
-| 🎮 Online environments    | Crosswords, Hangman                        | Train LLMs through interactive game-based learning |
+| 📚 Dataset environments   | GSM8K, MMLU, Custom HF Datasets            | Evaluate and improve LLM performance on static data|
+| 🎮 Online environments    | Blackjack, Taxi, Text-based games          | Train LLMs through interactive game-based learning |
 | 🤖 RLAIF and RLHF         | LLM Judge/Reward Models                    | Fine-tune LLMs using human feedback and alignment  |
 | 🔄 Multi-Turn RL          | deepresearch, internal tool calling        | Train LLMs on complex multi-step interactions      |
+| 💻 Code Execution         | MBPP, HumanEval (via `coding_server.py`)   | Train LLMs to generate and execute code            |
+| 🖼️ Multimodal             | OCR VQA, Clevr (via `multimodal_dpo/`)     | Train LLMs on tasks involving vision and language  |
 
 </div>
 
