@@ -55,7 +55,8 @@ dev = [
 ]
 examples = [
     "gradio",
-    "atroposlib[rewardfns]"
+    "atroposlib[rewardfns]",
+    "langdetect"
 ]
 
 [build-system]
