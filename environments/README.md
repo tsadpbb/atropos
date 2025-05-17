@@ -92,6 +92,14 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
 
 ### Instruction Following Environment (`instruction_following_algorithm_environment.py`)
 
+**Dependencies:**
+- `datasets` (Hugging Face)
+- `langdetect`
+
+This environment was inspired by AllenAI's RLVR-IFEVAL environment and uses AllenAI's dataset from their Tulu3 paper and project:
+- Dataset: https://huggingface.co/datasets/allenai/RLVR-IFeval
+- Paper: https://arxiv.org/abs/2411.15124
+
 Environment for training models to follow natural language instructions and constraints, based on the `allenai/RLVR-IFeval` dataset and environment.
 **Dependencies:**
 - `datasets` (Hugging Face)
