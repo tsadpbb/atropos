@@ -142,6 +142,7 @@ Key Documents:
 - [Full Environment Config Options](CONFIG.md) - Documentation for creating custom environments
 - [Example Trainer](example_trainer/README.md) - Getting started with training
 - [Slurm Guide](SLURM.md) - Guide for using Atropos with Slurm for distributed inference
+- [Frequently Asked Questions (FAQ)](atroposlib/FAQ.md) - Answers to common questions for new users
 - [Contributing Guide](CONTRIBUTING.md) - Guidelines for contributors
 - [License](LICENSE) - MIT license details
 
