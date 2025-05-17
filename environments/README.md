@@ -93,7 +93,9 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
 ### Instruction Following Environment (`instruction_following_algorithm_environment.py`)
 
 Environment for training models to follow natural language instructions and constraints, based on the `allenai/RLVR-IFeval` dataset and environment.
-*This environment has unique dependencies: `datasets` (from Hugging Face) and `langdetect`.*
+**Dependencies:**
+- `datasets` (Hugging Face)
+- `langdetect`
 
 **Input Format:**
 - Each item from the processed `allenai/RLVR-IFeval` dataset contains:
@@ -120,7 +122,7 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
   - `dataset_config_name`: Optional name for a specific configuration or subset of the dataset.
   - `test_set_ratio`: Defines the proportion of the dataset reserved for testing (defaults to 5%).
 
-- **Verifier-Based Scoring:** Utilizes a comprehensive map of verifier functions (`IF_FUNCTIONS_MAP`) to evaluate whether the model's 
+- **Verifier-Based Scoring:** Utilizes a comprehensive map of verifier functions (`IF_FUNCTIONS_MAP`) to evaluate whether the model's
 output adheres to diverse and specific constraints defined in the input instructions (e.g., keyword presence, response length, JSON format, etc.).
 
 - **Specialized Dataset Processing:** The `setup` method is specifically designed to parse the `allenai/RLVR-IFeval` dataset, extracting user instructions, the corresponding verifier function name, and its arguments.
