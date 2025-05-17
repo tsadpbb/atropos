@@ -311,7 +311,7 @@ All environments share these common features:
    - Support for multiple model completions per prompt
 
 5. **Detailed Documentation:**
-   - Most environments, especially those with more complexity, include detailed `README.md` files within their respective subdirectories to provide specific context and usage instructions.
+   - Many environments, especially those with more complexity, include detailed `README.md` files within their respective subdirectories to provide specific context and usage instructions.
 
 6. **Additional Libraries:**
    - If an environment requires specific libraries not covered by the main project dependencies, its subdirectory may include a `requirements.txt` file for easy installation via `pip`, or provide installation instructions in its `README.md`.

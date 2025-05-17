@@ -95,7 +95,7 @@ To start, you'd typically select an environment that suits your interest from th
 Why it's for use with LLMs:
 -   **Memory Efficiency:** One of GRPO's main advantages is that it's designed to be more memory-efficient than some other RL algorithms like PPO. It achieves this by not needing a separate, often large, "value model" to estimate potential future rewards. This can be very helpful when training already large LLMs. The tradeoff is more inference for doing rollouts - but, generally that's less of an issue than VRAM is. There's nothing wrong with PPO, but with compute always being tight with LLMs, GRPO and similar more memory-efficient algorithms have gained a lot of ground.
 -   **How it Learns:** Instead of a value model, GRPO typically has the LLM generate multiple different responses for a given prompt or situation. These responses are then scored (e.g., an objective score from an environment, by an AI judge, a specific metric, or a reward model - anything you can use to get a reward signal really). GRPO uses the average score of this group of responses as a baseline. It then looks at how much better or worse each individual response was compared to that average. The model is then updated to make it more likely to produce responses that scored above the average.
--   **Suitability for Atropos:** The example trainer uses GRPO to showcase how Atropos environments can provide the interactive data needed for this kind of online RL. This aligns with Atropos's goal of enabling LLMs to learn through interaction and feedback. 
+-   **Suitability for Atropos:** The example trainer uses GRPO to showcase how Atropos environments can provide the interactive data needed for this kind of online RL. This aligns with Atropos's goal of enabling LLMs to learn through interaction and feedback.
 
 ---
 
@@ -109,4 +109,3 @@ Here's its role:
 -   **Central Coordination:** It allows multiple different environments to potentially contribute data to the same training process and enables tools like `view-run` to inspect the data flowing through the system.
 
 So, in most Atropos workflows, you'll need the `run-api` server running in one terminal before you start your environment servers and your trainer.
-
