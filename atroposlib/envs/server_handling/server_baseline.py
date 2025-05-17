@@ -155,9 +155,7 @@ class APIServer(ABC):
         self.eval_sem.update_weight(weight)
 
     @abstractmethod
-    async def check_server_status_task(
-        self, chat_completion: bool = True, skip_check: bool = False
-    ):
+    async def check_server_status_task(self, chat_completion: bool = True):
         """
         Check the status of the server. Should be overridden by the child class.
         Set self.server_healthy to True if the server is healthy.
