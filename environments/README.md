@@ -241,6 +241,7 @@ Two Blackjack environment implementations are provided. For more details, see th
     - **Gameplay:** A more complex version designed for agents that produce long interaction sequences, including "thinking" steps.
     - **Features:** Windowed decision making, local alternative generation, value-based pruning, and counterfactual data for training (GRPO).
     - **Use Case:** Ideal for training LLMs that engage in explicit multi-step reasoning before action. Teaches the model to be more "confident" about selecting optimal moves & taking informed risks in uncertain environments, even with the knowledge that it might still lose with optimal play.
+
 ### Instruction Following Environment (`instruction_following_algorithm_environment.py`)
 
 **Dependencies:**
@@ -252,9 +253,6 @@ This environment was inspired by AllenAI's RLVR-IFEVAL environment and uses Alle
 - Paper: https://arxiv.org/abs/2411.15124
 
 Environment for training models to follow natural language instructions and constraints, based on the `allenai/RLVR-IFeval` dataset and environment.
-**Dependencies:**
-- `datasets` (Hugging Face)
-- `langdetect`
 
 **Input Format:**
 - Each item from the processed `allenai/RLVR-IFeval` dataset contains:
