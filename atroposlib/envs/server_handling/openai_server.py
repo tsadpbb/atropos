@@ -24,7 +24,12 @@ class OpenAIServer(APIServer):
         )
         super().__init__(config)
 
-    async def check_server_status_task(self, chat_completion: bool = True):
+    async def check_server_status_task(
+        self, chat_completion: bool = True, skip_check: bool = False
+    ):
+        if skip_check:
+            self.server_healthy = True
+            return
         while True:
             try:
                 if chat_completion:
