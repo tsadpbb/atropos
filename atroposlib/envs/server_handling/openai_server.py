@@ -29,7 +29,7 @@ class OpenAIServer(APIServer):
             try:
                 await self.openai.chat.completions.create(
                     model=self.config.model_name,
-                    prompt="hi",
+                    messages=[{"role": "user", "content": "hi"}],
                     max_tokens=1,
                 )
                 self.server_healthy = True
