@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-Before running this script, you need to install KernelBench:
+Before running `kernelbench_env.py`, you need to install KernelBench:
 
 1. Install KernelBench from source:
    ```bash
@@ -13,10 +13,16 @@ Before running this script, you need to install KernelBench:
    cd -
    ```
 
-2. Set variables at the top of this script:
+2. Set variables at the top of the script:
    - `KERNELBENCH_LEVEL`: The difficulty level (1-3)
    - `KERNELBENCH_PROBLEM_NUMBER`: The specific problem number to solve
    - `KERNELBENCH_DIR`: The absolute path to your KernelBench install
+
+3. Run `kernelbench_env.py` as you would any other environment:
+    ```bash
+   python kernelbench_env.py serve --slurm False
+
+   ```
 
 These environment variables will be used to configure the evaluation environment.
 
