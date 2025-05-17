@@ -27,7 +27,7 @@ class OpenAIServer(APIServer):
     async def check_server_status_task(self):
         while True:
             try:
-                await self.openai.completions.create(
+                await self.openai.chat.completions.create(
                     model=self.config.model_name,
                     prompt="hi",
                     max_tokens=1,
