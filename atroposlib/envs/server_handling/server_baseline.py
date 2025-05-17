@@ -320,7 +320,9 @@ class APIServer(ABC):
             if (
                 self.config.base_url is not None
             ):  # skip health check if using OpenAI API
-                self.check_task = asyncio.create_task(self.check_server_status_task(chat_completion=False))
+                self.check_task = asyncio.create_task(
+                    self.check_server_status_task(chat_completion=False)
+                )
             else:
                 self.server_healthy = True
             self.initialized = True

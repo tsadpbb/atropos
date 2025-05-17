@@ -37,8 +37,8 @@ class OpenAIServer(APIServer):
                     await self.openai.completions.create(
                         model=self.config.model_name,
                         prompt="hi",
-                    max_tokens=1,
-                )
+                        max_tokens=1,
+                    )
                 self.server_healthy = True
             except (
                 aiohttp.ClientError,
