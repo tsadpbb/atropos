@@ -66,8 +66,8 @@ python punchline_env.py process \
 
 You will need to have vLLM serving the model on port 9001 for this to work.
 
-[Weights & Biases link](https://wandb.ai/jaboggs-nous-hackathon-nc-state-university/uncategorized/runs/c24sz5t5)
+[Weights & Biases link](https://wandb.ai/jaboggs-nous-hackathon-nc-state-university/uncategorized/runs/0vly0u4p)
 
 #### Output
 
-[jokes.zip](https://github.com/user-attachments/files/20275132/jokes.zip)
+[jokes.zip](https://github.com/user-attachments/files/20275345/jokes.zip)
