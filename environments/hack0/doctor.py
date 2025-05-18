@@ -1,9 +1,15 @@
 import re
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple, TypedDict
 
-import gymnasium as gym
+from datasets import load_dataset
 
-from atroposlib.envs.base import APIServerConfig, BaseEnv, BaseEnvConfig, ScoredDataItem
+from atroposlib.envs.base import (
+    APIServerConfig,
+    BaseEnv,
+    BaseEnvConfig,
+    EvalHandlingEnum,
+    ScoredDataItem,
+)
 from atroposlib.type_definitions import Item
 
 system_prompt = """
@@ -26,6 +32,19 @@ user: It's been going on for 2 days.
 assistant: The patient is diagnosed with <diagnosis>headache</diagnosis>
 """
 
+DatasetItem = TypedDict(
+    "DatasetItem",
+    {
+        "question": str,
+        "answer": str,
+        "options": Dict[str, str],
+        "meta_info": str,
+        "answer_idx": str,
+        "diagnosis": str,
+        "metamap_sequence": Sequence[str],
+    },
+)
+
 
 class DoctorEnv(BaseEnv):
 
@@ -35,7 +54,7 @@ class DoctorEnv(BaseEnv):
         self,
         config: BaseEnvConfig,
         server_configs: List[APIServerConfig],
-        slurm=True,
+        slurm=False,
         testing=False,
     ):
         super().__init__(config, server_configs, slurm, testing)
@@ -53,8 +72,16 @@ class DoctorEnv(BaseEnv):
             group_size=32,
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
-            max_token_length=8192,
-            wandb_name="gym_taxi",
+            wandb_name="doctor",
+            max_num_workers=128,
+            total_steps=100,
+            batch_size=1024,
+            steps_per_eval=1,
+            max_token_length=1024 * 15,
+            inference_weight=1.0,
+            data_path_to_save_groups=None,
+            eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
+            eval_limit_ratio=0.1,
         )
         server_configs = [
             APIServerConfig(
@@ -88,14 +115,36 @@ class DoctorEnv(BaseEnv):
         await super().wandb_log(wandb_metrics)
 
     async def setup(self):
+        """
+        Set up the environment by loading and preparing the dataset.
+        """
+        # Load the full dataset
+        full_dataset = load_dataset("GBaker/MedQA-USMLE-4-options")
+
+        full_dataset = full_dataset.shuffle(seed=42)
+
+        # Keep the splits as is - no need to reformat
+        self.train = full_dataset["train"]
+        # Limit test set size to prevent evaluation from taking too long
+        self.test = full_dataset["test"].select(
+            range(min(128, len(full_dataset["test"])))
+        )
+
+        # Print some dataset statistics
+        print(
+            f"Loaded dataset with {len(self.train)} training examples and {len(self.test)} test examples"
+        )
+        print(f"Example item format: {self.train[0]}")
+
+        # Initialize iteration counter
         self.iter = 0
 
     async def evaluate(self, *args, **kwargs):
         pass
 
-    async def get_patient_msg(self, env: gym.Env) -> str:
+    async def get_patient_msg(self, item: Item) -> str:
         # Call xAI to get a patient message
-        return env.render()
+        return item["question"]
 
     async def collect_trajectory(
         self, item: Item
@@ -176,10 +225,17 @@ class DoctorEnv(BaseEnv):
         return scored_data_item, []
 
     async def get_next_item(self):
-        next_item = {"seed": self.iter}
+        """
+        Get the next training item from the dataset.
+
+        Returns:
+            A tuple containing prompt and expected answer
+        """
+        next_item: DatasetItem = self.train[self.iter % len(self.train)]
         self.iter += 1
+
         return next_item
 
 
-# if __name__ == "__main__":
-#     GymTaxiEnv.cli()
+if __name__ == "__main__":
+    DoctorEnv.cli()
