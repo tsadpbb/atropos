@@ -1,14 +1,14 @@
 # Punchline VR-CLI Environment
 
-This fork contains an Atropos environment designed to train a large language model to generate humorous punchlines for jokes. The environment utilizes a Reinforcement Learning (RL) technique called Verifiable Rewards via Completion Likelihood Improvement (VR-CLI), from the paper "Learning to Reason for Long-Form Story Generation" (Gurung & Lapata, 2025) [https://arxiv.org/html/2503.22828v1](https://arxiv.org/html/2503.22828v1).
+This environment trains an LLM to generate humorous punchlines for jokes, utilizing a Reinforcement Learning (RL) technique called Verifiable Rewards via Completion Likelihood Improvement (VR-CLI), from the paper "Learning to Reason for Long-Form Story Generation" (Gurung & Lapata, 2025) [https://arxiv.org/html/2503.22828v1](https://arxiv.org/html/2503.22828v1).
 
-## Environment Design
+## Design
 
 The core idea is to teach a model not just to produce a punchline, but to first generate "reasoning" that leads to a good punchline. The quality of this reasoning is then "verified" by measuring how much it improves the likelihood (reduces the perplexity) of the *actual* punchline from the dataset, as assessed by a separate, fixed reference model. This greatly reduces overfitting, as the model does not have access to the ground-truth answer. Typical fine-tuning fails at this, as it makes the model memorize the jokes rather than gain an understanding of why they are funny.
 
 ## Example
 
-Here's an example of how the model generates a punchline with reasoning:
+Here's an example of one trajectory:
 
 ```
 Question: What do you call a herd of cows masturbating?
@@ -26,19 +26,16 @@ Beef strokin off!
 
 ## Impact
 
-How is this applicable to anything useful? Well, VR-CLI can be applied to many other domains beyond jokes. The original authors of the paper used it for creative writing, but it could also be applied to code generation without requiring it to be executed in a VM or custom business tasks with existing examples.
+How is this applicable to anything useful? Well, VR-CLI can be applied to many domains beyond jokes. The original authors of the paper used it for creative writing, but it could also be applied to code generation without requiring it to be executed in a VM or custom business tasks with existing examples.
 
 ## Key Components:
 
 *   **Dataset:** The environment uses the `"SocialGrep/one-million-reddit-jokes"` dataset, filtering for jokes with a question-answer format (setup and punchline) and a minimum number of upvotes.
-*   **Task:** Given the setup of a joke (the "question"), the model is prompted to generate a thinking process `<think>...</think>` followed by the punchline.
+*   **Task:** Given the setup of a joke (the "question"), the model `Qwen/Qwen3-1.7B` is prompted to generate a thinking process `<think>...</think>` followed by the punchline.
 *   **Reward (VR-CLI):**
     1.  A base perplexity of the "golden" punchline is calculated given only the joke's setup, using a reference LLM `Qwen/Qwen3-1.7B-Base`.
     2.  A new perplexity of the golden punchline is calculated, this time conditioned on both the joke's setup AND the model-generated reasoning.
     3.  The reward is proportional to the improvement in perplexity `(base_perplexity - plus_perplexity) / base_perplexity`. A positive reward indicates the reasoning was helpful.
-*   **Models:**
-    *   The environment is configured to use `Qwen/Qwen3-1.7B` for generating trajectories.
-    *   A reference model `Qwen/Qwen3-1.7B-Base` is used locally to calculate the VR-CLI reward.
 
 ## Metrics
 
