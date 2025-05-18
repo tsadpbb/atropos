@@ -14,9 +14,11 @@ Here's an example of how the model generates a punchline with reasoning:
 Question: What do you call a herd of cows masturbating?
 
 <think>
-Okay, the user is asking, "What do you call a herd of cows masturbating?" Hmm, that's a play on words. Let me think. The key here is the word "masturbating" and the animal "cows." The answer needs to be a pun or a play on words.
+Okay, the user is asking, "What do you call a herd of cows masturbating?" Hmm, that's a play on words. Let me think.
+The key here is the word "masturbating" and the animal "cows." The answer needs to be a pun or a play on words.
 
-First, I need to connect "herd" with "masturbating." A herd of cows is a group, so maybe something related to a group. "Masturbating" is a term that's not typically used for animals, but maybe there's a word that combines the two.........
+First, I need to connect "herd" with "masturbating." A herd of cows is a group, so maybe something related to a group.
+"Masturbating" is a term that's not typically used for animals, but maybe there's a word that combines the two.........
 </think>
 
 Beef strokin off!
@@ -75,4 +77,4 @@ You will need to have vLLM serving the model on port 9001 for this to work.
 
 #### Output
 
-Zip placeholder
+[jokes.zip](https://github.com/user-attachments/files/20275132/jokes.zip)
