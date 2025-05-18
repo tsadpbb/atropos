@@ -24,8 +24,8 @@ After replicating RESTGPT, we noticed that LLMs struggled to find the right tool
 | Environmental Variables  |   |
 | Compute Footprint Estimate  |   |
 
-Estimate	
-🧪 Zero-Training Test Results
+## Estimate	
+### 🧪 Zero-Training Test Results
 Details
 W&B Link:
 
