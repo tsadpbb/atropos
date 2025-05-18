@@ -41,14 +41,28 @@ def run_web_server(port, static_dir):
     """Run a simple HTTP server for the frontend"""
     import http.server
     import socketserver
+    import socket
     
     class Handler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=static_dir, **kwargs)
     
-    with socketserver.TCPServer(("", port), Handler) as httpd:
-        print(f"Web server running at http://localhost:{port}")
-        httpd.serve_forever()
+    # Try ports in sequence until one works
+    max_port_attempts = 10
+    current_port = port
+    
+    for attempt in range(max_port_attempts):
+        try:
+            with socketserver.TCPServer(("", current_port), Handler) as httpd:
+                print(f"Web server running at http://localhost:{current_port}")
+                httpd.serve_forever()
+                break
+        except socket.error as e:
+            if attempt < max_port_attempts - 1:
+                print(f"Port {current_port} is in use, trying port {current_port + 1}")
+                current_port += 1
+            else:
+                raise Exception(f"Could not find an available port after {max_port_attempts} attempts")
 
 def main():
     """Main entry point"""
@@ -756,21 +770,15 @@ window.addEventListener('load', async () => {
     
     # Start web server for frontend
     print(f"Starting web server on port {args.web_port}")
-    web_url = f"http://localhost:{args.web_port}"
     
-    # Open the browser if requested
-    if not args.no_open:
-        print(f"Opening {web_url} in your default browser")
-        webbrowser.open(web_url)
-    
-    # Print instructions
-    print("\n=== DynastAI Local Server ===")
-    print(f"API Server: http://localhost:{args.api_port}/api")
-    print(f"Web Frontend: {web_url}")
-    print("Press Ctrl+C to stop the servers")
-    
-    # Run the web server in the main thread
-    run_web_server(args.web_port, static_dir)
+    try:
+        # Run the web server in the main thread
+        run_web_server(args.web_port, static_dir)
+    except Exception as e:
+        print(f"Error starting web server: {e}")
+        print("Please try running the server again with a different port:")
+        print(f"python3 environments/dynastai/dynastai_local_server.py --web-port 8080")
+        sys.exit(1)
 
 if __name__ == "__main__":
     try:
