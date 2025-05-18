@@ -324,6 +324,55 @@ async function startGame() {
 }
 
 /**
+ * Add this mapping function before generateCard()
+ */
+function getCharacterImageFilename(characterName) {
+    // Map of titles to image filenames (without .png extension)
+    const titleMap = {
+        // Compound titles (must come before single-word titles)
+        'Guild Master': 'guild-merchant',
+        'Royal Advisor': 'royal-advisor',
+        'Master of Coin': 'master-of-coin',
+        'Master of Laws': 'master-of-laws',
+        'Master of Arms': 'master-of-arms',
+        'Master of Spies': 'master-of-spies',
+        'Court Jester': 'court-jester',
+        'Master Builder': 'master-builder',
+        'Fleet Admiral': 'fleet-admiral',
+        'Royal Seneschal': 'royal-seneschal',
+        'Grand Inquisitor': 'grand-inquisitor',
+        'Court Astronomer': 'court-astronomer',
+        'Master Blacksmith': 'master-blacksmith',
+        'Court Physician': 'court-physician',
+        'Royal Diplomat': 'royal-diplomat',
+        'Court Scribe': 'court-scribe',
+        'Royal Librarian': 'royal-librarian',
+        'Captain of the Guard': 'captain-of-the-guard',
+        'Plague Doctor': 'plague-doctor',
+        
+        // Single-word titles
+        'Bishop': 'cardinal',
+        'General': 'general',
+        'Abbot': 'abbot',
+        'Sheriff': 'sheriff',
+        'Queen': 'queen',
+        'Prince': 'prince',
+        'Princess': 'princess'
+    };
+
+    // Try to match the full title first
+    for (const [title, filename] of Object.entries(titleMap)) {
+        if (characterName.startsWith(title)) {
+            return filename;
+        }
+    }
+    
+    // If no match found, return default
+    console.warn(`No image mapping found for character: ${characterName}`);
+    return 'royal-advisor';
+}
+
+/**
  * Generate a new card
  */
 async function generateCard() {
@@ -343,9 +392,25 @@ async function generateCard() {
         // Update card UI
         let cardContent = currentCard.text;
         
-        // Always use character name from the Character field if available
+        // Handle character image
+        const characterImage = document.getElementById('character-image');
         if (currentCard.character_name) {
+            // Get the correct image filename based on character title
+            const imageFilename = getCharacterImageFilename(currentCard.character_name);
+            
+            // Set image source and show it
+            characterImage.src = `img/${imageFilename}.png`;
+            characterImage.style.display = 'block';
+            
+            // Add error handler to fallback to default if image fails to load
+            characterImage.onerror = () => {
+                console.warn(`Failed to load image for ${currentCard.character_name}, falling back to default`);
+                characterImage.src = 'img/royal-advisor.png';
+            };
+            
             cardContent = `<span class="character-name">${currentCard.character_name}:</span> ${cardContent}`;
+        } else {
+            characterImage.style.display = 'none';
         }
         
         cardText.innerHTML = cardContent;
@@ -480,7 +545,7 @@ async function makeChoice(choice) {
         if (document.getElementById('play-mode').value === 'ai') {
             setTimeout(async () => {
                 await letAIMakeChoice();
-            }, 2000);
+            }, 1400);
         }
         
     } catch (error) {
