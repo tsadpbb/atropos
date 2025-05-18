@@ -1,10 +1,10 @@
 # Punchline VR-CLI Environment
 
-This fork contains an Atropos environment designed to train a large language model to generate humorous punchlines for jokes. The environment utilizes a Reinforcement Learning (RL) technique called Verifiable Rewards via Completion Likelihood Improvement (VR-CLI), taken from the paper "Learning to Reason for Long-Form Story Generation" (Gurung & Lapata, 2025) [https://arxiv.org/html/2503.22828v1](https://arxiv.org/html/2503.22828v1).
+This fork contains an Atropos environment designed to train a large language model to generate humorous punchlines for jokes. The environment utilizes a Reinforcement Learning (RL) technique called Verifiable Rewards via Completion Likelihood Improvement (VR-CLI), from the paper "Learning to Reason for Long-Form Story Generation" (Gurung & Lapata, 2025) [https://arxiv.org/html/2503.22828v1](https://arxiv.org/html/2503.22828v1).
 
-## Environment Design and Motivation
+## Environment Design
 
-The core idea is to teach a model not just to produce a punchline, but to first generate a "reasoning" or "thought process" that leads to a good punchline. The quality of this reasoning is then "verified" by measuring how much it improves the likelihood (reduces the perplexity) of the *actual* punchline from the dataset, as assessed by a separate, fixed reference model. This greatly reduces overfitting, as the model does not have access to the ground-truth answer.
+The core idea is to teach a model not just to produce a punchline, but to first generate "reasoning" that leads to a good punchline. The quality of this reasoning is then "verified" by measuring how much it improves the likelihood (reduces the perplexity) of the *actual* punchline from the dataset, as assessed by a separate, fixed reference model. This greatly reduces overfitting, as the model does not have access to the ground-truth answer. Typical fine-tuning fails at this, as it makes the model memorize the jokes rather than gain an understanding of why they are funny.
 
 ## Example
 
@@ -24,7 +24,11 @@ First, I need to connect "herd" with "masturbating." A herd of cows is a group, 
 Beef strokin off!
 ```
 
-### Key Components:
+## Impact
+
+How is this applicable to anything useful? Well, VR-CLI can be applied to many other domains beyond jokes. The original authors of the paper used it for creative writing, but it could also be applied to code generation without requiring it to be executed in a VM or custom business tasks with existing examples.
+
+## Key Components:
 
 *   **Dataset:** The environment uses the `"SocialGrep/one-million-reddit-jokes"` dataset, filtering for jokes with a question-answer format (setup and punchline) and a minimum number of upvotes.
 *   **Task:** Given the setup of a joke (the "question"), the model is prompted to generate a thinking process `<think>...</think>` followed by the punchline.
@@ -35,14 +39,6 @@ Beef strokin off!
 *   **Models:**
     *   The environment is configured to use `Qwen/Qwen3-1.7B` for generating trajectories.
     *   A reference model `Qwen/Qwen3-1.7B-Base` is used locally to calculate the VR-CLI reward.
-
-The motivation is to guide the LLM towards generating more creative and contextually relevant punchlines by explicitly rewarding the intermediate reasoning steps that make a punchline "work." Typical fine-tuning fails to do this, as it makes the models memorize the jokes rather than gain an understanding of what makes them funny.
-
-## Prompt
-
-The model is giving the following prompt to guide the reasoning process. Qwen3 models have reasoning built-in, so we do not need to explicitly ask for `<think></think>` tags.
-
-`You have a strong sense of humor and answer the user's question with a punchline. You always give the funniest answer, even if it could offend some people. Consider the aspects that make a joke funny, for example the answer is usually surprising to hear but makes sense in hindsight. You shouldn't need to explain your answer, it should stand on its own.`
 
 ## Metrics
 
