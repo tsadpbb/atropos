@@ -179,6 +179,76 @@ function formatEffect(value) {
 }
 
 /**
+ * Decide which choice to make based on balancing metrics
+ */
+async function decideChoice(card, currentMetrics) {
+    console.log("AI analyzing choices for card:", card);
+    
+    // Get effects for both choices
+    const yesEffects = card.effects.yes;
+    const noEffects = card.effects.no;
+    
+    // Calculate how "balanced" each choice would make the metrics
+    const yesScore = calculateBalanceScore(currentMetrics, yesEffects);
+    const noScore = calculateBalanceScore(currentMetrics, noEffects);
+    
+    console.log("Balance scores - Yes:", yesScore, "No:", noScore);
+    
+    // Choose the option with the better balance score
+    const choice = yesScore >= noScore ? 'yes' : 'no';
+    console.log("AI chose:", choice);
+    return choice;
+}
+
+/**
+ * Calculate how well-balanced the metrics would be after applying effects
+ * Returns a score where higher is better (more balanced)
+ */
+function calculateBalanceScore(metrics, effects) {
+    // Predict new metric values
+    const newMetrics = {
+        power: metrics.power + (effects.power || 0),
+        stability: metrics.stability + (effects.stability || 0),
+        piety: metrics.piety + (effects.piety || 0),
+        wealth: metrics.wealth + (effects.wealth || 0)
+    };
+    
+    // Calculate how far each metric is from the ideal range (20-80)
+    // Lower penalty score is better
+    let penaltyScore = 0;
+    
+    Object.values(newMetrics).forEach(value => {
+        if (value < 20) {
+            penaltyScore += (20 - value) * 2; // Penalize low values more
+        } else if (value > 80) {
+            penaltyScore += (value - 80) * 2; // Penalize high values more
+        }
+        // Values between 20-80 add no penalty
+    });
+    
+    // Return inverted penalty score so higher is better
+    return 1000 - penaltyScore;
+}
+
+/**
+ * Highlight the selected choice button
+ */
+function highlightChoice(choice) {
+    // Remove any existing highlights and indicators
+    yesButton.classList.remove('highlight');
+    noButton.classList.remove('highlight');
+    
+    // Add highlight to the chosen button with pixel art style
+    const buttonToHighlight = choice === 'yes' ? yesButton : noButton;
+    buttonToHighlight.classList.add('highlight');
+    
+    // Remove highlight after 1.5 seconds (before the next card appears)
+    setTimeout(() => {
+        buttonToHighlight.classList.remove('highlight');
+    }, 1500);
+}
+
+/**
  * Start a new game session
  */
 async function startGame() {
@@ -197,17 +267,21 @@ async function startGame() {
         // Get ruler name from input
         rulerName = rulerNameInput.value.trim() || "Anonymous Ruler";
         
+        // Get play mode
+        const playMode = document.getElementById('play-mode').value;
+        console.log("Starting game in mode:", playMode);
+        
         // Reset dynasty year only if this is a new game (button text check)
         if (startGameButton.textContent !== "Continue Dynasty") {
             dynastyYear = 0;
         }
         
         // Create new game session
-        const response = await fetch(`${API_URL}new_game`, { // Removed the / for consistency
+        const response = await fetch(`${API_URL}new_game`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
-                session_id: sessionId  // This will be null for a brand new game
+                session_id: sessionId
             })
         });
         
@@ -225,8 +299,24 @@ async function startGame() {
         // Reset the start button text for future new games
         startGameButton.textContent = "Start New Game";
         
+        // Show/hide AI choice button based on play mode
+        const aiChoiceButton = document.getElementById('ai-choice-button');
+        if (aiChoiceButton) {
+            aiChoiceButton.style.display = playMode === 'ai' ? 'none' : 'block';
+        }
+        
         // Generate first card
         await generateCard();
+        
+        // If AI mode is selected, start making choices automatically after a 2-second delay
+        if (playMode === 'ai') {
+            console.log("AI mode selected, making first choice...");
+            const choice = await decideChoice(currentCard, metrics);
+            console.log("AI chose:", choice);
+            highlightChoice(choice);
+            setTimeout(() => makeChoice(choice), 2000);
+        }
+        
     } catch (error) {
         console.error("Error starting game:", error);
         alert("Failed to start game. Please check your connection to the game server.");
@@ -238,6 +328,10 @@ async function startGame() {
  */
 async function generateCard() {
     try {
+        // Clear any existing highlights first
+        yesButton.classList.remove('highlight');
+        noButton.classList.remove('highlight');
+        
         const response = await fetch(`${API_URL}generate_card`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -262,6 +356,17 @@ async function generateCard() {
         categoryIndicator.className = '';
         categoryIndicator.classList.add(currentCard.category);
         
+        // Attach AI choice button event listener after rendering
+        const aiChoiceButton = document.getElementById('ai-choice-button');
+        if (aiChoiceButton) {
+            aiChoiceButton.onclick = async () => {
+                console.log("AI choice button clicked");
+                const choice = await decideChoice(currentCard, metrics);
+                console.log("AI chose:", choice);
+                highlightChoice(choice);
+                setTimeout(() => makeChoice(choice), 1000);
+            };
+        }
     } catch (error) {
         console.error("Error generating card:", error);
         cardText.textContent = "Something went wrong generating the next scenario. Please try again.";
@@ -269,9 +374,36 @@ async function generateCard() {
 }
 
 /**
- * Make a card choice (yes/no)
+ * Function to let AI make a choice
+ */
+async function letAIMakeChoice() {
+    const playMode = document.getElementById('play-mode').value;
+    console.log("Play mode selected:", playMode);
+    if (playMode === 'ai') {
+        console.log("AI is making a choice...");
+        const choice = await decideChoice(currentCard, metrics);
+        console.log("AI chose:", choice);
+        
+        // Wait for 2 seconds to simulate thinking, then show choice and highlight
+        setTimeout(() => {
+            // Add AI choice text indicator with text shadow for better readability
+            const choiceText = choice === 'yes' ? currentCard.yes_option : currentCard.no_option;
+            cardText.innerHTML += `<div class="ai-choice-indicator" style="margin-top: 1rem; color: #ffd700; font-family: var(--header-font); font-size: 0.8em; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;">AI chooses: ${choiceText}</div>`;
+            
+            // Highlight the chosen button
+            highlightChoice(choice);
+            
+            // Make the choice after a brief pause
+            setTimeout(() => makeChoice(choice), 500);
+        }, 1500);
+    }
+}
+
+/**
+ * Modify the makeChoice function to call AI if in AI mode
  */
 async function makeChoice(choice) {
+    console.log("Making choice:", choice);
     try {
         const response = await fetch(`${API_URL}card_choice`, {
             method: 'POST',
@@ -287,14 +419,15 @@ async function makeChoice(choice) {
         }
         
         const data = await response.json();
+        console.log("Choice processed successfully:", data);
         
         // Display choice effects
         displayEffects(currentCard.effects[choice]);
         
         // Record this move in trajectory
         trajectory.push({
-            card_id: String(currentCard.id || "unknown"), // Ensure card_id is always a string
-            category: String(currentCard.category || "unknown"), // Ensure category is always a string
+            card_id: String(currentCard.id || "unknown"),
+            category: String(currentCard.category || "unknown"),
             choice: choice,
             effects: {
                 power: Number(currentCard.effects[choice].power || 0),
@@ -342,6 +475,13 @@ async function makeChoice(choice) {
         
         // Generate next card
         await generateCard();
+        
+        // If in AI mode, let AI make the next choice after a 2-second delay
+        if (document.getElementById('play-mode').value === 'ai') {
+            setTimeout(async () => {
+                await letAIMakeChoice();
+            }, 2000);
+        }
         
     } catch (error) {
         console.error("Error processing choice:", error);

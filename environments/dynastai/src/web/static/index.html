@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
@@ -73,6 +74,15 @@
                 <label for="ruler-name">Your Royal Name:</label>
                 <input type="text" id="ruler-name" placeholder="Enter your name">
             </div>
+            
+            <div class="play-mode">
+                <label for="play-mode">Choose Play Mode:</label>
+                <select id="play-mode" class="mode-select">
+                    <option value="manual">Play Manually</option>
+                    <option value="ai">Let AI Play</option>
+                </select>
+            </div>
+            
             <button id="start-game" class="primary-btn">Start New Game</button>
         </div>
         
@@ -96,7 +106,7 @@
     </main>
     
     <footer>
-        <p>Year <span id="reign-year">1</span> of your reign | Dynasty Year: <span id="dynasty-year">0</span></p>
+        <p>Year <span id="reign-year">1</span> of your reign</p>
         <p class="api-status">API Status: <span id="api-status">Checking...</span></p>
     </footer>
     
