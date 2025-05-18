@@ -16,13 +16,13 @@ After replicating RESTGPT, we noticed that LLMs struggled to find the right tool
 
 | Field  | Entry |
 | ------------- | ------------- |
-| Environment Name  | Content Cell  |
-| Short Description  | Content Cell  |
-| Category  | Content Cell  |
-| Dataset Needed?  | Content Cell  |
-| External Deps  | Content Cell  |
-| Environmental Variables  | Content Cell  |
-| Compute Footprint Estimate  | Content Cell  |
+| Environment Name  |   |
+| Short Description  |   |
+| Category  |   |
+| Dataset Needed?  |   |
+| External Deps  |   |
+| Environmental Variables  |   |
+| Compute Footprint Estimate  |   |
 
 Estimate	
 🧪 Zero-Training Test Results
