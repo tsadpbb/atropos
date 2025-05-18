@@ -646,7 +646,8 @@ class BaseEnv(ABC):
             group_size = group.get("group_overrides", {}).get(
                 "group_size", self.config.group_size
             )
-
+            rprint(f"group_size: {group_size}")
+            rprint(f"group: {group}")
             if not (
                 (None not in group) and (len(group.get("tokens", [])) == group_size)
             ):
