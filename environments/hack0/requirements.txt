@@ -1,1 +1,8 @@
-use uv :D
+torch
+transformers
+vllm
+pydantic
+numpy
+requests
+tenacity
+wandb
