@@ -1,6 +1,5 @@
+# FastAPI server for DynastAI game
 """
-FastAPI server for DynastAI game
-
 This module initializes and runs the FastAPI server for the DynastAI game.
 """
 

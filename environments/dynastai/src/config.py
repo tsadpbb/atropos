@@ -63,6 +63,22 @@ class DynastAIConfig(BaseModel):
         description="Directory for storing game data"
     )
     
+    # Card configuration
+    cards_file: str = Field(
+        default="cards.json",
+        description="Filename for storing cards"
+    )
+    
+    use_local_cards: bool = Field(
+        default=True,
+        description="Whether to use cards from local JSON file"
+    )
+    
+    use_api_cards: bool = Field(
+        default=True,
+        description="Whether to generate cards using OpenRouter API"
+    )
+    
     # Game difficulty settings
     min_effect_value: int = Field(default=-20, description="Minimum effect value")
     max_effect_value: int = Field(default=20, description="Maximum effect value")

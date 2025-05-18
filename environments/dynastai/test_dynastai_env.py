@@ -86,23 +86,10 @@ async def test_environment():
 
 def _generate_card_internal(self, metrics, category_weights):
     """Internal method for card generation during testing"""
-    from src.game_logic import generate_mock_card
+    from src.game_logic import generate_card
     
-    # Select a category based on weights
-    categories = list(category_weights.keys())
-    weights = [category_weights[cat] for cat in categories]
-    total_weight = sum(weights)
-    
-    # Normalize weights
-    if total_weight > 0:
-        normalized_weights = [w/total_weight for w in weights]
-    else:
-        normalized_weights = [1/len(categories)] * len(categories)
-    
-    category = random.choices(categories, weights=normalized_weights, k=1)[0]
-    
-    # Use the mock generator for testing
-    return generate_mock_card(metrics, category)
+    # Use the main card generator which now checks cards.json first
+    return generate_card(metrics, category_weights)
 
 # Add the test method to the environment class
 DynastAIEnv._generate_card_internal = _generate_card_internal

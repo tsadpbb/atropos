@@ -19,7 +19,8 @@ Each turn, players are presented with scenario cards generated using Qwen 1.7B v
 - **FastAPI Backend**: REST endpoints for game state management
 - **HTML/CSS/JS Frontend**: Modern, responsive web interface
 - **Adaptive Rewards**: Reward calculation that adapts to player choices and outcomes
-- **OpenRouter Integration**: Dynamic card generation using Qwen 1.7B language model
+- **Card Generation**: Uses both pre-defined cards from JSON and dynamic generation via Qwen 1.7B
+- **OpenRouter Integration**: Dynamic card generation using Qwen 1.7B language model (optional)
 
 ## Project Structure
 
@@ -33,6 +34,8 @@ dynastai/
 │   ├── game_logic.py        # Core game mechanics
 │   ├── util.py              # Utility functions
 │   ├── data/                # Game data storage
+│   │   ├── game_data.json   # Game configuration data
+│   │   └── cards.json       # Card templates
 │   └── web/                 # Web interface
 │       ├── __init__.py
 │       ├── api.py           # FastAPI endpoints
@@ -44,6 +47,8 @@ dynastai/
 │
 ├── dynastai_server.py       # Main server entry point
 ├── dynastai_local_server.py # Local development server
+├── test_dynastai_env.py     # Environment test script
+├── test_dynastai_api.py     # API test script
 ├── requirements.txt         # Dependencies
 └── README.md                # Documentation
 ```
@@ -87,6 +92,8 @@ This creates a dynamic reward system that adapts to each player's style and deci
    OPENROUTER_API_KEY=your_api_key_here
    ```
 
+4. The system includes a pre-configured `cards.json` file with 400+ scenario cards. If you don't set an OpenRouter API key, the game will exclusively use these pre-defined cards.
+
 ### Running the Server
 
 To run the full server with API endpoints:
@@ -100,6 +107,30 @@ For local development with both API and web server:
 ```bash
 python dynastai_local_server.py
 ```
+
+### Testing the Installation
+
+DynastAI includes several test scripts to verify that everything is working correctly:
+
+1. **Installation Verification**: Check if all required packages are installed properly
+   ```bash
+   python verify_install.py
+   ```
+
+2. **Quick Test**: Run the game with the web interface
+   ```bash
+   python run_dynastai.py
+   ```
+
+3. **Card Generation Test**: Test that cards are generated correctly
+   ```bash
+   python test_card_generation.py
+   ```
+
+4. **Environment Test**: Test the Atropos environment integration
+   ```bash
+   python test_dynastai_env.py
+   ```
 
 Then access the web interface at http://localhost:3000
 
@@ -116,17 +147,34 @@ The game exposes the following REST API endpoints:
 
 ## Integration with Atropos
 
-The `DynastAIEnv` class implements Atropos's `BaseEnv` interface, making it compatible with Atropos reinforcement learning workflows:
+DynastAI fully integrates with the Atropos RL framework. There are two ways to use it:
+
+### Method 1: Using the Environment Entry Point
+
+```bash
+# From the atropos root directory
+python environments/dynastai_environment.py serve --slurm False
+```
+
+### Method 2: Direct Integration in Trainers
 
 ```python
-from atroposlib.envs.base import BaseEnv
-from src.dynastai_env import DynastAIEnv
+from atroposlib.envs.base import BaseEnv, ServerBaseline
+from environments.dynastai.src.dynastai_env import DynastAIEnv, DynastAIEnvConfig
 
 # Create and configure environment
+config = DynastAIEnvConfig(
+    api_host="localhost",
+    api_port=9001,
+    web_enabled=True,
+    web_port=3000
+)
+server_configs = ServerBaseline()
 env = DynastAIEnv(config, server_configs)
 
 # Use with Atropos training
 observation = await env.reset()
+action = {"session_id": observation["session_id"], "choice": "yes"}
 observation, reward, done, info = await env.step(action)
 ```
 

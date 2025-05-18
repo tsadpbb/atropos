@@ -1,6 +1,5 @@
-   """
-FastAPI endpoints for DynastAI game
-
+# FastAPI endpoints for DynastAI game
+"""
 This module provides the REST API endpoints for the DynastAI game:
 - GET /state: Get current game state
 - POST /generate_card: Generate a new card
@@ -19,11 +18,26 @@ from pydantic import BaseModel
 # Import the game logic
 from ..game_logic import GameState, generate_card, apply_choice_effects
 
-# In-memory store for game sessions
-game_sessions: Dict[str, GameState] = {}
-
-# In-memory store for category weights across reigns
-category_weights: Dict[str, float] = {"power": 50, "stability": 50, "piety": 50, "wealth": 50}
+# Try to import the environment if running in standalone mode
+try:
+    from ..dynastai_env import DynastAIEnv, HAS_ATROPOSLIB
+    
+    # Create a standalone environment instance if running without atroposlib
+    standalone_env = None
+    if not HAS_ATROPOSLIB:
+        standalone_env = DynastAIEnv()
+        # Use the environment's game states and category weights
+        game_sessions = standalone_env.game_states
+        category_weights = standalone_env.category_weights
+    else:
+        # In-memory store for game sessions
+        game_sessions: Dict[str, GameState] = {}
+        # In-memory store for category weights across reigns
+        category_weights: Dict[str, float] = {"power": 50, "stability": 50, "piety": 50, "wealth": 50}
+except ImportError:
+    # Fallback if import fails
+    game_sessions: Dict[str, GameState] = {}
+    category_weights: Dict[str, float] = {"power": 50, "stability": 50, "piety": 50, "wealth": 50}
 
 # Path to save reign trajectories
 trajectories_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "trajectories.json")
@@ -58,6 +72,9 @@ class TrajectoryItem(BaseModel):
     choice: str
     effects: Dict[str, Any]
     post_metrics: Dict[str, int]
+    
+    class Config:
+        extra = "ignore"  # Allow extra fields
 
 class EndReignRequest(BaseModel):
     """Request model for ending a reign"""
@@ -66,6 +83,9 @@ class EndReignRequest(BaseModel):
     final_metrics: Dict[str, int]
     reign_length: int
     cause_of_end: Optional[str] = None
+    
+    class Config:
+        extra = "ignore"  # Allow extra fields
 
 class EndReignResponse(BaseModel):
     """Response model for ending a reign"""
@@ -128,8 +148,16 @@ async def generate_new_card(request: GenerateCardRequest):
         
     game_state = game_sessions[request.session_id]
     
-    # Generate a new card using the current metrics and category weights
-    card = generate_card(game_state.get_metrics(), category_weights)
+    # Check if this session has a history of previous reigns
+    # This would be used to adapt card generation based on previous outcomes
+    previous_reigns = game_state.previous_reigns if hasattr(game_state, 'previous_reigns') else []
+    
+    # Generate a new card using the current metrics, category weights, and reign history
+    card = generate_card(
+        game_state.get_metrics(), 
+        category_weights,
+        previous_reigns=previous_reigns
+    )
     
     # Store the card in the game state
     game_state.current_card = card
@@ -170,76 +198,136 @@ async def end_reign(request: EndReignRequest):
     """
     if request.session_id not in game_sessions:
         raise HTTPException(status_code=404, detail="Session not found")
+    
+    # Log the received trajectory for debugging
+    print(f"Received trajectory with {len(request.trajectory)} items")
+    
+    try:
+        # Calculate the adaptive reward
+        reward = calculate_adaptive_reward(request.final_metrics, request.trajectory)
         
-    # Calculate the adaptive reward
-    reward = calculate_adaptive_reward(request.final_metrics, request.trajectory)
+        # Update category weights
+        update_category_weights(request.final_metrics, request.trajectory)
+        
+        # Log the trajectory
+        log_trajectory(request, reward)
+        
+        # Store previous reign data before resetting
+        previous_reign = {
+            "final_metrics": request.final_metrics,
+            "reign_length": request.reign_length,
+            "cause_of_end": request.cause_of_end,
+            "reward": reward
+        }
+        
+        # Create new game state while preserving reign history
+        new_state = GameState()
+        
+        # Initialize previous_reigns if needed
+        new_state.previous_reigns = []
+        
+        # If session already exists, get previous reigns history
+        if request.session_id in game_sessions:
+            if hasattr(game_sessions[request.session_id], 'previous_reigns'):
+                new_state.previous_reigns = game_sessions[request.session_id].previous_reigns
+        
+        # Add this reign to history
+        new_state.previous_reigns.append(previous_reign)
+        
+        # Update the session with new state
+        game_sessions[request.session_id] = new_state
+        
+        return EndReignResponse(
+            reward=reward,
+            session_id=request.session_id,
+            new_weights=category_weights
+        )
     
-    # Update category weights
-    update_category_weights(request.final_metrics, request.trajectory)
-    
-    # Log the trajectory
-    log_trajectory(request, reward)
-    
-    # Clean up the session
-    # Note: We don't delete it in case the client wants to start a new reign with same session
-    game_sessions[request.session_id] = GameState()  # Reset the game state
-    
-    return EndReignResponse(
-        reward=reward,
-        session_id=request.session_id,
-        new_weights=category_weights
-    )
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Error processing end_reign: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error calculating reward: {str(e)}")
 
 def calculate_adaptive_reward(final_metrics: Dict[str, int], trajectory: List[TrajectoryItem]) -> float:
     """
-    Calculate the adaptive reward based on the final metrics and trajectory
+    Calculate the adaptive reward based on the final metrics and trajectory.
     
-    R = power_final * P + stability_final * S + piety_final * Pi + wealth_final * W
+    Following the formula: R = power_final * P + stability_final * S + piety_final * Pi + wealth_final * W
+    Where P, S, Pi, W are the counts of cards played in each category
     """
-    # Count the number of cards in each category
+    # Initialize category counts
     category_counts = {"power": 0, "stability": 0, "piety": 0, "wealth": 0}
     
+    # Count cards played in each category
     for item in trajectory:
-        if item.category in category_counts:
-            category_counts[item.category] += 1
+        try:
+            category = item.category.lower()
+            if category in category_counts:
+                category_counts[category] += 1
+        except Exception as e:
+            print(f"Error processing trajectory item: {str(e)}, item: {item}")
+            continue
     
-    # Calculate the reward
-    reward = (
-        final_metrics["power"] * category_counts["power"] +
-        final_metrics["stability"] * category_counts["stability"] +
-        final_metrics["piety"] * category_counts["piety"] +
-        final_metrics["wealth"] * category_counts["wealth"]
-    )
-    
-    return reward
+    # Calculate reward using the formula from README.md
+    try:
+        # For each category, multiply final metric value by the count of cards in that category
+        reward = 0.0
+        reward += final_metrics.get("power", 50) * category_counts["power"] 
+        reward += final_metrics.get("stability", 50) * category_counts["stability"]
+        reward += final_metrics.get("piety", 50) * category_counts["piety"]
+        reward += final_metrics.get("wealth", 50) * category_counts["wealth"]
+        
+        # If no cards were played, use the average of final metrics as reward
+        if sum(category_counts.values()) == 0:
+            total = sum(final_metrics.get(key, 50) for key in ["power", "stability", "piety", "wealth"])
+            reward = total / 4.0
+            
+        print(f"Calculated reward: {reward} based on:")
+        print(f"Final metrics: {final_metrics}")
+        print(f"Category counts: {category_counts}")
+        
+        return float(reward)
+        
+    except Exception as e:
+        print(f"Error in adaptive reward calculation: {str(e)}")
+        # Provide a fallback reward calculation
+        return float(sum(final_metrics.get(key, 50) for key in ["power", "stability", "piety", "wealth"]) / 4)
 
 def update_category_weights(final_metrics: Dict[str, int], trajectory: List[TrajectoryItem]):
     """
-    Update category weights using exponential moving average (EMA)
-    
-    weights["power"]     = 0.9 * weights["power"]     + 0.1 * (power_final     * P_last)
-    weights["stability"] = 0.9 * weights["stability"] + 0.1 * (stability_final * S_last)
-    weights["piety"]     = 0.9 * weights["piety"]     + 0.1 * (piety_final     * Pi_last)
-    weights["wealth"]    = 0.9 * weights["wealth"]    + 0.1 * (wealth_final    * W_last)
+    Update category weights using exponential moving average (EMA) based on 
+    the average per-card adaptive rewards value of its associated metric.
     """
-    global category_weights
-    
-    # Count the number of cards in each category
+    # Initialize tracking variables
+    category_totals = {"power": 0, "stability": 0, "piety": 0, "wealth": 0}
     category_counts = {"power": 0, "stability": 0, "piety": 0, "wealth": 0}
     
+    # Calculate total reward for each category
     for item in trajectory:
-        if item.category in category_counts:
-            category_counts[item.category] += 1
+        try:
+            category = item.category.lower()
+            if category in category_totals:
+                category_totals[category] += final_metrics.get(category, 50)
+                category_counts[category] += 1
+        except Exception as e:
+            print(f"Error processing category weight for item: {e}")
+            continue
     
     # Update weights using EMA
     alpha = 0.9  # Weight for the old value
     beta = 0.1   # Weight for the new value
     
     for category in category_weights:
-        category_weights[category] = (
-            alpha * category_weights[category] +
-            beta * (final_metrics[category] * category_counts[category])
-        )
+        # Calculate average reward for this category (use current weight if no cards in this category)
+        avg_reward = final_metrics.get(category, 50)
+        if category_counts[category] > 0:
+            avg_reward = category_totals[category] / category_counts[category]
+        
+        # Update weight using EMA
+        category_weights[category] = alpha * category_weights[category] + beta * avg_reward
+        
         # Ensure weights stay in a reasonable range
         category_weights[category] = max(1, min(100, category_weights[category]))
     

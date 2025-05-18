@@ -16,6 +16,11 @@ from threading import Thread
 # Ensure src directory is in path
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
+# Add parent directory to path to allow standalone execution without atroposlib
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
 from src.web.server import run_server
 from src.config import get_config
 
@@ -133,7 +138,12 @@ def main():
             <h2>Your Reign Has Ended</h2>
             <p id="game-over-reason"></p>
             <p id="reign-summary"></p>
-            <button id="new-game">Start New Reign</button>
+            <p id="detailed-ending" class="detailed-ending"></p>
+            <p id="legacy-message" class="legacy-message"></p>
+            <div id="reign-options">
+                <button id="continue-game">Continue Playing</button>
+                <button id="new-game">Start New Reign</button>
+            </div>
         </div>
     </main>
     
@@ -164,13 +174,10 @@ def main():
 
 body {
     font-family: 'Georgia', serif;
-    background-color: #f5f5f5;
-    color: #333;
+    background-color: #2c3e50;
+    color: #ecf0f1;
     line-height: 1.6;
-    background-image: url('https://images.unsplash.com/photo-1534196511436-921a4e99f297?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    /* Removed stock photo background */
 }
 
 header, footer {
@@ -305,6 +312,28 @@ footer {
 .hidden {
     display: none !important;
 }
+
+.detailed-ending {
+    background-color: rgba(30, 30, 30, 0.7);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    line-height: 1.7;
+    max-width: 800px;
+    text-align: justify;
+}
+
+.legacy-message {
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+#reign-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
                 """)
         
         if not os.path.exists(js_file):
@@ -337,6 +366,9 @@ const startGameButton = document.getElementById('start-game');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverReason = document.getElementById('game-over-reason');
 const reignSummary = document.getElementById('reign-summary');
+const detailedEnding = document.getElementById('detailed-ending');
+const legacyMessage = document.getElementById('legacy-message');
+const continueGameButton = document.getElementById('continue-game');
 const newGameButton = document.getElementById('new-game');
 
 // Game state
@@ -354,6 +386,7 @@ let trajectory = [];
 startGameButton.addEventListener('click', startGame);
 yesButton.addEventListener('click', () => makeChoice('yes'));
 noButton.addEventListener('click', () => makeChoice('no'));
+continueGameButton.addEventListener('click', continueGame);
 newGameButton.addEventListener('click', startGame);
 
 // Helper functions
@@ -462,12 +495,17 @@ async function makeChoice(choice) {
         
         const data = await response.json();
         
-        // Record this move in trajectory
+        // Record this move in trajectory with all required fields
         trajectory.push({
-            card_id: currentCard.id,
-            category: currentCard.category,
+            card_id: currentCard.id || "unknown",
+            category: currentCard.category || "unknown",
             choice: choice,
-            effects: currentCard.effects[choice],
+            effects: {
+                power: currentCard.effects[choice].power || 0,
+                stability: currentCard.effects[choice].stability || 0,
+                piety: currentCard.effects[choice].piety || 0,
+                wealth: currentCard.effects[choice].wealth || 0
+            },
             post_metrics: data.metrics
         });
         
@@ -475,9 +513,19 @@ async function makeChoice(choice) {
         metrics = data.metrics;
         updateMeters();
         
-        // Check for game over
-        if (data.game_over) {
-            endReign();
+        // Check for game over conditions
+        const reignEnded = (
+            data.game_over || 
+            metrics.power <= 0 || metrics.power >= 100 ||
+            metrics.stability <= 0 || metrics.stability >= 100 ||
+            metrics.piety <= 0 || metrics.piety >= 100 ||
+            metrics.wealth <= 0 || metrics.wealth >= 100
+        );
+        
+        console.log("Checking game over conditions:", reignEnded, metrics);
+        
+        if (reignEnded) {
+            await endReign();
             return;
         }
         
@@ -490,56 +538,198 @@ async function makeChoice(choice) {
     }
 }
 
+async function continueGame() {
+    try {
+        // Reset game state but keep session ID for continuity
+        gameOver = false;
+        trajectory = [];
+        
+        // Create new game session with the same session ID to maintain reign history
+        const response = await fetch(`${API_URL}/new_game`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session_id: sessionId })
+        });
+        
+        const data = await response.json();
+        metrics = data.metrics;
+        
+        updateMeters();
+        
+        // Hide game over screen, show game screen
+        gameOverScreen.classList.add('hidden');
+        cardContainer.classList.remove('hidden');
+        
+        // Generate first card
+        await generateCard();
+    } catch (error) {
+        console.error("Error continuing game:", error);
+        gameOverReason.textContent = "Something went wrong when starting a new reign.";
+    }
+}
+
 async function endReign() {
     try {
         // Determine cause of end
         let cause = null;
-        if (metrics.power <= 0) cause = "power";
-        else if (metrics.power >= 100) cause = "power";
-        else if (metrics.stability <= 0) cause = "stability";
-        else if (metrics.stability >= 100) cause = "stability";
-        else if (metrics.piety <= 0) cause = "piety";
-        else if (metrics.piety >= 100) cause = "piety";
-        else if (metrics.wealth <= 0) cause = "wealth";
-        else if (metrics.wealth >= 100) cause = "wealth";
         
-        // Send end reign data to server
+        // Log current metrics for debugging
+        console.log("End reign metrics:", metrics);
+        
+        if (metrics.power <= 0) cause = "power_low";
+        else if (metrics.power >= 100) cause = "power_high";
+        else if (metrics.stability <= 0) cause = "stability_low";
+        else if (metrics.stability >= 100) cause = "stability_high";
+        else if (metrics.piety <= 0) cause = "piety_low";
+        else if (metrics.piety >= 100) cause = "piety_high";
+        else if (metrics.wealth <= 0) cause = "wealth_low";
+        else if (metrics.wealth >= 100) cause = "wealth_high";
+        else cause = "old_age";
+        
+        console.log("Determined cause of end:", cause);
+        
+        // Send end reign data to server with complete information
         const response = await fetch(`${API_URL}/end_reign`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 session_id: sessionId,
                 trajectory: trajectory,
-                final_metrics: metrics,
+                final_metrics: {
+                    power: metrics.power,
+                    stability: metrics.stability,
+                    piety: metrics.piety,
+                    wealth: metrics.wealth,
+                    reign_year: metrics.reign_year
+                },
                 reign_length: metrics.reign_year,
                 cause_of_end: cause
             })
         });
         
-        const data = await response.json();
+        let data = { reward: 0 };
+        
+        if (response.ok) {
+            data = await response.json();
+        } else {
+            console.error("End reign failed with status:", response.status);
+        }
         
         // Show game over screen
         cardContainer.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
         
-        // Set reason based on metrics
+        // Set reason based on metrics and get detailed ending
         let reason = "";
-        if (metrics.power <= 0) reason = "You lost all authority. The nobles overthrew you!";
-        else if (metrics.power >= 100) reason = "Your absolute power made you a tyrant. You were assassinated!";
-        else if (metrics.stability <= 0) reason = "The people revolted against your rule!";
-        else if (metrics.stability >= 100) reason = "The people loved you so much they established a republic!";
-        else if (metrics.piety <= 0) reason = "The church declared you a heretic and had you executed!";
-        else if (metrics.piety >= 100) reason = "The church became too powerful and took control of your kingdom!";
-        else if (metrics.wealth <= 0) reason = "Your kingdom went bankrupt and you were deposed!";
-        else if (metrics.wealth >= 100) reason = "Your vast wealth attracted invaders who conquered your kingdom!";
+        let detailedText = "";
+        let legacyText = "";
+        
+        // Set reason based on cause
+        if (cause === "power_low") {
+            reason = "You lost all authority. The nobles overthrew you!";
+            detailedText = "Years of concessions and weak leadership eroded your authority. The nobles, seeing your weakness, formed a coalition against you. After a brief struggle, you were deposed and exiled, remembered as a ruler who couldn't maintain the respect of the nobility.";
+            legacyText = determineRulerLegacy("weak");
+        } else if (cause === "power_high") {
+            reason = "Your absolute power made you a tyrant. You were assassinated!";
+            detailedText = "Your iron-fisted rule and consolidation of power bred resentment among the nobility. As your authority grew unchecked, many feared for their own positions. A conspiracy formed in the shadows, and despite your vigilance, an assassin's blade found its mark. You died as you ruled - alone and feared.";
+            legacyText = determineRulerLegacy("tyrant");
+        } else if (cause === "stability_low") {
+            reason = "The people revolted against your rule!";
+            detailedText = "The cries of the hungry and oppressed grew too loud to ignore. Years of neglect and harsh policies turned the populace against you. What began as isolated protests quickly spread across the kingdom. The uprising was swift and merciless, with angry mobs storming the palace. Your reign ended at the hands of those you failed to serve.";
+            legacyText = determineRulerLegacy("hated");
+        } else if (cause === "stability_high") {
+            reason = "The people loved you so much they established a republic!";
+            detailedText = "The common folk adored you for your generosity and fairness. However, your popularity threatened the traditional power structure. As people began calling for democratic reforms and greater representation, the nobles and church became alarmed. They orchestrated your removal, claiming the kingdom needed 'proper governance, not popularity.' The republic that followed bore your name, though you did not live to see it flourish.";
+            legacyText = determineRulerLegacy("beloved");
+        } else if (cause === "piety_low") {
+            reason = "The church declared you a heretic and had you executed!";
+            detailedText = "Your dismissal of religious traditions and constant conflicts with church authorities were deemed heretical. The Grand Inquisitor publicly denounced you, turning religious sentiment against the crown. Priests preached against you from every pulpit until the faithful rose up in a holy crusade. Declared a heretic, you faced the ultimate punishment for challenging divine authority.";
+            legacyText = determineRulerLegacy("heretic");
+        } else if (cause === "piety_high") {
+            reason = "The church became too powerful and took control of your kingdom!";
+            detailedText = "You allowed religious authorities too much influence, and the church's power grew unchecked. Gradually, religious law superseded royal edicts, and church officials began overruling your decisions. Eventually, the Archbishop declared divine right to rule, and with popular support, established a theocracy. You were permitted to retain your title in name only - a figurehead in a kingdom ruled by the cloth.";
+            legacyText = determineRulerLegacy("pious");
+        } else if (cause === "wealth_low") {
+            reason = "Your kingdom went bankrupt and you were deposed!";
+            detailedText = "Years of extravagance and financial mismanagement emptied the royal coffers. Unable to pay the army or maintain the kingdom's infrastructure, your rule collapsed under mounting debts. Foreign creditors seized royal assets, while unpaid servants and soldiers abandoned their posts. With nothing left to rule, you were quietly removed from the throne, your name becoming synonymous with fiscal irresponsibility.";
+            legacyText = determineRulerLegacy("poor");
+        } else if (cause === "wealth_high") {
+            reason = "Your vast wealth attracted invaders who conquered your kingdom!";
+            detailedText = "Your kingdom's legendary wealth attracted unwanted attention. Neighboring rulers looked upon your treasuries with envy, and despite your diplomatic efforts, greed won out. A coalition of foreign powers, using your hoarding of wealth as justification, invaded with overwhelming force. Your vast riches funded your enemies' armies, and your kingdom was divided among the victors.";
+            legacyText = determineRulerLegacy("wealthy");
+        } else {
+            reason = "You died of natural causes after a long reign.";
+            detailedText = `After ${metrics.reign_year} years of rule, age finally caught up with you. Your legacy secured, you passed peacefully in your sleep, surrounded by generations of family. The kingdom mourned for forty days, and your achievements were recorded in detail by royal historians. Few monarchs are fortunate enough to meet such a natural end, a testament to your balanced approach to leadership.`;
+            legacyText = determineRulerLegacy("balanced");
+        }
         
         gameOverReason.textContent = reason;
+        detailedEnding.textContent = detailedText;
+        legacyMessage.textContent = legacyText;
         reignSummary.textContent = `You ruled for ${metrics.reign_year} years. Final reward: ${data.reward.toFixed(2)}`;
         
     } catch (error) {
         console.error("Error ending reign:", error);
         gameOverReason.textContent = "Something went wrong when calculating your legacy.";
     }
+}
+
+function determineRulerLegacy(rulerType) {
+    // Generate a legacy message based on reign length and ruler type
+    const reignLength = metrics.reign_year;
+    let legacy = "";
+    
+    if (reignLength < 5) {
+        legacy = "Your brief rule will be barely a footnote in the kingdom's history.";
+    } else if (reignLength > 30) {
+        switch (rulerType) {
+            case "balanced":
+                legacy = "Your long and balanced reign will be remembered as a golden age of prosperity and peace.";
+                break;
+            case "tyrant":
+                legacy = "Your decades of tyrannical rule have left a permanent scar on the kingdom's history. Your name will be used to frighten children for generations.";
+                break;
+            case "beloved":
+                legacy = "Your generous and fair leadership established a cultural renaissance that will be studied for centuries to come.";
+                break;
+            default:
+                legacy = "Your long reign, despite its end, has made an indelible mark on the kingdom's history.";
+        }
+    } else {
+        switch (rulerType) {
+            case "weak":
+                legacy = "History will remember you as a monarch who failed to maintain control of their own court.";
+                break;
+            case "tyrant":
+                legacy = "You will be remembered as a harsh and unforgiving ruler who sought power above all else.";
+                break;
+            case "hated":
+                legacy = "Your name will be spoken with contempt by commoners for generations to come.";
+                break;
+            case "beloved":
+                legacy = "The people will sing songs of your kindness and fairness for many years.";
+                break;
+            case "heretic":
+                legacy = "Religious texts will cite you as an example of the dangers of straying from the faith.";
+                break;
+            case "pious":
+                legacy = "You will be remembered as a devout ruler who perhaps trusted the clergy too much.";
+                break;
+            case "poor":
+                legacy = "Future monarchs will study your reign as a cautionary tale of financial mismanagement.";
+                break;
+            case "wealthy":
+                legacy = "Tales of your kingdom's riches will become legendary, though they ultimately led to your downfall.";
+                break;
+            case "balanced":
+                legacy = "Your rule will be remembered as a time of reasonable balance and steady progress.";
+                break;
+            default:
+                legacy = `You ruled for ${reignLength} years, leaving behind a mixed legacy of successes and failures.`;
+        }
+    }
+    
+    return legacy;
 }
 
 // Check if API is available when page loads

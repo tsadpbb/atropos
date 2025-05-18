@@ -1,13 +1,13 @@
-   /* 
+/* 
    DynastAI - Main CSS Styles
    Medieval kingdom management game
 */
 
 :root {
-    --power-color: #e74c3c;
-    --stability-color: #2ecc71;
-    --piety-color: #f1c40f;
-    --wealth-color: #3498db;
+    --power-color: #e74c3c;     /* Red for power */
+    --stability-color: #2ecc71; /* Green for stability */
+    --piety-color: #9b59b6;     /* Purple for piety */
+    --wealth-color: #f1c40f;    /* Yellow for wealth */
     --primary-bg: #2c3e50;
     --secondary-bg: #34495e;
     --card-bg: rgba(255, 255, 255, 0.95);
@@ -16,6 +16,10 @@
     --shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
     --header-font: 'Cinzel', serif;
     --body-font: 'Lato', sans-serif;
+    --parchment: #f5e7c1;
+    --aged-parchment: #e8d8b0;
+    --dark-ink: #3a2921;
+    --border-color: #916726;
 }
 
 * {
@@ -26,29 +30,33 @@
 
 body {
     font-family: var(--body-font);
-    background-color: #f5f5f5;
+    background-color: #3a2921; /* Dark woody background */
     color: var(--text-color);
     line-height: 1.6;
-    background-image: url('https://images.unsplash.com/photo-1534196511436-921a4e99f297?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
+    position: relative;
 }
 
 header, footer {
     text-align: center;
     padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: #28180c;
     color: var(--light-text);
+    border-bottom: 3px solid var(--border-color);
 }
 
 header h1 {
     font-family: var(--header-font);
-    font-size: 2.5rem;
+    font-size: 3rem;
     margin-bottom: 0.5rem;
     text-transform: uppercase;
     letter-spacing: 3px;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    color: #d4af37; /* Gold */
+}
+
+header p {
+    font-style: italic;
+    color: #c0c0c0; /* Silver */
 }
 
 main {
@@ -65,10 +73,13 @@ main {
     flex-wrap: wrap;
     justify-content: space-between;
     margin-bottom: 2rem;
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: var(--aged-parchment);
     padding: 1rem;
     border-radius: 10px;
     box-shadow: var(--shadow);
+    border: 2px solid var(--border-color);
+    /* Create parchment texture with gradient */
+    background-image: linear-gradient(to right, rgba(222, 208, 173, 0.2) 0%, rgba(255, 255, 255, 0.1) 20%, rgba(222, 208, 173, 0.2) 40%, rgba(255, 255, 255, 0.1) 60%, rgba(222, 208, 173, 0.2) 80%);
 }
 
 .metric {
@@ -78,6 +89,14 @@ main {
     text-align: center;
 }
 
+.metric h3 {
+    font-family: var(--header-font);
+    color: var(--dark-ink);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
 .meter-container {
     background-color: #ddd;
     height: 20px;
@@ -85,6 +104,7 @@ main {
     margin: 0.5rem 0;
     overflow: hidden;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
 }
 
 .meter {
@@ -98,6 +118,27 @@ main {
 .piety { background-color: var(--piety-color); width: 50%; }
 .wealth { background-color: var(--wealth-color); width: 50%; }
 
+.stat-change {
+    font-size: 0.9em;
+    font-weight: bold;
+    margin-left: 4px;
+    animation: pulse 1.5s infinite;
+}
+
+.positive {
+    color: var(--stability-color);
+}
+
+.negative {
+    color: var(--power-color);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
 #card-container {
     display: flex;
     justify-content: center;
@@ -105,14 +146,18 @@ main {
 }
 
 #card {
-    background-color: var(--card-bg);
+    background-color: var(--parchment);
     padding: 2rem;
     border-radius: 10px;
     box-shadow: var(--shadow);
     width: 100%;
     max-width: 600px;
     position: relative;
-    border: 1px solid #ddd;
+    border: 2px solid var(--border-color);
+    /* Create parchment texture with subtle patterns */
+    background-image: 
+        repeating-linear-gradient(45deg, rgba(222, 208, 173, 0.2) 0px, rgba(222, 208, 173, 0.2) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(-45deg, rgba(222, 208, 173, 0.2) 0px, rgba(222, 208, 173, 0.2) 1px, transparent 1px, transparent 3px);
 }
 
 #category-indicator {
@@ -124,6 +169,7 @@ main {
     border-radius: 50%;
     background-color: var(--power-color);
     border: 2px solid white;
+    box-shadow: var(--shadow);
 }
 
 #category-indicator.power { background-color: var(--power-color); }
@@ -135,6 +181,17 @@ main {
     font-size: 1.2rem;
     margin-bottom: 2rem;
     line-height: 1.6;
+    color: var(--dark-ink);
+}
+
+.character-name {
+    font-weight: bold;
+    color: var(--border-color);
+    display: block;
+    margin-bottom: 8px;
+    font-style: italic;
+    font-size: 1.3rem;
+    font-family: var(--header-font);
 }
 
 #card-options {
@@ -150,32 +207,46 @@ button {
     font-size: 1rem;
     font-weight: bold;
     transition: all 0.2s ease;
+    font-family: var(--header-font);
+    letter-spacing: 1px;
 }
 
 .choice-btn {
     min-width: 150px;
+    border: 2px solid #7d5614;
 }
 
 #yes-button {
-    background-color: #2ecc71;
+    background-color: #2e7d32;
     color: white;
 }
 
 #no-button {
-    background-color: #e74c3c;
+    background-color: #c62828;
     color: white;
 }
 
 .primary-btn {
-    background-color: #3498db;
+    background-color: #916726;
     color: white;
     padding: 1rem 2rem;
     font-size: 1.1rem;
+    border: 2px solid #7d5614;
+}
+
+.secondary-btn {
+    background-color: #5f4520;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    margin-right: 10px;
+    border: 2px solid #493814;
 }
 
 button:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow);
+    filter: brightness(110%);
 }
 
 #effects-display {
@@ -183,10 +254,11 @@ button:hover {
     justify-content: space-around;
     flex-wrap: wrap;
     margin: 1rem 0;
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: var(--parchment);
     padding: 1rem;
     border-radius: 5px;
     box-shadow: var(--shadow);
+    border: 2px solid var(--border-color);
 }
 
 .effect-item {
@@ -204,23 +276,29 @@ button:hover {
 .wealth-effect { color: var(--wealth-color); }
 
 #start-screen, #game-over {
-    background-color: var(--card-bg);
+    background-color: var(--parchment);
     padding: 2rem;
     border-radius: 10px;
     box-shadow: var(--shadow);
     text-align: center;
     margin: 2rem auto;
     max-width: 500px;
+    border: 2px solid var(--border-color);
+    /* Create parchment texture with subtle patterns */
+    background-image: 
+        repeating-linear-gradient(45deg, rgba(222, 208, 173, 0.2) 0px, rgba(222, 208, 173, 0.2) 1px, transparent 1px, transparent 3px),
+        repeating-linear-gradient(-45deg, rgba(222, 208, 173, 0.2) 0px, rgba(222, 208, 173, 0.2) 1px, transparent 1px, transparent 3px);
 }
 
 #start-screen h2, #game-over h2 {
     font-family: var(--header-font);
     margin-bottom: 1rem;
-    color: var(--primary-bg);
+    color: #916726;
 }
 
 #start-screen p {
     margin-bottom: 1rem;
+    color: var(--dark-ink);
 }
 
 #game-over #final-metrics {
@@ -230,19 +308,76 @@ button:hover {
     margin: 1.5rem 0;
     text-align: left;
     padding: 1rem;
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(255, 255, 255, 0.5);
     border-radius: 5px;
+    border: 1px solid var(--border-color);
+    color: var(--dark-ink);
 }
 
 #game-over #reign-summary {
     margin: 1.5rem 0;
     font-weight: bold;
     font-size: 1.1rem;
+    color: #916726;
+}
+
+.detailed-ending {
+    background-color: rgba(30, 30, 30, 0.7);
+    color: var(--light-text);
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+    line-height: 1.7;
+    max-width: 600px;
+    text-align: justify;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid var(--border-color);
+}
+
+.legacy-message {
+    font-style: italic;
+    margin: 20px 0;
+    color: #493814;
+}
+
+#reign-options {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.name-input {
+    margin: 15px 0;
+}
+
+.name-input label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    font-family: var(--header-font);
+    color: #916726;
+}
+
+.name-input input {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    width: 100%;
+    font-size: 16px;
+    max-width: 300px;
+    margin: 0 auto 15px;
+    display: block;
+    background-color: rgba(255, 255, 255, 0.7);
+    font-family: var(--body-font);
 }
 
 footer {
     margin-top: auto;
     font-size: 0.9rem;
+    border-top: 3px solid var(--border-color);
+    border-bottom: none;
 }
 
 .api-status {

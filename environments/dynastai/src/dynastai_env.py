@@ -10,14 +10,35 @@ import time
 import json
 import random
 import uuid
+import sys
 from typing import Dict, List, Tuple, Any, Optional, Union
 
 import requests
 from dotenv import load_dotenv
 
-from atroposlib.envs.base import BaseEnv, BaseEnvConfig
-from atroposlib.envs.server_handling.server_baseline import ServerBaseline
-from atroposlib.envs.server_handling.server_manager import APIServerConfig
+# Try to import from atroposlib, but provide fallbacks for standalone mode
+try:
+    from atroposlib.envs.base import BaseEnv, BaseEnvConfig
+    from atroposlib.envs.server_handling.server_baseline import ServerBaseline
+    from atroposlib.envs.server_handling.server_manager import APIServerConfig
+    HAS_ATROPOSLIB = True
+except ImportError:
+    # Create minimal stub classes for standalone mode
+    class BaseEnvConfig:
+        pass
+    
+    class BaseEnv:
+        def __init__(self, *args, **kwargs):
+            pass
+    
+    class ServerBaseline:
+        pass
+    
+    class APIServerConfig:
+        pass
+    
+    HAS_ATROPOSLIB = False
+    print("Running in standalone mode without atroposlib")
 
 from .game_logic import GameState, generate_card, apply_choice_effects
 
@@ -54,12 +75,18 @@ class DynastAIEnv(BaseEnv):
 
     def __init__(
         self,
-        config: DynastAIEnvConfig,
-        server_configs: Union[ServerBaseline, List[APIServerConfig]],
+        config: DynastAIEnvConfig = None,
+        server_configs: Union[ServerBaseline, List[APIServerConfig]] = None,
         slurm=False,
         testing=False,
     ):
-        super().__init__(config, server_configs, slurm, testing)
+        if HAS_ATROPOSLIB:
+            super().__init__(config, server_configs, slurm, testing)
+        
+        # In standalone mode, initialize with default config if none provided
+        if config is None:
+            config = DynastAIEnvConfig()
+            
         self.config = config
         
         # Game state storage (in-memory keyed by session_id)

@@ -69,6 +69,10 @@
             <h2>Begin Your Reign</h2>
             <p>As the new monarch, you must balance the needs of the realm while keeping your metrics in check.</p>
             <p>If any metric reaches 0 or 100, your reign will end.</p>
+            <div class="name-input">
+                <label for="ruler-name">Your Royal Name:</label>
+                <input type="text" id="ruler-name" placeholder="Enter your name">
+            </div>
             <button id="start-game" class="primary-btn">Start New Game</button>
         </div>
         
@@ -82,12 +86,17 @@
                 <div>Wealth: <span id="final-wealth"></span></div>
             </div>
             <p id="reign-summary"></p>
-            <button id="new-game" class="primary-btn">Start New Reign</button>
+            <p id="detailed-ending" class="detailed-ending"></p>
+            <p id="legacy-message" class="legacy-message"></p>
+            <div id="reign-options">
+                <button id="continue-game" class="secondary-btn">Continue Dynasty</button>
+                <button id="new-game" class="primary-btn">Start New Reign</button>
+            </div>
         </div>
     </main>
     
     <footer>
-        <p>Year <span id="reign-year">1</span> of your reign</p>
+        <p>Year <span id="reign-year">1</span> of your reign | Dynasty Year: <span id="dynasty-year">0</span></p>
         <p class="api-status">API Status: <span id="api-status">Checking...</span></p>
     </footer>
     
