@@ -1,0 +1,2 @@
+   mkdir dynastai
+   cd dynastai

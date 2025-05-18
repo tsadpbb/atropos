@@ -1,0 +1,285 @@
+   /* 
+   DynastAI - Main CSS Styles
+   Medieval kingdom management game
+*/
+
+:root {
+    --power-color: #e74c3c;
+    --stability-color: #2ecc71;
+    --piety-color: #f1c40f;
+    --wealth-color: #3498db;
+    --primary-bg: #2c3e50;
+    --secondary-bg: #34495e;
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --text-color: #333;
+    --light-text: #f5f5f5;
+    --shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    --header-font: 'Cinzel', serif;
+    --body-font: 'Lato', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--body-font);
+    background-color: #f5f5f5;
+    color: var(--text-color);
+    line-height: 1.6;
+    background-image: url('https://images.unsplash.com/photo-1534196511436-921a4e99f297?ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+header, footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: var(--light-text);
+}
+
+header h1 {
+    font-family: var(--header-font);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+main {
+    max-width: 800px;
+    margin: 2rem auto;
+    min-height: calc(100vh - 12rem);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+#metrics-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.metric {
+    flex: 1;
+    min-width: 150px;
+    margin: 0.5rem;
+    text-align: center;
+}
+
+.meter-container {
+    background-color: #ddd;
+    height: 20px;
+    border-radius: 10px;
+    margin: 0.5rem 0;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.meter {
+    height: 100%;
+    transition: width 0.5s ease-in-out;
+    position: relative;
+}
+
+.power { background-color: var(--power-color); width: 50%; }
+.stability { background-color: var(--stability-color); width: 50%; }
+.piety { background-color: var(--piety-color); width: 50%; }
+.wealth { background-color: var(--wealth-color); width: 50%; }
+
+#card-container {
+    display: flex;
+    justify-content: center;
+    margin: 2rem 0;
+}
+
+#card {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    width: 100%;
+    max-width: 600px;
+    position: relative;
+    border: 1px solid #ddd;
+}
+
+#category-indicator {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: var(--power-color);
+    border: 2px solid white;
+}
+
+#category-indicator.power { background-color: var(--power-color); }
+#category-indicator.stability { background-color: var(--stability-color); }
+#category-indicator.piety { background-color: var(--piety-color); }
+#category-indicator.wealth { background-color: var(--wealth-color); }
+
+#card-text {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+#card-options {
+    display: flex;
+    justify-content: space-between;
+}
+
+button {
+    padding: 0.8rem 2rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: bold;
+    transition: all 0.2s ease;
+}
+
+.choice-btn {
+    min-width: 150px;
+}
+
+#yes-button {
+    background-color: #2ecc71;
+    color: white;
+}
+
+#no-button {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.primary-btn {
+    background-color: #3498db;
+    color: white;
+    padding: 1rem 2rem;
+    font-size: 1.1rem;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+#effects-display {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    padding: 1rem;
+    border-radius: 5px;
+    box-shadow: var(--shadow);
+}
+
+.effect-item {
+    padding: 0.5rem;
+    border-radius: 5px;
+    margin: 0.25rem;
+    min-width: 100px;
+    text-align: center;
+    font-weight: bold;
+}
+
+.power-effect { color: var(--power-color); }
+.stability-effect { color: var(--stability-color); }
+.piety-effect { color: var(--piety-color); }
+.wealth-effect { color: var(--wealth-color); }
+
+#start-screen, #game-over {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    margin: 2rem auto;
+    max-width: 500px;
+}
+
+#start-screen h2, #game-over h2 {
+    font-family: var(--header-font);
+    margin-bottom: 1rem;
+    color: var(--primary-bg);
+}
+
+#start-screen p {
+    margin-bottom: 1rem;
+}
+
+#game-over #final-metrics {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    text-align: left;
+    padding: 1rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 5px;
+}
+
+#game-over #reign-summary {
+    margin: 1.5rem 0;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+footer {
+    margin-top: auto;
+    font-size: 0.9rem;
+}
+
+.api-status {
+    font-size: 0.8rem;
+    margin-top: 0.5rem;
+    opacity: 0.8;
+}
+
+#api-status.online {
+    color: var(--stability-color);
+}
+
+#api-status.offline {
+    color: var(--power-color);
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    #card {
+        margin: 1rem;
+        padding: 1.5rem;
+    }
+    
+    .metric {
+        min-width: 120px;
+    }
+    
+    #card-options {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .choice-btn {
+        width: 100%;
+    }
+}
