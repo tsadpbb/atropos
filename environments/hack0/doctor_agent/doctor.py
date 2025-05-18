@@ -1,7 +1,9 @@
-import re
+import json
+import random
 from typing import Dict, List, Optional, Sequence, Tuple, TypedDict
 
 from datasets import load_dataset
+from openai import OpenAI
 
 from atroposlib.envs.base import (
     APIServerConfig,
@@ -12,7 +14,35 @@ from atroposlib.envs.base import (
 )
 from atroposlib.type_definitions import Item
 
-system_prompt = """
+from .patient import patient_profiles
+
+DatasetItem = TypedDict(
+    "DatasetItem",
+    {
+        "question": str,
+        "answer": str,
+        "options": Dict[str, str],
+        "meta_info": str,
+        "answer_idx": str,
+        "diagnosis": str,
+        "metamap_sequence": Sequence[str],
+    },
+)
+
+with open("environments/hack0/doctor_agent", "r") as f:
+    keys = json.load(f)
+    xai_key = keys["xai"]
+
+
+client = OpenAI(
+    api_key=xai_key,
+    base_url="https://api.x.ai/v1",
+)
+
+final_message = "The diagnosis is:"
+final_message_prompt = final_message + "<diagnosis>headache</diagnosis>"
+
+doctor_system_prompt = """
 You are a doctor. You are interacting with a patient.
 You need to diagnose the patient based on the symptoms.
 You will need to ask the patient follow up questions to diagnose them.
@@ -32,18 +62,9 @@ user: It's been going on for 2 days.
 assistant: The patient is diagnosed with <diagnosis>headache</diagnosis>
 """
 
-DatasetItem = TypedDict(
-    "DatasetItem",
-    {
-        "question": str,
-        "answer": str,
-        "options": Dict[str, str],
-        "meta_info": str,
-        "answer_idx": str,
-        "diagnosis": str,
-        "metamap_sequence": Sequence[str],
-    },
-)
+
+doctor_model = "NousResearch/DeepHermes-3-Llama-3-8B-Preview"
+wandb_name = "doctor"
 
 
 class DoctorEnv(BaseEnv):
@@ -68,11 +89,11 @@ class DoctorEnv(BaseEnv):
     @classmethod
     def config_init(cls) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
         env_config = BaseEnvConfig(
-            tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
+            tokenizer_name=doctor_model,
             group_size=32,
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
-            wandb_name="doctor",
+            wandb_name=wandb_name,
             max_num_workers=128,
             total_steps=100,
             batch_size=1024,
@@ -85,7 +106,7 @@ class DoctorEnv(BaseEnv):
         )
         server_configs = [
             APIServerConfig(
-                model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
+                model_name=doctor_model,
                 base_url="http://localhost:9001/v1",
                 api_key="x",
                 num_requests_for_eval=256,
@@ -142,81 +163,96 @@ class DoctorEnv(BaseEnv):
     async def evaluate(self, *args, **kwargs):
         pass
 
-    async def get_patient_msg(self, item: Item) -> str:
-        # Call xAI to get a patient message
-        return item["question"]
-
     async def collect_trajectory(
         self, item: Item
     ) -> Tuple[Optional[ScoredDataItem], List[Item]]:
         # Grab a dedicated llm server to take advantage of caching
         async with self.server.dedicated_server() as server:
-            init_msg = f"{system_prompt}\n\n"
-            messages = [{"role": "system", "content": init_msg}]
-            patient_msg = await self.get_patient_msg(item)
-            messages.append({"role": "user", "content": patient_msg})
+
+            patient_messages = []
+            doctor_messages = [{"role": "system", "content": doctor_system_prompt}]
+
+            patient_profile = random.choice(patient_profiles)
+            symptoms = item["question"]
+            patient_system_prompt = patient_profile.format(symptoms)
+
+            patient_messages = [{"role": "system", "content": patient_system_prompt}]
+
+            completion = client.chat.completions.create(
+                model="grok-3-latest",
+                messages=patient_messages,
+            )
+
+            patient_msg = completion.choices[0].message
+
+            doctor_messages.append({"role": "user", "content": patient_msg})
+            patient_messages.append({"role": "assistant", "content": patient_msg})
+
             score = -1
             while True:
                 if (
-                    len(self.tokenizer.apply_chat_template(messages))
+                    len(self.tokenizer.apply_chat_template(doctor_messages))
                     > self.config.max_token_length - 10
                 ):
                     score = 0
                     break
                 max_tokens = self.config.max_token_length - len(
                     self.tokenizer.apply_chat_template(
-                        messages, add_generation_prompt=True
+                        doctor_messages, add_generation_prompt=True
                     )
                 )
-                chat_completions = await server.chat_completion(
-                    messages=messages,
+                doctor_completions = await server.chat_completion(
+                    messages=doctor_messages,
                     n=1,
                     max_tokens=max_tokens,
                 )
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": chat_completions.choices[0].message.content,
-                    }
-                )
-                diagnosis_match = re.search(
-                    r"<diagnosis>(.*?)</diagnosis>",
-                    chat_completions.choices[0].message.content,
-                    re.DOTALL,
-                )
-                if diagnosis_match:
-                    diagnosis = diagnosis_match.group(1).strip()
-                    # Check if the diagnosis is correct
-                    if diagnosis == item["diagnosis"]:
+
+                doctor_msg = doctor_completions.choices[0].message.content
+
+                doctor_messages.append({"role": "assistant", "content": doctor_msg})
+                patient_messages.append({"role": "user", "content": doctor_msg})
+
+                # check output
+                if doctor_msg.startwith(final_message):
+                    diagnosis = doctor_msg.strip(final_message)
+                    diagnosis = diagnosis.strip()
+
+                    if diagnosis.contains(item["answer"]):
                         score = 1
                     else:
                         score = 0
                     break
 
-                next_patient_msg = await self.get_patient_msg(item)
-                messages.append(
-                    {
-                        "role": "user",
-                        "content": next_patient_msg,
-                    }
+                completion = client.chat.completions.create(
+                    model="grok-3-latest",
+                    messages=patient_messages,
                 )
+
+                patient_msg = completion.choices[0].message
+
+                doctor_messages.append({"role": "user", "content": patient_msg})
+                patient_messages.append({"role": "assistant", "content": patient_msg})
+
             self.percent_correct_buffer.append(max(score, 0))
-            tokens = self.tokenizer.apply_chat_template(messages)
+            tokens = self.tokenizer.apply_chat_template(doctor_messages)
+
             masks = []
-            for i, msg in enumerate(messages):
-                if i == len(messages) - 1:
+            for i, msg in enumerate(doctor_messages):
+                if i == len(doctor_messages) - 1:
                     masks.extend(tokens[len(masks) :])
                 else:
                     curr_tokens = self.tokenizer.apply_chat_template(
-                        messages[: i + 1],
-                        add_generation_prompt=messages[i + 1]["role"] == "assistant",
+                        doctor_messages[: i + 1],
+                        add_generation_prompt=doctor_messages[i + 1]["role"]
+                        == "assistant",
                     )
-                    if messages[i]["role"] == "user":
+                    if doctor_messages[i]["role"] == "user":
                         masks.extend([-100] * (len(curr_tokens) - len(masks)))
                     else:
                         masks.extend(curr_tokens[len(masks) :])
+
         scored_data_item = ScoredDataItem(
-            messages=messages,
+            messages=doctor_messages,
             finish_reason=score,
             tokens=tokens,
             masks=masks,
