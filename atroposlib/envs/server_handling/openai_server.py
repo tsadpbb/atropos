@@ -167,7 +167,7 @@ def resolve_openai_configs(
             message=f"CLI overrides for OpenAI settings (--{openai_full_prefix}*) are not supported "
             f"when multiple servers are defined (either via YAML list under '{OPENAI_NAMESPACE}' "
             "or a default list with length >= 2).",
-            exit_code=2
+            exit_code=2,
         )
 
     if is_multi_server_yaml:
