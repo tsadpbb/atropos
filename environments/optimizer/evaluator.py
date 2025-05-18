@@ -2,12 +2,17 @@ from verdict.schema import Schema
 from verdict import Pipeline, Layer
 from verdict.common.judge import JudgeUnit
 from verdict.scale import ContinuousScale
+from verdict.common.judge import CategoricalJudgeUnit
 from verdict.transform import MaxPoolUnit
+from verdict.scale import DiscreteScale
 
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class OptimizerEvaluator:
     def __init__(self):
-        self.pipeline = (
+        self.score_pipeline = (
             Pipeline()
             >> Layer(
                 JudgeUnit(scale=ContinuousScale(1, 10)).prompt(
@@ -25,17 +30,56 @@ class OptimizerEvaluator:
             >> MaxPoolUnit()
         )
 
-    def run(self, optimizer_code: str, architecture: str) -> int:
+        self.validity_pipeline = (
+            Pipeline()
+            >> Layer(
+                CategoricalJudgeUnit(
+                    name='Judge',
+                    categories=DiscreteScale(['yes', 'no']),
+                    explanation=True
+                ).prompt("""
+                    You are an expert code validator specializing in PyTorch optimizers. Your task is to determine if the provided optimizer code is completely valid and error-free.
+
+                    A valid optimizer MUST satisfy ALL of these criteria:
+                    1. Has zero syntax or runtime errors:
+                       - No undefined variables
+                       - No type mismatches
+                       - No memory issues
+                       - No CUDA/CPU compatibility problems
+                    2. Can be imported and instantiated without blocking errors
+                    3. Can run a complete optimization step without exceptions
+
+                    Optimizer Code: {source.optimizer_code}
+                    Stdout: {source.stdout}
+                    Stderr: {source.stderr}
+
+                    Respond with:
+                    - "yes" if ALL criteria are met and the code is completely error-free
+                    - "no" if ANY criterion fails or there are ANY potential issues
+
+                    Be extremely strict in your evaluation.
+                """).via("xai/grok-3-latest", retries=2)
+            )
+        )
+
+    def score(self, optimizer_code: str, architecture: str) -> int:
         schema = Schema.of(
             optimizer_code=optimizer_code,
             architecture=architecture,
         )
-        response, _ = self.pipeline.run(schema)
-        final_score = self.__get_final_score(response)
-        return final_score
-
-    def __get_final_score(self, response: dict) -> float:
+        response, _ = self.score_pipeline.run(schema)
         return response.get("Pipeline_root.block.block.unit[Map MaxPool]_score", 0.0)
+    
+    def check_validity(self, optimizer_code: str, stdout: str, stderr: str) -> bool:
+        schema = Schema.of(
+            optimizer_code=optimizer_code,
+            stdout=stdout,
+            stderr=stderr,
+        )
+        response, _ = self.validity_pipeline.run(schema)
+        print(response)
+        choice = response.get("Pipeline_root.block.layer[0].unit[CategoricalJudge Judge]_choice", None)
+        return choice == "yes"
 
 
 if __name__ == "__main__":
@@ -58,5 +102,25 @@ for step in range(20):
 print(f"\nOptimal x: {x.item():.4f}")
     """
 
-    score = evaluator.run(optimizer_code=optimizer_code, architecture="MLP")
+    stdout = """
+    Step 1: x = 0.0000, loss = 9.0000
+    Step 2: x = 0.0900, loss = 8.1000
+    Step 3: x = 0.1620, loss = 7.2900
+    Step 4: x = 0.2187, loss = 6.5610
+    Step 5: x = 0.2624, loss = 5.9049
+    Step 6: x = 0.2962, loss = 5.3144
+    Step 7: x = 0.3225, loss = 4.7830
+    """
+
+    stderr = """
+    Traceback (most recent call last):
+      File "optimizer.py", line 8, in <module>
+        optimizer = torch.optim.SGD([x], lr=0.1)
+    RuntimeError: CUDA out of memory. Tried to allocate 2.00 MiB (GPU 0; 4.00 GiB total capacity; 3.47 GiB already allocated; 0 bytes free; 3.47 GiB reserved in total by PyTorch)
+
+    Traceback (most recent call last):
+      File "optimizer.py", line 12, in <
+    """
+
+    score = evaluator.check_validity(optimizer_code=optimizer_code, stdout=stdout, stderr=stderr)
     print(score)
