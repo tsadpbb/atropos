@@ -218,8 +218,10 @@ class DynastAIEnv(BaseEnv):
             prompt = self.format_prompt(kingdom_state, choice_history)
             eval_tasks.append(self.rollout_and_score_eval(prompt))
         
+        print(f"[DYNASTAI] Running evaluation on {len(eval_tasks)} test scenarios")
         scores = await tqdm_asyncio.gather(*eval_tasks)
         self.eval_metrics.append(("eval/percent_correct", sum(scores) / len(scores)))
+        print(f"[DYNASTAI] Evaluation complete. Accuracy: {sum(scores) / len(scores):.4f}")
 
     def format_prompt(self, kingdom_state, choice_history):
         prompt = "Generate a new scenario for the kingdom with the following current state:\n"
@@ -242,6 +244,7 @@ class DynastAIEnv(BaseEnv):
         return prompt
 
     async def rollout_and_score_eval(self, scenario_prompt: str) -> number:
+        print(f"[DYNASTAI] Generating evaluation scenario")
         completion = await self.server.chat_completion(
             messages=[
                 {"role": "system", "content": system_prompt},
@@ -254,6 +257,8 @@ class DynastAIEnv(BaseEnv):
         )
         
         completion_content = completion.choices[0].message.content
+        print(f"[DYNASTAI] Raw LLM output (eval):\n{completion_content[:500]}...")  # Print first 500 chars
+        print(f"[DYNASTAI] Validating generated JSON structure")
         score = self.validate_json_structure(completion_content)
         return score
 
@@ -265,6 +270,7 @@ class DynastAIEnv(BaseEnv):
         # Find JSON structure
         json_match = re.search(r'\{.*\}', content, re.DOTALL)
         if not json_match:
+            print("[DYNASTAI] Failed to find JSON structure in content")
             return 0
         
         json_str = json_match.group(0)
@@ -272,6 +278,9 @@ class DynastAIEnv(BaseEnv):
         try:
             # Attempt to parse as JSON
             data = json.loads(json_str)
+            
+            # Print the parsed JSON structure
+            print(f"[DYNASTAI] Extracted JSON:\n{json.dumps(data, indent=2)}")
             
             # Check for required fields
             required_fields = [
@@ -282,6 +291,8 @@ class DynastAIEnv(BaseEnv):
             ]
             
             if not all(field in data for field in required_fields):
+                missing = [field for field in required_fields if field not in data]
+                print(f"[DYNASTAI] Missing required fields: {missing}")
                 return 0
             
             # Check numeric fields
@@ -292,23 +303,29 @@ class DynastAIEnv(BaseEnv):
             
             for field in numeric_fields:
                 if not isinstance(data[field], int):
+                    print(f"[DYNASTAI] Field {field} is not an integer: {data[field]}")
                     return 0
                 if data[field] < -20 or data[field] > 20:
+                    print(f"[DYNASTAI] Field {field} out of range [-20, 20]: {data[field]}")
                     return 0
             
             # Check category field
             if data["category"] not in ["piety", "stability", "power", "wealth"]:
+                print(f"[DYNASTAI] Invalid category: {data['category']}")
                 return 0
             
             # If we made it here, the JSON is valid
+            print("[DYNASTAI] JSON structure validated successfully")
             return 1
             
         except json.JSONDecodeError:
+            print("[DYNASTAI] Failed to parse JSON structure")
             return 0
 
     async def collect_trajectories(
         self, item: DynastAIRow
     ) -> Tuple[ScoredDataGroup, list[Item]]:
+        print(f"[DYNASTAI] Generating {self.config.group_size} scenario completions")
         user_message = {"role": "user", "content": item["scenario_prompt"]}
 
         chat_completions = await self.server.chat_completion(
@@ -321,16 +338,24 @@ class DynastAIEnv(BaseEnv):
         to_backlog = []
         
         for i, chat_completion in enumerate(chat_completions.choices):
+            content = chat_completion.message.content
+            # Print first completion in full, others just show length to avoid log spam
+            if i == 0:
+                print(f"[DYNASTAI] Sample LLM output (completion #{i}):\n{content[:500]}...")
+            else:
+                print(f"[DYNASTAI] Completion #{i} length: {len(content)} chars")
+                
             messages = (
                 {"role": "system", "content": system_prompt},
                 user_message,
-                {"role": "assistant", "content": chat_completion.message.content},
+                {"role": "assistant", "content": content},
             )
             to_score.append({
                 "messages": messages,
                 "finish_reason": chat_completion.finish_reason,
             })
             
+        print(f"[DYNASTAI] Scoring {len(to_score)} generated scenarios")
         to_postprocess = await self.score(to_score)
         
         # Update choice history with the highest scoring scenario
@@ -362,8 +387,9 @@ class DynastAIEnv(BaseEnv):
                         # Store the full scenario data for later use
                         "scenario_data": data
                     })
+                    print(f"[DYNASTAI] Added new scenario from {data.get('Character', 'Unknown')} to choice history")
             except Exception as e:
-                print(f"Error processing scenario: {e}")
+                print(f"[DYNASTAI] Error processing scenario: {e}")
         
         return to_postprocess, to_backlog
 
@@ -376,9 +402,15 @@ class DynastAIEnv(BaseEnv):
         scores["scores"] = list()
 
         random.shuffle(rollout_group_data)
+        valid_count = 0
+        invalid_count = 0
         for item in rollout_group_data:
             completion_content = item["messages"][-1]["content"]
             reward = self.validate_json_structure(completion_content)
+            if reward:
+                valid_count += 1
+            else:
+                invalid_count += 1
             
             out_dict = tokenize_for_trainer(
                 self.tokenizer, item["messages"], item["finish_reason"]
@@ -388,6 +420,7 @@ class DynastAIEnv(BaseEnv):
             
             # Remove obviously bad examples
             if len([1 for i in masks if i != -100]) < 10:
+                print("[DYNASTAI] Skipping item with insufficient valid tokens")
                 continue
                 
             scores["tokens"].append(tokens)
@@ -396,12 +429,15 @@ class DynastAIEnv(BaseEnv):
             
             if len(scores["tokens"]) >= self.config.group_size:
                 break
+        
+        print(f"[DYNASTAI] Scoring complete: {valid_count} valid / {invalid_count} invalid generations")
                 
         for score in scores["scores"]:
             self.percent_correct_buffer.append(max(score, 0))
             
         # Check if all the same
         if all([score == scores["scores"][0] for score in scores["scores"]]):
+            print("[DYNASTAI] All scores identical, returning None")
             return None  # If all the same, we return None
             
         return scores
@@ -416,12 +452,15 @@ class DynastAIEnv(BaseEnv):
             input_data = card.get("input", {})
             kingdom_state = input_data.get("kingdom_current_state", self.current_kingdom_state)
             choice_history = input_data.get("choice_history", [])
+            print(f"[DYNASTAI] Using training data scenario (iter: {self.iter})")
         else:
             kingdom_state = self.current_kingdom_state
             choice_history = self.choice_history
+            print(f"[DYNASTAI] Using current kingdom state for new scenario (iter: {self.iter})")
         
         # Generate prompt based on kingdom state and choice history
         prompt = self.format_prompt(kingdom_state, choice_history)
+        print(f"[DYNASTAI] Kingdom state - Piety: {kingdom_state.get('Piety', 50)}, Stability: {kingdom_state.get('Stability', 50)}, Power: {kingdom_state.get('Power', 50)}, Wealth: {kingdom_state.get('Wealth', 50)}")
         
         return {
             "scenario_prompt": prompt,
