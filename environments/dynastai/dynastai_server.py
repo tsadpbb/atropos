@@ -30,20 +30,79 @@ You are playing a game called DynastAI where you generate scenarios for a kingdo
 Each scenario should include a character presenting a dilemma to the ruler, with two choices that affect 
 the four key resources of the kingdom: Piety, Stability, Power, and Wealth.
 
+**Point System Guidelines:**
+- The point values for Piety, Stability, Power, and Wealth for each choice should be integers ranging from -20 to 20.
+- These values should be logically consistent with the scenario and the choice described. A choice that is clearly beneficial should have a net positive sum of points, while a detrimental choice should have a net negative sum.
+- Strive for a variety of point distributions; not all resources need to be affected by every choice.
+
 Your response must be a valid JSON object with the following structure:
 {
   "Character": "Name/Title of the character",
   "Prompt": "The scenario description",
   "Left_Choice": "The first choice option",
-  "Left_Piety": integer value between -30 and 30,
-  "Left_Stability": integer value between -30 and 30,
-  "Left_Power": integer value between -30 and 30,
-  "Left_Wealth": integer value between -30 and 30,
+  "Left_Piety": integer value between -20 and 20,
+  "Left_Stability": integer value between -20 and 20,
+  "Left_Power": integer value between -20 and 20,
+  "Left_Wealth": integer value between -20 and 20,
   "Right_Choice": "The second choice option",
-  "Right_Piety": integer value between -30 and 30,
-  "Right_Stability": integer value between -30 and 30,
-  "Right_Power": integer value between -30 and 30,
-  "Right_Wealth": integer value between -30 and 30
+  "Right_Piety": integer value between -20 and 20,
+  "Right_Stability": integer value between -20 and 20,
+  "Right_Power": integer value between -20 and 20,
+  "Right_Wealth": integer value between -20 and 20,
+  "category": "piety/stability/power/wealth"
+}
+
+Here are some examples:
+
+Example 1:
+{
+  "Character": "Diplomat",
+  "Prompt": "With a sly smile, the diplomat gestures broadly: \"Sire, the lords quarrel like children. Shall we mediate disputes between lords?\"",
+  "Left_Choice": "We cannot risk the kingdom's future; dismiss them with a royal wave.",
+  "Left_Piety": 10,
+  "Left_Stability": -10,
+  "Left_Power": 0,
+  "Left_Wealth": 0,
+  "Right_Choice": "Make it so; our enemies shall kneel in terror!",
+  "Right_Piety": -10,
+  "Right_Stability": 10,
+  "Right_Power": 0,
+  "Right_Wealth": 0,
+  "category": "stability"
+}
+
+Example 2:
+{
+  "Character": "Merchant",
+  "Prompt": "The merchant nervously fidgets with coins: \"My king, the markets groan under heavy tariffs. Shall we reduce tariffs?\"",
+  "Left_Choice": "Absurd! Unthinkable; it's madness that courts disaster.",
+  "Left_Piety": 0,
+  "Left_Stability": -15,
+  "Left_Power": 0,
+  "Left_Wealth": 10,
+  "Right_Choice": "Brilliant! Most ingenious; begin before the sun sets!",
+  "Right_Piety": 0,
+  "Right_Stability": 15,
+  "Right_Power": 0,
+  "Right_Wealth": -10,
+  "category": "wealth"
+}
+
+Example 3:
+{
+  "Character": "Farmer",
+  "Prompt": "Mud-stained and weary, the farmer removes his cap: \"Your Grace, our villages yearn for markets. Shall we hold local markets?\"",
+  "Left_Choice": "Silence! Such talk borders on treason; it whispers of rebellion and ruin.",
+  "Left_Piety": 0,
+  "Left_Stability": -15,
+  "Left_Power": 0,
+  "Left_Wealth": 10,
+  "Right_Choice": "Indeed! We shall usher wealth and fortune to the land!",
+  "Right_Piety": 0,
+  "Right_Stability": 15,
+  "Right_Power": 0,
+  "Right_Wealth": -10,
+  "category": "stability"
 }
 
 Be creative and make each scenario interesting!"""
@@ -51,7 +110,8 @@ Be creative and make each scenario interesting!"""
 
 class DynastAIRow(TypedDict):
     scenario_prompt: str
-    card: Optional[Dict] = None
+    kingdom_current_state: Optional[Dict] = None
+    choice_history: Optional[List] = None
 
 
 class DynastAIEnv(BaseEnv):
@@ -129,41 +189,57 @@ class DynastAIEnv(BaseEnv):
         
         self.train = cards[test_size:]
         self.test = cards[:test_size]
-        
-        # Keep scenario prompts for generating new scenarios
-        self.scenario_prompts = [
-            "Create a dilemma involving the Church and Treasury",
-            "Create a dilemma involving the Military and People",
-            "Create a scenario where a foreign diplomat visits",
-            "Create a scenario about a natural disaster",
-            "Create a scenario about a rebellious noble",
-            "Create a scenario about a religious conflict",
-            "Create a scenario about a military campaign",
-            "Create a scenario about a royal marriage proposal",
-            "Create a scenario about a trade agreement",
-            "Create a scenario about a mysterious artifact",
-            "Create a scenario about peasant unrest",
-            "Create a scenario about a spy in the court",
-            "Create a scenario about a disputed succession",
-            "Create a scenario about a diplomatic incident",
-            "Create a scenario about a technological innovation",
-        ]
         self.iter = 0
+        
+        # Initialize default kingdom state
+        self.current_kingdom_state = {
+            "Piety": 50,
+            "Stability": 50,
+            "Power": 50,
+            "Wealth": 50
+        }
+        self.choice_history = []
 
     def save_checkpoint(self, step, data=None):
         if data is None:
             data = {}
         data["iter"] = self.iter
+        data["current_kingdom_state"] = self.current_kingdom_state
+        data["choice_history"] = self.choice_history
         super().save_checkpoint(step, data)
 
     async def evaluate(self, *args, **kwargs):
         # For evaluation, we'll use the test set cards
         eval_tasks = []
         for card in self.test:
-            eval_tasks.append(self.rollout_and_score_eval(f"Create a scenario similar to: {card['Prompt']}"))
+            input_data = card.get("input", {})
+            kingdom_state = input_data.get("kingdom_current_state", self.current_kingdom_state)
+            choice_history = input_data.get("choice_history", [])
+            prompt = self.format_prompt(kingdom_state, choice_history)
+            eval_tasks.append(self.rollout_and_score_eval(prompt))
         
         scores = await tqdm_asyncio.gather(*eval_tasks)
         self.eval_metrics.append(("eval/percent_correct", sum(scores) / len(scores)))
+
+    def format_prompt(self, kingdom_state, choice_history):
+        prompt = "Generate a new scenario for the kingdom with the following current state:\n"
+        prompt += f"Piety: {kingdom_state.get('Piety', 50)}, "
+        prompt += f"Stability: {kingdom_state.get('Stability', 50)}, "
+        prompt += f"Power: {kingdom_state.get('Power', 50)}, "
+        prompt += f"Wealth: {kingdom_state.get('Wealth', 50)}\n\n"
+        
+        if choice_history:
+            prompt += "Previous choices made:\n"
+            for i, choice in enumerate(choice_history[-3:]):  # Show last 3 choices at most
+                prompt += f"{i+1}. {choice.get('Character', 'Unknown')} presented: \"{choice.get('Prompt', 'Unknown')}\"\n"
+                prompt += f"   Decision: {choice.get('choice_made', 'Unknown')}\n"
+                prompt += f"   Effects: Piety {choice.get('effects', {}).get('Piety', 0)}, "
+                prompt += f"Stability {choice.get('effects', {}).get('Stability', 0)}, "
+                prompt += f"Power {choice.get('effects', {}).get('Power', 0)}, "
+                prompt += f"Wealth {choice.get('effects', {}).get('Wealth', 0)}\n\n"
+        
+        prompt += "Based on this context, generate a new challenging scenario for the ruler."
+        return prompt
 
     async def rollout_and_score_eval(self, scenario_prompt: str) -> number:
         completion = await self.server.chat_completion(
@@ -201,7 +277,8 @@ class DynastAIEnv(BaseEnv):
             required_fields = [
                 "Character", "Prompt", 
                 "Left_Choice", "Left_Piety", "Left_Stability", "Left_Power", "Left_Wealth",
-                "Right_Choice", "Right_Piety", "Right_Stability", "Right_Power", "Right_Wealth"
+                "Right_Choice", "Right_Piety", "Right_Stability", "Right_Power", "Right_Wealth",
+                "category"
             ]
             
             if not all(field in data for field in required_fields):
@@ -216,8 +293,12 @@ class DynastAIEnv(BaseEnv):
             for field in numeric_fields:
                 if not isinstance(data[field], int):
                     return 0
-                if data[field] < -30 or data[field] > 30:
+                if data[field] < -20 or data[field] > 20:
                     return 0
+            
+            # Check category field
+            if data["category"] not in ["piety", "stability", "power", "wealth"]:
+                return 0
             
             # If we made it here, the JSON is valid
             return 1
@@ -236,8 +317,8 @@ class DynastAIEnv(BaseEnv):
             max_tokens=self.config.max_token_length,
         )
         
-        to_score = list()
-        to_backlog = list()
+        to_score = []
+        to_backlog = []
         
         for i, chat_completion in enumerate(chat_completions.choices):
             messages = (
@@ -251,6 +332,39 @@ class DynastAIEnv(BaseEnv):
             })
             
         to_postprocess = await self.score(to_score)
+        
+        # Update choice history with the highest scoring scenario
+        if to_postprocess and to_postprocess["scores"]:
+            best_idx = to_postprocess["scores"].index(max(to_postprocess["scores"]))
+            best_content = to_score[best_idx]["messages"][-1]["content"]
+            
+            try:
+                # Extract JSON from content
+                if "</think>" in best_content:
+                    best_content = best_content.split("</think>")[-1].strip()
+                json_match = re.search(r'\{.*\}', best_content, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                    data = json.loads(json_str)
+                    
+                    # Store the generated scenario in choice history
+                    self.choice_history.append({
+                        "Character": data.get("Character", "Unknown"),
+                        "Prompt": data.get("Prompt", "Unknown"),
+                        "choice_made": "Unknown",  # Will be set when player makes a choice
+                        "effects": {
+                            "Piety": 0, 
+                            "Stability": 0,
+                            "Power": 0,
+                            "Wealth": 0
+                        },
+                        "category": data.get("category", "unknown"),
+                        # Store the full scenario data for later use
+                        "scenario_data": data
+                    })
+            except Exception as e:
+                print(f"Error processing scenario: {e}")
+        
         return to_postprocess, to_backlog
 
     async def score(
@@ -293,19 +407,48 @@ class DynastAIEnv(BaseEnv):
         return scores
 
     async def get_next_item(self) -> DynastAIRow:
-        # Alternate between using saved cards and generating new scenarios
-        if self.iter % 2 == 0 and self.train:
-            # Use a card from the training set
-            card_index = (self.iter // 2) % len(self.train)
-            card = self.train[card_index]
-            prompt = f"Create a scenario similar to: {card['Prompt']}"
-            self.iter += 1
-            return {"scenario_prompt": prompt, "card": card}
+        # Increment counter
+        self.iter += 1
+        
+        # Occasionally sample from training data, otherwise use current state
+        if self.train and random.random() < 0.3:
+            card = random.choice(self.train)
+            input_data = card.get("input", {})
+            kingdom_state = input_data.get("kingdom_current_state", self.current_kingdom_state)
+            choice_history = input_data.get("choice_history", [])
         else:
-            # Generate a completely new scenario
-            prompt = random.choice(self.scenario_prompts)
-            self.iter += 1
-            return {"scenario_prompt": prompt}
+            kingdom_state = self.current_kingdom_state
+            choice_history = self.choice_history
+        
+        # Generate prompt based on kingdom state and choice history
+        prompt = self.format_prompt(kingdom_state, choice_history)
+        
+        return {
+            "scenario_prompt": prompt,
+            "kingdom_current_state": kingdom_state,
+            "choice_history": choice_history
+        }
+
+    # Helper method to update kingdom state based on a choice
+    def update_kingdom_state(self, choice, is_left_choice=True):
+        choice_prefix = "Left_" if is_left_choice else "Right_"
+        
+        # Update the most recent choice in the history with the player's decision
+        if self.choice_history:
+            most_recent = self.choice_history[-1]
+            most_recent["choice_made"] = choice.get(f"{choice_prefix}Choice", "Unknown")
+            
+            # Update effects based on the choice
+            effects = {}
+            for resource in ["Piety", "Stability", "Power", "Wealth"]:
+                value = choice.get(f"{choice_prefix}{resource}", 0)
+                effects[resource] = value
+                
+                # Apply effect to current kingdom state
+                current_value = self.current_kingdom_state.get(resource, 50)
+                self.current_kingdom_state[resource] = max(0, min(100, current_value + value))
+            
+            most_recent["effects"] = effects
 
 
 if __name__ == "__main__":
