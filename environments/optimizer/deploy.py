@@ -50,6 +50,8 @@ def _write_optimizer_code_to_volume(code: str, volume: Volume) -> str:
 # --- Modal Function ---
 @app.function(
     image=base_image,
+    scaledown_window=60 * 5,
+    min_containers=2,
     timeout=60 * 30,
     volumes={"/optimizers": optimizers_volume, "/sysPrompt": sys_prompt_volume},
     secrets=[Secret.from_name("optimizerSecret")],
