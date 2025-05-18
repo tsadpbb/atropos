@@ -212,10 +212,15 @@ class DynastAIEnv(BaseEnv):
         # For evaluation, we'll use the test set cards
         eval_tasks = []
         for card in self.test:
+            print(f"[DYNASTAI DEBUG] Processing test card: {card.keys()}")
             input_data = card.get("input", {})
+            print(f"[DYNASTAI DEBUG] Card input data: {input_data}")
             kingdom_state = input_data.get("kingdom_current_state", self.current_kingdom_state)
+            print(f"[DYNASTAI] Evaluation kingdom state: {kingdom_state}")
             choice_history = input_data.get("choice_history", [])
+            print(f"[DYNASTAI DEBUG] Card choice history: {choice_history}")
             prompt = self.format_prompt(kingdom_state, choice_history)
+            print(f"[DYNASTAI DEBUG] Generated prompt: {prompt[:100]}...")
             eval_tasks.append(self.rollout_and_score_eval(prompt))
         
         print(f"[DYNASTAI] Running evaluation on {len(eval_tasks)} test scenarios")
@@ -224,6 +229,9 @@ class DynastAIEnv(BaseEnv):
         print(f"[DYNASTAI] Evaluation complete. Accuracy: {sum(scores) / len(scores):.4f}")
 
     def format_prompt(self, kingdom_state, choice_history):
+        print(f"[DYNASTAI DEBUG] Formatting prompt with kingdom_state: {kingdom_state}")
+        print(f"[DYNASTAI DEBUG] Formatting prompt with choice_history: {choice_history}")
+        
         prompt = "Generate a new scenario for the kingdom with the following current state:\n"
         prompt += f"Piety: {kingdom_state.get('Piety', 50)}, "
         prompt += f"Stability: {kingdom_state.get('Stability', 50)}, "
@@ -241,6 +249,7 @@ class DynastAIEnv(BaseEnv):
                 prompt += f"Wealth {choice.get('effects', {}).get('Wealth', 0)}\n\n"
         
         prompt += "Based on this context, generate a new challenging scenario for the ruler."
+        print(f"[DYNASTAI DEBUG] Final prompt: {prompt[:150]}...")
         return prompt
 
     async def rollout_and_score_eval(self, scenario_prompt: str) -> number:
@@ -326,7 +335,17 @@ class DynastAIEnv(BaseEnv):
         self, item: DynastAIRow
     ) -> Tuple[ScoredDataGroup, list[Item]]:
         print(f"[DYNASTAI] Generating {self.config.group_size} scenario completions")
-        user_message = {"role": "user", "content": item["scenario_prompt"]}
+        print(f"[DYNASTAI DEBUG] Item received: {item.keys()}")
+        print(f"[DYNASTAI DEBUG] Scenario prompt: {item['scenario_prompt'][:150]}...")
+        print(f"[DYNASTAI DEBUG] Kingdom state: {item.get('kingdom_current_state')}")
+        print(f"[DYNASTAI DEBUG] Choice history length: {len(item.get('choice_history', []))}")
+        
+        # Format the prompt properly using the format_prompt method
+        formatted_prompt = self.format_prompt(
+            item.get('kingdom_current_state', self.current_kingdom_state),
+            item.get('choice_history', [])
+        )
+        user_message = {"role": "user", "content": formatted_prompt}
 
         chat_completions = await self.server.chat_completion(
             messages=[{"role": "system", "content": system_prompt}, user_message],
@@ -449,9 +468,12 @@ class DynastAIEnv(BaseEnv):
         # Occasionally sample from training data, otherwise use current state
         if self.train and random.random() < 0.3:
             card = random.choice(self.train)
+            print(f"[DYNASTAI DEBUG] Selected training card: {card.keys()}")
             input_data = card.get("input", {})
+            print(f"[DYNASTAI DEBUG] Training card input data: {input_data}")
             kingdom_state = input_data.get("kingdom_current_state", self.current_kingdom_state)
             choice_history = input_data.get("choice_history", [])
+            print(f"[DYNASTAI DEBUG] Training card choice history: {choice_history}")
             print(f"[DYNASTAI] Using training data scenario (iter: {self.iter})")
         else:
             kingdom_state = self.current_kingdom_state
