@@ -1,6 +1,6 @@
 # ExamCraft
 
-🎓 5. ExamCraft Agent
+🎓  ExamCraft Agent
 Premise: The agent must generate a complete, valid, and curriculum-aligned exam (MCQs or open-ended) on a given topic and difficulty level, using mock student skill profiles as reference.
 Inputs: topic="linear algebra", target=11th grade, student_avg_score=73%
 
