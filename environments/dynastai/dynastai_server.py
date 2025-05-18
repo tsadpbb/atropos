@@ -240,8 +240,12 @@ class DynastAIEnv(BaseEnv):
         
         if choice_history:
             prompt += "Previous choices made:\n"
-            for i, choice in enumerate(choice_history[-3:]):  # Show last 3 choices at most
-                prompt += f"{i+1}. {choice.get('Character', 'Unknown')} presented: \"{choice.get('Prompt', 'Unknown')}\"\n"
+            for i, choice in enumerate(choice_history):  # Show all choices
+                # Get the character and prompt, ensuring we strip any existing numbering
+                character = choice.get('Character', 'Unknown')
+                character_prompt = choice.get('Prompt', 'Unknown')
+                
+                prompt += f"{i+1}. {character} presented: \"{character_prompt}\"\n"
                 prompt += f"   Decision: {choice.get('choice_made', 'Unknown')}\n"
                 prompt += f"   Effects: Piety {choice.get('effects', {}).get('Piety', 0)}, "
                 prompt += f"Stability {choice.get('effects', {}).get('Stability', 0)}, "
