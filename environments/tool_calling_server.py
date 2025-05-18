@@ -44,7 +44,7 @@ class SingleToolCallingEnv(BaseEnv):
     def config_init(self) -> Tuple[BaseEnvConfig, List[APIServerConfig]]:
         env_config = BaseEnvConfig(
             tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-            group_size=32,
+            group_size=16,
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
             total_steps=2000,
@@ -404,9 +404,9 @@ class SingleToolCallingEnv(BaseEnv):
                     # Apply linear penalty scaling from 1.0 down to 0.0
                     scores["scores"].append(1.0 - percentage_of_range)
 
-        # Check if all scores are the same (no learning signal)
-        if all(scores["scores"][0] == score for score in scores["scores"]):
-            return None
+        # # Check if all scores are the same (no learning signal)
+        # if all(scores["scores"][0] == score for score in scores["scores"]):
+        #     return None
 
         return scores
 
