@@ -301,7 +301,7 @@ class SingleToolCallingEnv(BaseEnv):
             max_tokens=1024 * 15,
             temperature=0.8,  # Using temperature to get diverse responses
         )
-
+        print(f"completions: {completions}")
         to_score = list()
 
         for i, completion_choice in enumerate(completions.choices):
