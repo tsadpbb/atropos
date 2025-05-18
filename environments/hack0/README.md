@@ -12,7 +12,7 @@ After replicating RESTGPT, we noticed that LLMs struggled to find the right tool
 [to add] Why is this environment interesting or useful for RL research
 [to add] What inspired our design choices
 
-🔖 Environment Snapshot
+## 🔖 Environment Snapshot
 
 | Field  | Entry |
 | ------------- | ------------- |
