@@ -64,13 +64,6 @@ class SingleToolCallingEnv(BaseEnv):
                 num_max_requests_at_once=32,
                 num_requests_for_eval=256,
             ),
-            # APIServerConfig(
-            #     model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-            #     base_url="http://localhost:9005/v1",
-            #     api_key="x",
-            #     num_max_requests_at_once=32,
-            #     num_requests_for_eval=256,
-            # ),
         ]
 
         return env_config, server_configs
@@ -301,7 +294,6 @@ class SingleToolCallingEnv(BaseEnv):
             max_tokens=1024 * 15,
             temperature=0.8,  # Using temperature to get diverse responses
         )
-        print(f"completions: {completions}")
         to_score = list()
 
         for i, completion_choice in enumerate(completions.choices):
@@ -404,9 +396,9 @@ class SingleToolCallingEnv(BaseEnv):
                     # Apply linear penalty scaling from 1.0 down to 0.0
                     scores["scores"].append(1.0 - percentage_of_range)
 
-        # # Check if all scores are the same (no learning signal)
-        # if all(scores["scores"][0] == score for score in scores["scores"]):
-        #     return None
+        # Check if all scores are the same (no learning signal)
+        if all(scores["scores"][0] == score for score in scores["scores"]):
+            return None
 
         return scores
 
