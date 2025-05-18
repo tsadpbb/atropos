@@ -38,7 +38,7 @@ class PunchEnvConfig(BaseEnvConfig):
     steps_per_eval: int = 100
     max_token_length: int = 3000
     wandb_name: str = "punchline_vrcli"
-    gpu_device: int = 2
+    gpu_device: int = 0
 
 
 class PunchlineEnv(BaseEnv):
