@@ -64,13 +64,13 @@ class SingleToolCallingEnv(BaseEnv):
                 num_max_requests_at_once=32,
                 num_requests_for_eval=256,
             ),
-            APIServerConfig(
-                model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
-                base_url="http://localhost:9005/v1",
-                api_key="x",
-                num_max_requests_at_once=32,
-                num_requests_for_eval=256,
-            ),
+            # APIServerConfig(
+            #     model_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
+            #     base_url="http://localhost:9005/v1",
+            #     api_key="x",
+            #     num_max_requests_at_once=32,
+            #     num_requests_for_eval=256,
+            # ),
         ]
 
         return env_config, server_configs
