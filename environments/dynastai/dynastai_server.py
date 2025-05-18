@@ -239,13 +239,13 @@ class DynastAIEnv(BaseEnv):
         prompt += f"Wealth: {kingdom_state.get('Wealth', 50)}\n\n"
         
         if choice_history:
-            prompt += "Previous choices made:\n"
+            prompt += "Previous choices made (in order):\n"
             for i, choice in enumerate(choice_history):  # Show all choices
                 # Get the character and prompt, ensuring we strip any existing numbering
                 character = choice.get('Character', 'Unknown')
                 character_prompt = choice.get('Prompt', 'Unknown')
                 
-                prompt += f"{i+1}. {character} presented: \"{character_prompt}\"\n"
+                prompt += f"{character} presented: \"{character_prompt}\"\n"
                 prompt += f"   Decision: {choice.get('choice_made', 'Unknown')}\n"
                 prompt += f"   Effects: Piety {choice.get('effects', {}).get('Piety', 0)}, "
                 prompt += f"Stability {choice.get('effects', {}).get('Stability', 0)}, "
@@ -448,7 +448,7 @@ class DynastAIEnv(BaseEnv):
                 
             scores["tokens"].append(tokens)
             scores["masks"].append(masks)
-            scores["scores"].append(1.0 if reward else -1.0)
+            scores["scores"].append(1.0 if reward else -100.0)
             
             if len(scores["tokens"]) >= self.config.group_size:
                 break
