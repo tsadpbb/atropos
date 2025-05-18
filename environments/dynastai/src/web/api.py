@@ -1,4 +1,4 @@
-   """
+"""
 FastAPI endpoints for DynastAI game
 
 This module provides the REST API endpoints for the DynastAI game:
