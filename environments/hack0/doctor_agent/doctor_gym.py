@@ -1,176 +1,64 @@
-from typing import Dict, List, Optional, Tuple
+import re
+from typing import Dict, List, Optional, Sequence, Tuple, TypedDict
 
-import gymnasium as gym
+from datasets import load_dataset
 
-from atroposlib.envs.base import APIServerConfig, BaseEnv, BaseEnvConfig, ScoredDataItem
+from atroposlib.envs.base import (
+    APIServerConfig,
+    BaseEnv,
+    BaseEnvConfig,
+    EvalHandlingEnum,
+    ScoredDataItem,
+)
 from atroposlib.type_definitions import Item
 
-start_msg = """### Description
-There are four designated locations in the grid world indicated by R(ed),
-G(reen), Y(ellow), and B(lue). When the episode starts, the taxi starts off
-at a random square and the passenger is at a random location. The taxi
-drives to the passenger's location, picks up the passenger, drives to the
-passenger's destination (another one of the four specified locations), and
-then drops off the passenger. Once the passenger is dropped off, the episode ends.
+system_prompt = """
+You are a doctor. You are interacting with a patient.
+You need to diagnose the patient based on the symptoms.
+You will need to ask the patient follow up questions to diagnose them.
+Once you are confident in your diagnosis, provide it in the format:
 
-Map:
+The patient is diagnosed with <diagnosis>{possible_illness}.</diagnosis>
 
-    +---------+
-    |R: | : :G|
-    | : | : : |
-    | : : : : |
-    | | : | : |
-    |Y| : |B: |
-    +---------+
+For example,
 
-### Actions
-There are 6 discrete deterministic actions:
-- 0: move south (increases row index)
-- 1: move north (decreases row index)
-- 2: move east (increases column index)
-- 3: move west (decreases column index)
-- 4: pickup passenger (IF on a letter location, AND passenger is located at the same location, pickup passenger)
-- 5: drop off passenger
+user: I have a headache.
+assistant: What is the severity of your headache?
+user: It's a 3/10.
+assistant: What is the location of your headache?
+user: It's in the front of my head.
+assistant: What is the duration of your headache?
+user: It's been going on for 2 days.
+assistant: The patient is diagnosed with <diagnosis>headache</diagnosis>
+"""
 
-### Observations
-
-Passenger locations:
-- 0: R(ed)
-- 1: G(reen)
-- 2: Y(ellow)
-- 3: B(lue)
-- 4: in taxi
-
-Destinations:
-- 0: R(ed) (Row 0, Col 0)
-- 1: G(reen) (Row 4, Col 4)
-- 2: Y(ellow) (Row 0, Col 4)
-- 3: B(lue) (Row 3, Col 3)
-
-### Instructions
-Please perform the actions that will let you pick up and/or drop off the passenger.
-Please respond with the action number only.
-You cannot move the taxi into walls, which are displayed as | in the map. : means you are free to move through that column.
+DatasetItem = TypedDict(
+    "DatasetItem",
+    {
+        "question": str,
+        "answer": str,
+        "options": Dict[str, str],
+        "meta_info": str,
+        "answer_idx": str,
+        "diagnosis": str,
+        "metamap_sequence": Sequence[str],
+    },
+)
 
 
-For an example, if the passenger is at R, and the destination is G, and the taxi is at (2, 2), then here are the following actions to solve this in the correct order:
+class DoctorEnv(BaseEnv):
 
-3 (move west)
-3 (move west)
-1 (move north)
-1 (move north)
-4 (pickup passenger)
-0 (move south)
-0 (move south)
-2 (move east)
-2 (move east)
-2 (move east)
-2 (move east)
-0 (move south)
-0 (move south)
-5 (drop off passenger)
-
-If you are stuck, try moving to row idx 2, as there are no walls there.
-
-Submit your response as a number between 0 and 5 only to perform the discrete action.
-Each turn we will give you the current state of the environment, and you will need to respond with the action number only from the available actions."""  # noqa: E501
-
-
-def decode(i):
-    out = []
-    out.append(i % 4)
-    i = i // 4
-    out.append(i % 5)
-    i = i // 5
-    out.append(i % 5)
-    i = i // 5
-    out.append(i)
-    assert 0 <= i < 5
-    x = reversed(out)
-    # Making it explicit so I don't have to look into gym code
-    taxi_row, taxi_col, pass_idx, dest_idx = x
-    return taxi_row, taxi_col, pass_idx, dest_idx
-
-
-# Note: Works for both the passenger and the destination
-TO_LOC_MAP = {
-    0: "R(Row 0, Col 0)",
-    1: "G (Row 4, Col 4)",
-    2: "Y (Row 0, Col 4)",
-    3: "B (Row 3, Col 3)",
-    4: "in taxi",
-}
-MAP_LOC = {0: (0, 0), 1: (4, 4), 2: (0, 4), 3: (3, 3)}
-TO_ACTION_MAP = {
-    0: "south",
-    1: "north",
-    2: "east",
-    3: "west",
-    4: "pickup",
-    5: "dropoff",
-}
-
-
-def state_render_to_user_msg(last_state, state, action_mask, render):
-    taxi_row, taxi_col, pass_idx, dest_idx = decode(state)
-    if last_state is not None:
-        last_taxi_row, last_taxi_col, last_pass_idx, last_dest_idx = decode(last_state)
-    available_actions = "\n".join(
-        [
-            f"- {i}: {TO_ACTION_MAP[i]}"
-            for i in range(6)
-            if (action_mask[i] == 1)
-            and (
-                (i != 5)
-                or (
-                    (i == 5)
-                    and (taxi_row == MAP_LOC[dest_idx][0])
-                    and (taxi_col == MAP_LOC[dest_idx][1])
-                )
-            )
-        ]
-    )
-    if last_state is not None:
-        ret_str = (
-            f"Previous Taxi Location: Row: {last_taxi_row}, Col: {last_taxi_col}\n"
-        )
-    else:
-        ret_str = ""
-    ret_str += (
-        f"Current state:\nTaxi: Row: {taxi_row}, Col: {taxi_col}\nPassenger: {TO_LOC_MAP[pass_idx]}\n"
-        f"Destination: {TO_LOC_MAP[dest_idx]}\n\n"
-        f"Map:\n{render}\n\n"
-        f"Available actions:\n{available_actions}"
-    )
-    if (
-        (pass_idx == 4)
-        and (taxi_row == MAP_LOC[dest_idx][0])
-        and (taxi_col == MAP_LOC[dest_idx][1])
-    ):
-        ret_str += "\n\nPlease drop off the passenger."
-    elif pass_idx == 4:
-        ret_str += f"\n\nPlease move the taxi to {TO_LOC_MAP[dest_idx]} to drop off the passenger."
-    elif (taxi_row == MAP_LOC[pass_idx][0]) and (taxi_col == MAP_LOC[pass_idx][1]):
-        ret_str += "\n\nPlease pick up the passenger."
-    else:
-        ret_str += f"\n\nPlease move the taxi to {TO_LOC_MAP[pass_idx]} to pick up the passenger."
-    return ret_str
-
-
-class GymTaxiEnv(BaseEnv):
-
-    name = "gym_taxi"
+    name = "doctor"
 
     def __init__(
         self,
         config: BaseEnvConfig,
         server_configs: List[APIServerConfig],
-        slurm=True,
+        slurm=False,
         testing=False,
     ):
         super().__init__(config, server_configs, slurm, testing)
         self.percent_correct_buffer = list()
-        self.percent_picked_up_passenger_buffer = list()
         self.eval_metrics = list()
         # Add tracking for wandb visualizations
         self.rollouts_for_wandb = []
@@ -184,8 +72,16 @@ class GymTaxiEnv(BaseEnv):
             group_size=32,
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
-            max_token_length=8192,
-            wandb_name="gym_taxi",
+            wandb_name="doctor",
+            max_num_workers=128,
+            total_steps=100,
+            batch_size=1024,
+            steps_per_eval=1,
+            max_token_length=1024 * 15,
+            inference_weight=1.0,
+            data_path_to_save_groups=None,
+            eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
+            eval_limit_ratio=0.1,
         )
         server_configs = [
             APIServerConfig(
@@ -210,16 +106,8 @@ class GymTaxiEnv(BaseEnv):
         except ZeroDivisionError:
             # Skip if buffer is empty
             pass
-        try:
-            wandb_metrics["train/percent_picked_up_passenger"] = sum(
-                self.percent_picked_up_passenger_buffer
-            ) / len(self.percent_picked_up_passenger_buffer)
-        except ZeroDivisionError:
-            # Skip if buffer is empty
-            pass
 
         self.percent_correct_buffer = list()
-        self.percent_picked_up_passenger_buffer = list()
         for item in self.eval_metrics:
             wandb_metrics[item[0]] = item[1]
         self.eval_metrics = list()
@@ -227,30 +115,53 @@ class GymTaxiEnv(BaseEnv):
         await super().wandb_log(wandb_metrics)
 
     async def setup(self):
+        """
+        Set up the environment by loading and preparing the dataset.
+        """
+        # Load the full dataset
+        full_dataset = load_dataset("GBaker/MedQA-USMLE-4-options")
+
+        full_dataset = full_dataset.shuffle(seed=42)
+
+        # Keep the splits as is - no need to reformat
+        self.train = full_dataset["train"]
+        # Limit test set size to prevent evaluation from taking too long
+        self.test = full_dataset["test"].select(
+            range(min(128, len(full_dataset["test"])))
+        )
+
+        # Print some dataset statistics
+        print(
+            f"Loaded dataset with {len(self.train)} training examples and {len(self.test)} test examples"
+        )
+        print(f"Example item format: {self.train[0]}")
+
+        # Initialize iteration counter
         self.iter = 0
 
     async def evaluate(self, *args, **kwargs):
         pass
+
+    async def get_patient_msg(self, item: Item) -> str:
+        # Call xAI to get a patient message
+        return item["question"]
 
     async def collect_trajectory(
         self, item: Item
     ) -> Tuple[Optional[ScoredDataItem], List[Item]]:
         # Grab a dedicated llm server to take advantage of caching
         async with self.server.dedicated_server() as server:
-            env = gym.make("Taxi-v3", render_mode="ansi")
-            state, info = env.reset(seed=item["seed"])
-            last_state = None
-            taxi_row, taxi_col, pass_idx, dest_idx = decode(state)
-            init_msg = f"{start_msg}\n\n" + state_render_to_user_msg(
-                last_state, state, info["action_mask"], env.render()
-            )
-            messages = [{"role": "user", "content": init_msg}]
+            init_msg = f"{system_prompt}\n\n"
+            messages = [{"role": "system", "content": init_msg}]
+            patient_msg = await self.get_patient_msg(item)
+            messages.append({"role": "user", "content": patient_msg})
             score = -1
             while True:
                 if (
                     len(self.tokenizer.apply_chat_template(messages))
                     > self.config.max_token_length - 10
                 ):
+                    score = 0
                     break
                 max_tokens = self.config.max_token_length - len(
                     self.tokenizer.apply_chat_template(
@@ -262,42 +173,34 @@ class GymTaxiEnv(BaseEnv):
                     n=1,
                     max_tokens=max_tokens,
                 )
-                choice = (
-                    chat_completions.choices[0]
-                    .message.content.strip()
-                    .replace(".", "")[-1]
-                )
                 messages.append(
                     {
                         "role": "assistant",
                         "content": chat_completions.choices[0].message.content,
                     }
                 )
-                if choice.isdigit() and 0 <= int(choice) <= 5:
-                    action = int(choice)
-                else:
+                diagnosis_match = re.search(
+                    r"<diagnosis>(.*?)</diagnosis>",
+                    chat_completions.choices[0].message.content,
+                    re.DOTALL,
+                )
+                if diagnosis_match:
+                    diagnosis = diagnosis_match.group(1).strip()
+                    # Check if the diagnosis is correct
+                    if diagnosis == item["diagnosis"]:
+                        score = 1
+                    else:
+                        score = 0
                     break
-                if info["action_mask"][action] == 0:
-                    break
-                if action == 3:
-                    # picked up passenger
-                    score = 0
-                next_state, reward, terminated, truncated, info = env.step(action)
-                last_state = state
-                state = next_state
-                if terminated:
-                    score = 1
-                    break
+
+                next_patient_msg = await self.get_patient_msg(item)
                 messages.append(
                     {
                         "role": "user",
-                        "content": state_render_to_user_msg(
-                            last_state, state, info["action_mask"], env.render()
-                        ),
+                        "content": next_patient_msg,
                     }
                 )
             self.percent_correct_buffer.append(max(score, 0))
-            self.percent_picked_up_passenger_buffer.append(1 if score >= 0 else 0)
             tokens = self.tokenizer.apply_chat_template(messages)
             masks = []
             for i, msg in enumerate(messages):
@@ -322,10 +225,17 @@ class GymTaxiEnv(BaseEnv):
         return scored_data_item, []
 
     async def get_next_item(self):
-        next_item = {"seed": self.iter}
+        """
+        Get the next training item from the dataset.
+
+        Returns:
+            A tuple containing prompt and expected answer
+        """
+        next_item: DatasetItem = self.train[self.iter % len(self.train)]
         self.iter += 1
+
         return next_item
 
 
 if __name__ == "__main__":
-    GymTaxiEnv.cli()
+    DoctorEnv.cli()
