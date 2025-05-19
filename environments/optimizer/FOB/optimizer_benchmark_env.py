@@ -47,7 +47,7 @@ class OptimizerBenchmarkEnv:
         if self.optimizer_name is None:
             raise ValueError("No optimizer registered. Call submit_optimizer first.")
         if output_dir is None:
-            output_dir = f"outputs/experiment_{self.optimizer_name}"
+            output_dir = f"FOB/outputs/experiment_{self.optimizer_name}"
         if yaml_path is None:
             yaml_path = self.fob_root / f"experiment_{self.optimizer_name}.yaml"
         else:
