@@ -1,8 +1,8 @@
 import json
 import random
 import re
-from typing import Dict, List, Optional, Tuple, Union
 import wandb
+from typing import Dict, List, Optional, Tuple, Union
 from datasets import load_dataset
 from tqdm.asyncio import tqdm_asyncio
 
