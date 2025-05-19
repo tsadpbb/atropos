@@ -77,7 +77,6 @@ class OptimizerEvaluator:
             stderr=stderr,
         )
         response, _ = self.validity_pipeline.run(schema)
-        print(response)
         choice = response.get("Pipeline_root.block.layer[0].unit[CategoricalJudge Judge]_choice", None)
         return choice == "yes"
 
