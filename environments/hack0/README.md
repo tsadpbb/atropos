@@ -44,7 +44,7 @@ visualization_dir: "./rubiks_visualizations/"
 
 ## Performance Metrics & Training (150 words)
 
-[View WandB Run Results](https://wandb.ai/team/project/runs/abc123)
+[View WandB Run Results]([https://wandb.ai/team/project/runs/abc123](https://wandb.ai/joshuaxjerin-uc/atropos-environments?nw=nwuserjoshuaxjerin))
 
 Our environment tracks several key metrics:
 
