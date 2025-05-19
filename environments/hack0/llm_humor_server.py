@@ -90,4 +90,8 @@ class HumorEnv(BaseEnv):
 
 
 if __name__ == "__main__":
+    import sys
+    # default to 'serve' if no subcommand provided
+    if len(sys.argv) == 1:
+        sys.argv.append("serve")
     HumorEnv.cli()
