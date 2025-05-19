@@ -1,6 +1,9 @@
 Persona-Aware MedQA Benchmarking
 https://youtube.com/shorts/02GEURik0PQ
 
+Wandb: https://wandb.ai/nous-hackathon-2/atropos-environments_hack0_doctor_agent?nw=nwusertsadpbb
+We intended on adding a simple percentage accurate score but couldn't get it done in time :(
+
 In this project, we reimagined medical QA evaluation by introducing a persona filter—a novel layer that simulates real-world variability in patient communication styles. Leveraging the MedQA dataset as our foundation, we infused each scenario with distinct personas generated via xAI’s language models:
 
 1. The Cooperative Patient – open, verbose, and highly informative.
