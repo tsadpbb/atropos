@@ -208,7 +208,7 @@ class GSM8kEnv(BaseEnv):
             all_messages = []
             history = []
             cat_history = [user_message]
-            for i in range(5):
+            for turn_iter in range(5):
                 cat_completions = await self.server.chat_completion(
                     messages=[{"role": "system", "content": cat_system_prompt}] + cat_history,
                     n=self.config.group_size,
@@ -230,13 +230,16 @@ class GSM8kEnv(BaseEnv):
                 caretaker_response = {"role": "assistant", "content": caretaker_completions.choices[0].message.content}
                 cat_history.append(caretaker_response)
                 history.append(caretaker_response)
-                
-                messages = [
-                    {"role": "system", "content": cat_system_prompt},
-                    user_message,
-                    cat_response,
-                    caretaker_response
-                ]
+
+                if turn_iter == 0: 
+                    messages = [
+                        {"role": "system", "content": cat_system_prompt},
+                        user_message,
+                        cat_response,
+                        caretaker_response
+                    ]
+                else:
+                    messages = [cat_response, caretaker_response]
                 all_messages.extend(messages)
             all_messages = tuple(all_messages)
             to_score.append({
