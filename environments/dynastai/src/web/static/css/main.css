@@ -152,6 +152,7 @@ main {
 
 .meter {
     height: 100%;
+    width: 50%;  /* Set initial width to 50% */
     transition: width 0.5s steps(10);
     image-rendering: pixelated;
 }
