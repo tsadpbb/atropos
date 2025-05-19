@@ -14,7 +14,7 @@ from modal.sandbox import Sandbox
 
 # --- Modal App and Images ---
 APP_NAME = "optimizer-test"
-SANDBOX_APP_NAME = "sandboxedExecution"
+SANDBOX_APP_NAME = "new_sandbox"
 
 app = App(APP_NAME)
 
@@ -30,7 +30,7 @@ sys_prompt_volume = Volume.from_name("optimizerSystemPrompt")
 
 # --- Sandbox Setup ---
 sandbox_app = App.lookup(SANDBOX_APP_NAME, create_if_missing=True)
-sandbox = Sandbox.create(app=sandbox_app, image=sandbox_image)
+sandbox = Sandbox.create(app=sandbox_app, image=sandbox_image, timeout=60 * 60)
 
 
 # --- Utility Functions ---
