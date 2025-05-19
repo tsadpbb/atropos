@@ -16,18 +16,36 @@ from atroposlib.envs.base import (
 from atroposlib.type_definitions import Item, number
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
-system_prompt = (
-    "You are a deep thinking AI, you may use extremely long chains of thought "
-    "to deeply consider the problem and deliberate with yourself via systematic "
-    "reasoning processes to help come to a correct solution prior to answering. "
-    "You should enclose your thoughts and internal monologue inside <think> </think> "
-    "tags, and then provide your solution or response to the problem.\n\n"
-)
+# Configs
+
+CAT_BEHAVIORS_FILEPATH = 'environments/cat_behaviors.json'
+
+# Prompts
+
+def load_cat_behaviors_for_prompt(filepath: str) -> str:
+    """Loads cat behaviors from a JSONL file and formats them for the system prompt."""
+    behaviors_description = ["\n\nHere is a detailed list of behaviors you, as a cat, can use and what they generally mean:"]
+        
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            behaviors = json.load(f)          # <<< one big load
+            for behavior_data in behaviors:
+                behaviors_description.append(
+                    f"- **{behavior_data['behavior']}**: {behavior_data['description']}"
+                )
+        return "\n".join(behaviors_description)
+    except FileNotFoundError:
+        return "\n\nWarning: Cat behaviors file not found at '{filepath}'. You'll have to rely on your basic cat instincts (meow, hiss, purr, hairball, silence)."
+    except json.JSONDecodeError as e:
+        return f"\n\nWarning: Error decoding cat behaviors file '{filepath}'. Please ensure it's valid JSONL. Error: {e}. Rely on basic instincts."
+    
+cat_behaviors_list_string = load_cat_behaviors_for_prompt(CAT_BEHAVIORS_FILEPATH)
 
 cat_system_prompt = (
-    "You are a cat. The only way you can communicate is by meowing, hissing, purring, or making a hair ball, or silence."
-    "You will be given a collection of scenarios which describe various needs you want to be met by your caretaker."
-    "Please try to communicate with your caretaker through the modes outlined above."
+    "You are a cat. The primary ways you can communicate are by meowing, hissing, purring, making a hairball sound, or remaining silent. "
+    "You will be given a collection of scenarios which describe various needs you want to be met by your caretaker. "
+    "Please try to communicate with your caretaker through your available cat-like expressions and actions, referring to the list of behaviors below if needed."
+    f"{cat_behaviors_list_string}" # Appending the loaded behaviors here
 )
 cat_system_prompt += """You are allocated a maximum of 2048 tokens, please strive to use less."""
 
@@ -36,13 +54,6 @@ caretaker_system_prompt = (
     "Provide a written string which provides a set of interventions."
     "You will only have 5 opportunities to interact with the cat. Choose what you say wisely."
 )
-
-system_prompt += """You are allocated a maximum of 2048 tokens, please strive to use less.
-
-You will then provide your answer like this: \\boxed{your answer here}
-It is important that you provide your answer in the correct format.
-If you do not, you will not receive credit for your answer.
-So please end your answer with \\boxed{your answer here}"""
 
 
 class CatRow(TypedDict):
@@ -191,41 +202,47 @@ class GSM8kEnv(BaseEnv):
         self, item: CatRow
     ) -> Tuple[ScoredDataGroup, list[Item]]:
         user_message = {"role": "user", "content": item["scenario"]}
-        # gold_answer = (
-        #     "\\boxed{" + item["answer"].split("#")[-1].strip().replace(",", "") + "}"
-        # )
-
-        cat_completions = await self.server.chat_completion(
-            messages=[{"role": "system", "content": cat_system_prompt}, user_message],
-            n=self.config.group_size,
-            max_tokens=self.config.max_token_length,
-        )
-
-        for i, cat_completion in enumerate(cat_completions.choices):
-           if i == 0:
-            cat_message = cat_completion.message.content
-
-        caretaker_message = {"role": "user", "content": cat_message}
-        caretaker_completions = await self.server.chat_completion(
-            messages=[{"role": "system", "content": caretaker_system_prompt}, caretaker_message],
-            n=self.config.group_size,
-            max_tokens=self.config.max_token_length,
-        )
-        
         to_score = list()
         to_backlog = list()
-        for i, caretaker_completion in enumerate(caretaker_completions.choices):
-            messages = (
-                {"role": "system", "content": cat_system_prompt},
-                user_message,
-                {"role": "system", "content": cat_message},
-                {"role": "assistant", "content": caretaker_completion.message.content},
-            )
-            to_score.append(
-                {
-                    "messages": messages,
-                }
-            )
+        for j in range(self.config.group_size):
+            all_messages = []
+            history = []
+            cat_history = [user_message]
+            for i in range(5):
+                cat_completions = await self.server.chat_completion(
+                    messages=[{"role": "system", "content": cat_system_prompt}] + cat_history,
+                    n=self.config.group_size,
+                    max_tokens=self.config.max_token_length,
+                )
+
+                for i, cat_completion in enumerate(cat_completions.choices):
+                    if i == 0:
+                        cat_message = cat_completion.message.content
+                cat_response = {"role": "system", "content": cat_message}
+                cat_history.append(cat_response)
+                caretaker_message = {"role": "user", "content": cat_message}
+                history.append(caretaker_message)
+                caretaker_completions = await self.server.chat_completion(
+                    messages=[{"role": "system", "content": caretaker_system_prompt}] + history,
+                    n=1,
+                    max_tokens=self.config.max_token_length,
+                )
+                caretaker_response = {"role": "assistant", "content": caretaker_completions.choices[0].message.content}
+                cat_history.append(caretaker_response)
+                history.append(caretaker_response)
+                
+                messages = [
+                    {"role": "system", "content": cat_system_prompt},
+                    user_message,
+                    cat_response,
+                    caretaker_response
+                ]
+                all_messages.extend(messages)
+            all_messages = tuple(all_messages)
+            to_score.append({
+                        "messages": all_messages,
+                    })
+            # import pdb; pdb.set_trace()
         to_postprocess = await self.score(to_score)
         # import pdb; pdb.set_trace()
         return to_postprocess, to_backlog
