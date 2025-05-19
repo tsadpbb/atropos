@@ -1,4 +1,5 @@
 Persona-Aware MedQA Benchmarking
+https://youtube.com/shorts/02GEURik0PQ
 
 In this project, we reimagined medical QA evaluation by introducing a persona filter—a novel layer that simulates real-world variability in patient communication styles. Leveraging the MedQA dataset as our foundation, we infused each scenario with distinct personas generated via xAI’s language models:
 
@@ -16,7 +17,7 @@ Only the narrative context—the patient's communication—changes, testing robu
 This mirrors how real doctors must interpret patient symptoms, which are often incomplete or colored by personality, emotion, or context.
 
 Why this matters:
-Most QA benchmarks assume a perfect narrator. But in the real world, AI systems in healthcare will need to make decisions with varying degrees of input clarity. 
+Most QA benchmarks assume a perfect narrator. But in the real world, AI systems in healthcare will need to make decisions with varying degrees of input clarity.
 
 Our approach stress-tests reasoning models under more human-like variability, offering a path toward safer and more empathetic medical AI.
 
