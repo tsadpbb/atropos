@@ -34,22 +34,10 @@ we used the Single Tool Environment as a framework for the MCP env
 Challenge-
 Finding existing large datasets with MCP calls was extermely difficult.
 
-## 🔖 Environment Snapshot
-
-| Field  | Entry |
-| ------------- | ------------- |
-| Environment Name  |   |
-| Short Description  |   |
-| Category  |   |
-| Dataset Needed?  |   |
-| External Deps  |   |
-| Environmental Variables  |   |
-| Compute Footprint Estimate  |   |
-
 ## Estimate	
 ### 🧪 Zero-Training Test Results
 Results of running the example trainer on the gsm8k server via Lambda: 
 
 W&B Link: https://api.wandb.ai/links/l-a-t-hacken-tu-eindhoven/nqjy1v4b
 
-Examples of the Environment scoring a good example and a bad example
+
