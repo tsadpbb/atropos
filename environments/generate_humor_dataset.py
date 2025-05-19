@@ -2,6 +2,10 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def main():
     load_dotenv()
@@ -23,6 +27,7 @@ def main():
 
     output_file = "humor_dataset.jsonl"
     model_name = "gpt-4o-mini"
+    logger.info(f"Generating humor dataset to {output_file} using model {model_name}")
 
     with open(output_file, "w", encoding="utf-8") as fout:
         for comedian in comedians:
@@ -43,6 +48,7 @@ def main():
                     "response": answer,
                 }
                 fout.write(json.dumps(record, ensure_ascii=False) + "\n")
+                logger.info(f"Wrote record: comedian={comedian}, format={fmt}")
 
 if __name__ == "__main__":
     main()
