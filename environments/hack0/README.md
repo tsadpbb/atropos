@@ -19,27 +19,26 @@ What makes this environment particularly compelling is that it's measurable, dom
 ## Quickstart (100 words)
 
 ```bash
-# Run a single episode
-python environments/rubiks_cube_demo.py --curriculum_level 2
+pip install -r requirements.txt
 
-# Run with process script (uses curriculum learning)
-./environments/run_rubiks_process.sh
+cd atropos/environments/hack0
 
-# Train a model
-python train_rubiks_model.py
-```
-
-### Configuration
-
-Core parameters:
-```yaml
-# configs/rubiks_training.yaml
-curriculum_learning: true
-starting_level: 1
-max_level: 5
-auto_progress: true
-token_level_rewards: true
-visualization_dir: "./rubiks_visualizations/"
+(OPENAI_API_KEY="OPENAI_KEY" \
+      python rubiks_cube_environment.py process \
+      --slurm false \
+      --openai.model_name gpt-4.1-nano \
+      --env.tokenizer_name "NousResearch/DeepHermes-3-Llama-3-3B-Preview" \
+      --env.use_wandb true \
+      --env.group_size 4 \
+      --env.max_steps 15 \
+      --env.scramble_moves 5 \
+      --env.data_path_to_save_groups "rubiks_process_results.jsonl" \
+      --env.wandb_name "rubiks_cube_hackathon" \
+      --env.debug_mode true \
+      --env.use_curriculum true \
+      --env.generate_visualizations true \
+      --env.visualizations_dir "./rubiks_visualizations" \
+      --env.provide_solving_strategies true)
 ```
 
 ## Performance Metrics & Training (150 words)
