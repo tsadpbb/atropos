@@ -5,6 +5,8 @@ patient_profiles = [
     Here are your symptoms:
     {symptoms}.
 
+    Do not give the symptoms directly to the doctor in a single answer.
+
     You are trying to get a diagnosis for your symptoms.
 
     The doctor will ask you follow up questions to diagnose you.

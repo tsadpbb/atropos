@@ -1,7 +1,7 @@
 import json
 import random
 from typing import Dict, List, Optional, Sequence, Tuple, TypedDict
-
+import os
 from datasets import load_dataset
 from openai import OpenAI
 
@@ -11,10 +11,18 @@ from atroposlib.envs.base import (
     BaseEnvConfig,
     EvalHandlingEnum,
     ScoredDataItem,
+    ScoredDataGroup,
 )
+# from atroposlib.envs.base import (
+#     BaseEnv,
+#     BaseEnvConfig,
+#     EvalHandlingEnum,
+#     Item,
+#     APIServerConfig,
+# )
 from atroposlib.type_definitions import Item
 
-from .patient import patient_profiles
+from environments.hack0.doctor_agent.patient import patient_profiles
 
 DatasetItem = TypedDict(
     "DatasetItem",
@@ -29,7 +37,7 @@ DatasetItem = TypedDict(
     },
 )
 
-with open("environments/hack0/doctor_agent", "r") as f:
+with open("environments/hack0/doctor_agent/secrets.json", "r") as f:
     keys = json.load(f)
     xai_key = keys["xai"]
 
@@ -40,32 +48,33 @@ client = OpenAI(
 )
 
 final_message = "The diagnosis is:"
-final_message_prompt = final_message + "<diagnosis>headache</diagnosis>"
+final_message_prompt = final_message + " headache"
 
-doctor_system_prompt = """
-You are a doctor. You are interacting with a patient.
+doctor_system_prompt = """You are a doctor. You are interacting with a patient.
 You need to diagnose the patient based on the symptoms.
 You will need to ask the patient follow up questions to diagnose them.
+Ask up to 10 follow up questions. After that make your diagnosis.
 Once you are confident in your diagnosis, provide it in the format:
 
-The patient is diagnosed with <diagnosis>{possible_illness}.</diagnosis>
-
-For example,
-
-user: I have a headache.
-assistant: What is the severity of your headache?
-user: It's a 3/10.
-assistant: What is the location of your headache?
-user: It's in the front of my head.
-assistant: What is the duration of your headache?
-user: It's been going on for 2 days.
-assistant: The patient is diagnosed with <diagnosis>headache</diagnosis>
+The diagnosis is: {possible_illness}
 """
+# ## For example,
+
+# user: I have a headache.
+# assistant: What is the severity of your headache?
+# user: It's a 3/10.
+# assistant: What is the location of your headache?
+# user: It's in the front of my head.
+# assistant: What is the duration of your headache?
+# user: It's been going on for 2 days.
+# assistant: The patient is diagnosed with <diagnosis>headache</diagnosis>
+# """
 
 
 doctor_model = "NousResearch/DeepHermes-3-Llama-3-8B-Preview"
-wandb_name = "doctor"
 
+USER_TAG = "user"
+ASSISTANT_TAG = "assistant"
 
 class DoctorEnv(BaseEnv):
 
@@ -93,7 +102,7 @@ class DoctorEnv(BaseEnv):
             group_size=32,
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
-            wandb_name=wandb_name,
+            wandb_name="doctor",
             max_num_workers=128,
             total_steps=100,
             batch_size=1024,
@@ -103,12 +112,17 @@ class DoctorEnv(BaseEnv):
             data_path_to_save_groups=None,
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
+            debug_mode=True
         )
         server_configs = [
             APIServerConfig(
-                model_name=doctor_model,
-                base_url="http://localhost:9001/v1",
-                api_key="x",
+                # model_name=doctor_model,
+                # base_url="http://localhost:9001/v1",
+                # api_key="x",
+                # num_requests_for_eval=256,
+                model_name="grok-3-latest",
+                base_url=None,
+                api_key=os.environ.get("OPENAI_API_KEY"),
                 num_requests_for_eval=256,
             ),
         ]
@@ -169,25 +183,29 @@ class DoctorEnv(BaseEnv):
         # Grab a dedicated llm server to take advantage of caching
         async with self.server.dedicated_server() as server:
 
+            scores = ScoredDataGroup()
+            scores["scores"] = list()
+
             patient_messages = []
             doctor_messages = [{"role": "system", "content": doctor_system_prompt}]
 
             patient_profile = random.choice(patient_profiles)
             symptoms = item["question"]
-            patient_system_prompt = patient_profile.format(symptoms)
+            patient_system_prompt = patient_profile.format(symptoms = symptoms)
 
             patient_messages = [{"role": "system", "content": patient_system_prompt}]
-
+            # print("before xai message")
             completion = client.chat.completions.create(
                 model="grok-3-latest",
                 messages=patient_messages,
             )
 
-            patient_msg = completion.choices[0].message
+            patient_msg = completion.choices[0].message.content
+            # print("patient message", patient_msg)
 
-            doctor_messages.append({"role": "user", "content": patient_msg})
-            patient_messages.append({"role": "assistant", "content": patient_msg})
-
+            doctor_messages.append({"role": USER_TAG, "content": patient_msg})
+            patient_messages.append({"role": ASSISTANT_TAG, "content": patient_msg})
+            # print("after  xai message")
             score = -1
             while True:
                 if (
@@ -201,19 +219,22 @@ class DoctorEnv(BaseEnv):
                         doctor_messages, add_generation_prompt=True
                     )
                 )
+                # print("before doctor response")
+                # print("messages", doctor_messages)
                 doctor_completions = await server.chat_completion(
-                    messages=doctor_messages,
+                    messages=[{"role" : USER_TAG, "content": "test"}],
                     n=1,
                     max_tokens=max_tokens,
                 )
 
                 doctor_msg = doctor_completions.choices[0].message.content
+                # print("doctor message", doctor_msg)
 
-                doctor_messages.append({"role": "assistant", "content": doctor_msg})
-                patient_messages.append({"role": "user", "content": doctor_msg})
-
+                doctor_messages.append({"role": ASSISTANT_TAG, "content": doctor_msg})
+                patient_messages.append({"role": USER_TAG, "content": doctor_msg})
+                # print("after doctor response")
                 # check output
-                if doctor_msg.startwith(final_message):
+                if doctor_msg.startswith(final_message):
                     diagnosis = doctor_msg.strip(final_message)
                     diagnosis = diagnosis.strip()
 
@@ -228,10 +249,10 @@ class DoctorEnv(BaseEnv):
                     messages=patient_messages,
                 )
 
-                patient_msg = completion.choices[0].message
+                patient_msg = completion.choices[0].message.content
 
-                doctor_messages.append({"role": "user", "content": patient_msg})
-                patient_messages.append({"role": "assistant", "content": patient_msg})
+                doctor_messages.append({"role": USER_TAG, "content": patient_msg})
+                patient_messages.append({"role": ASSISTANT_TAG, "content": patient_msg})
 
             self.percent_correct_buffer.append(max(score, 0))
             tokens = self.tokenizer.apply_chat_template(doctor_messages)
@@ -244,12 +265,14 @@ class DoctorEnv(BaseEnv):
                     curr_tokens = self.tokenizer.apply_chat_template(
                         doctor_messages[: i + 1],
                         add_generation_prompt=doctor_messages[i + 1]["role"]
-                        == "assistant",
+                        == ASSISTANT_TAG,
                     )
-                    if doctor_messages[i]["role"] == "user":
+                    if doctor_messages[i]["role"] == USER_TAG:
                         masks.extend([-100] * (len(curr_tokens) - len(masks)))
                     else:
                         masks.extend(curr_tokens[len(masks) :])
+
+            scores["scores"].append(1.0 if score else -1.0)
 
         scored_data_item = ScoredDataItem(
             messages=doctor_messages,
@@ -258,6 +281,10 @@ class DoctorEnv(BaseEnv):
             masks=masks,
             scores=score,
         )
+        
+        for score in scores["scores"]:
+            self.percent_correct_buffer.append(max(score, 0))
+
         return scored_data_item, []
 
     async def get_next_item(self):
