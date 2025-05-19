@@ -36,7 +36,7 @@ class OptimizerEvaluator:
                 CategoricalJudgeUnit(
                     name='Judge',
                     categories=DiscreteScale(['yes', 'no']),
-                    explanation=True
+                    explanation=False
                 ).prompt("""
                     You are an expert code validator specializing in PyTorch optimizers. Your task is to determine if the provided optimizer code is completely valid and error-free.
 
