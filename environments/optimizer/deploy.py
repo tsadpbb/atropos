@@ -14,7 +14,7 @@ from modal.sandbox import Sandbox
 
 # --- Modal App and Images ---
 APP_NAME = "optimizer-test"
-SANDBOX_APP_NAME = "new_sandbox"
+SANDBOX_APP_NAME = "new_sandbox_test"
 
 app = App(APP_NAME)
 
@@ -28,9 +28,6 @@ benchmark_volume = Volume.from_name("benchmark-responses")
 optimizers_volume = Volume.from_name("optimizers")
 sys_prompt_volume = Volume.from_name("optimizerSystemPrompt")
 
-# --- Sandbox Setup ---
-sandbox_app = App.lookup(SANDBOX_APP_NAME, create_if_missing=True)
-sandbox = Sandbox.create(app=sandbox_app, image=sandbox_image, timeout=60 * 60)
 
 
 # --- Utility Functions ---
@@ -59,6 +56,10 @@ def _write_optimizer_code_to_volume(code: str, volume: Volume) -> str:
 def send_code(code: str):
     """Send and execute optimizer code in the sandbox environment."""
     filename, optimizer_code = _write_optimizer_code_to_volume(code, optimizers_volume)
+
+    # --- Sandbox Setup ---
+    sandbox_app = App.lookup(SANDBOX_APP_NAME, create_if_missing=True)
+    sandbox = Sandbox.create(app=sandbox_app, image=sandbox_image, timeout=60 * 60)
 
     # Write code to sandbox
     with sandbox.open(filename, "w") as f:

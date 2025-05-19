@@ -36,7 +36,7 @@ class OptimizerEvaluator:
                 CategoricalJudgeUnit(
                     name='Judge',
                     categories=DiscreteScale(['yes', 'no']),
-                    explanation=False
+                    explanation=False,
                 ).prompt("""
                     You are an expert code validator specializing in PyTorch optimizers. Your task is to determine if the provided optimizer code is completely valid and error-free.
 
@@ -114,12 +114,6 @@ print(f"\nOptimal x: {x.item():.4f}")
 
     stderr = """
     Traceback (most recent call last):
-      File "optimizer.py", line 8, in <module>
-        optimizer = torch.optim.SGD([x], lr=0.1)
-    RuntimeError: CUDA out of memory. Tried to allocate 2.00 MiB (GPU 0; 4.00 GiB total capacity; 3.47 GiB already allocated; 0 bytes free; 3.47 GiB reserved in total by PyTorch)
-
-    Traceback (most recent call last):
-      File "optimizer.py", line 12, in <
     """
 
     score = evaluator.check_validity(optimizer_code=optimizer_code, stdout=stdout, stderr=stderr)
