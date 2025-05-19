@@ -1,11 +1,11 @@
 import os
 import json
 from dotenv import load_dotenv
-import openai
+from openai import OpenAI
 
 def main():
     load_dotenv()
-    openai.api_key = os.getenv("OPENAI_API_KEY")
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
     comedians = [
         "Norm Macdonald",
@@ -31,7 +31,7 @@ def main():
                     f"What’s the best local LLM model to generate {fmt} jokes "
                     f"in the style of {comedian}? Please explain your reasoning step by step."
                 )
-                response = openai.ChatCompletion.create(
+                response = client.chat.completions.create(
                     model=model_name,
                     messages=[{"role": "user", "content": question}],
                 )
