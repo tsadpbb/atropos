@@ -90,8 +90,6 @@ header h1 {
     font-family: var(--header-font);
     font-size: 2.5rem;
     margin-bottom: 1rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
     color: #ffd700;
     text-shadow: var(--pixel-size) var(--pixel-size) 0 #000;
 }
