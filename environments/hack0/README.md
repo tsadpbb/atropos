@@ -30,3 +30,7 @@ $ sudo apt-get install libglfw3-dev libgles2-mesa-dev libnvidia-gl-570-server
 - Use `render_stl.py` to generate images from STL files.
 - Use `llm_label.py` to label the STL and image files.
 - Use `prepare_push_hf_dataset.py` to push the dataset to Hugging Face.
+
+Generated run: https://wandb.ai/csxl/atropos-environments_hack0/runs/dlexyg5r
+Training run (ran out of memory): https://wandb.ai/csxl/grpo-physical-trainer/runs/t61am7gu
+
