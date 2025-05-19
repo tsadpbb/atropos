@@ -50,5 +50,8 @@ def main():
                 fout.write(json.dumps(record, ensure_ascii=False) + "\n")
                 logger.info(f"Wrote record: comedian={comedian}, format={fmt}")
 
+    # Verify dataset count
+    count = sum(1 for _ in open(output_file, encoding="utf-8"))
+    logger.info(f"Dataset {output_file} contains {count} records")
 if __name__ == "__main__":
     main()
