@@ -88,6 +88,10 @@ class HumorEnv(BaseEnv):
     async def wandb_log(self, wandb_metrics: Optional[dict] = None):
         await super().wandb_log(wandb_metrics)
 
+    async def evaluate(self, *args, **kwargs):
+        # No-op evaluation; required by BaseEnv abstract interface
+        return None
+
 
 if __name__ == "__main__":
     import sys
