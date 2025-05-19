@@ -311,10 +311,9 @@ async function startGame() {
         // If AI mode is selected, start making choices automatically after a 2-second delay
         if (playMode === 'ai') {
             console.log("AI mode selected, making first choice...");
-            const choice = await decideChoice(currentCard, metrics);
-            console.log("AI chose:", choice);
-            highlightChoice(choice);
-            setTimeout(() => makeChoice(choice), 2000);
+            setTimeout(async () => {
+                await letAIMakeChoice();
+            }, 1400);
         }
         
     } catch (error) {
@@ -349,6 +348,9 @@ function getCharacterImageFilename(characterName) {
         'Royal Librarian': 'royal-librarian',
         'Captain of the Guard': 'captain-of-the-guard',
         'Plague Doctor': 'plague-doctor',
+        'Foreign Ambassador': 'foreign-ambassador',
+        'Peasant': 'peasant',
+        'Court Philosopher': 'court-philosopher',
         
         // Single-word titles
         'Bishop': 'cardinal',
@@ -367,9 +369,9 @@ function getCharacterImageFilename(characterName) {
         }
     }
     
-    // If no match found, return default
+    // If no match found, return no-image
     console.warn(`No image mapping found for character: ${characterName}`);
-    return 'royal-advisor';
+    return 'no-image';
 }
 
 /**
@@ -402,10 +404,10 @@ async function generateCard() {
             characterImage.src = `img/${imageFilename}.png`;
             characterImage.style.display = 'block';
             
-            // Add error handler to fallback to default if image fails to load
+            // Add error handler to fallback to no-image if image fails to load
             characterImage.onerror = () => {
-                console.warn(`Failed to load image for ${currentCard.character_name}, falling back to default`);
-                characterImage.src = 'img/royal-advisor.png';
+                console.warn(`Failed to load image for ${currentCard.character_name}, falling back to no-image`);
+                characterImage.src = 'img/no-image.png';
             };
             
             cardContent = `<span class="character-name">${currentCard.character_name}:</span> ${cardContent}`;
@@ -652,39 +654,39 @@ async function endReign() {
         // Set reason based on cause
         if (cause === "power_low") {
             reason = "You lost all authority. The nobles overthrew you!";
-            detailedText = "Years of concessions and weak leadership eroded your authority. The nobles, seeing your weakness, formed a coalition against you. After a brief struggle, you were deposed and exiled, remembered as a ruler who couldn't maintain the respect of the nobility.";
+            detailedText = "Your weak leadership led to a noble uprising. They deposed you and sent you into exile.";
             legacyText = determineRulerLegacy("weak");
         } else if (cause === "power_high") {
             reason = "Your absolute power made you a tyrant. You were assassinated!";
-            detailedText = "Your iron-fisted rule and consolidation of power bred resentment among the nobility. As your authority grew unchecked, many feared for their own positions. A conspiracy formed in the shadows, and despite your vigilance, an assassin's blade found its mark. You died as you ruled - alone and feared.";
+            detailedText = "Your iron rule bred fear and resentment. A conspiracy of nobles ended your tyranny with poison.";
             legacyText = determineRulerLegacy("tyrant");
         } else if (cause === "stability_low") {
             reason = "The people revolted against your rule!";
-            detailedText = "The cries of the hungry and oppressed grew too loud to ignore. Years of neglect and harsh policies turned the populace against you. What began as isolated protests quickly spread across the kingdom. The uprising was swift and merciless, with angry mobs storming the palace. Your reign ended at the hands of those you failed to serve.";
+            detailedText = "Neglect and harsh policies sparked a rebellion. The angry mob stormed your palace.";
             legacyText = determineRulerLegacy("hated");
         } else if (cause === "stability_high") {
             reason = "The people loved you so much they established a republic!";
-            detailedText = "The common folk adored you for your generosity and fairness. However, your popularity threatened the traditional power structure. As people began calling for democratic reforms and greater representation, the nobles and church became alarmed. They orchestrated your removal, claiming the kingdom needed 'proper governance, not popularity.' The republic that followed bore your name, though you did not live to see it flourish.";
+            detailedText = "Your popularity threatened the nobles. They removed you, but the people created a republic in your name.";
             legacyText = determineRulerLegacy("beloved");
         } else if (cause === "piety_low") {
             reason = "The church declared you a heretic and had you executed!";
-            detailedText = "Your dismissal of religious traditions and constant conflicts with church authorities were deemed heretical. The Grand Inquisitor publicly denounced you, turning religious sentiment against the crown. Priests preached against you from every pulpit until the faithful rose up in a holy crusade. Declared a heretic, you faced the ultimate punishment for challenging divine authority.";
+            detailedText = "Your defiance of church authority led to excommunication. The faithful rose against you.";
             legacyText = determineRulerLegacy("heretic");
         } else if (cause === "piety_high") {
             reason = "The church became too powerful and took control of your kingdom!";
-            detailedText = "You allowed religious authorities too much influence, and the church's power grew unchecked. Gradually, religious law superseded royal edicts, and church officials began overruling your decisions. Eventually, the Archbishop declared divine right to rule, and with popular support, established a theocracy. You were permitted to retain your title in name only - a figurehead in a kingdom ruled by the cloth.";
+            detailedText = "Religious law replaced royal authority. The Archbishop now rules, with you as a mere figurehead.";
             legacyText = determineRulerLegacy("pious");
         } else if (cause === "wealth_low") {
             reason = "Your kingdom went bankrupt and you were deposed!";
-            detailedText = "Years of extravagance and financial mismanagement emptied the royal coffers. Unable to pay the army or maintain the kingdom's infrastructure, your rule collapsed under mounting debts. Foreign creditors seized royal assets, while unpaid servants and soldiers abandoned their posts. With nothing left to rule, you were quietly removed from the throne, your name becoming synonymous with fiscal irresponsibility.";
+            detailedText = "Empty coffers and mounting debts doomed your reign. Foreign creditors seized the kingdom's assets.";
             legacyText = determineRulerLegacy("poor");
         } else if (cause === "wealth_high") {
             reason = "Your vast wealth attracted invaders who conquered your kingdom!";
-            detailedText = "Your kingdom's legendary wealth attracted unwanted attention. Neighboring rulers looked upon your treasuries with envy, and despite your diplomatic efforts, greed won out. A coalition of foreign powers, using your hoarding of wealth as justification, invaded with overwhelming force. Your vast riches funded your enemies' armies, and your kingdom was divided among the victors.";
+            detailedText = "Your riches drew the envy of neighbors. They invaded with overwhelming force and divided your realm.";
             legacyText = determineRulerLegacy("wealthy");
         } else {
             reason = "You died of natural causes after a long reign.";
-            detailedText = `After ${metrics.reign_year} years of rule, age finally caught up with you. Your legacy secured, you passed peacefully in your sleep, surrounded by generations of family. The kingdom mourned for forty days, and your achievements were recorded in detail by royal historians. Few monarchs are fortunate enough to meet such a natural end, a testament to your balanced approach to leadership.`;
+            detailedText = `After ${metrics.reign_year} years, you passed peacefully. The kingdom mourns a balanced ruler.`;
             legacyText = determineRulerLegacy("balanced");
         }
         
@@ -769,57 +771,56 @@ async function continueGame() {
  * Generate a legacy message based on reign length and ruler type
  */
 function determineRulerLegacy(rulerType) {
-    // Generate a legacy message based on reign length and ruler type
     const reignLength = metrics.reign_year;
     let legacy = "";
     
     if (reignLength < 5) {
-        legacy = "Your brief rule will be barely a footnote in the kingdom's history.";
+        legacy = "A brief footnote in history.";
     } else if (reignLength > 30) {
         switch (rulerType) {
             case "balanced":
-                legacy = "Your long and balanced reign will be remembered as a golden age of prosperity and peace.";
+                legacy = "A golden age of peace and prosperity.";
                 break;
             case "tyrant":
-                legacy = "Your decades of tyrannical rule have left a permanent scar on the kingdom's history. Your name will be used to frighten children for generations.";
+                legacy = "A reign of terror that scarred the kingdom.";
                 break;
             case "beloved":
-                legacy = "Your generous and fair leadership established a cultural renaissance that will be studied for centuries to come.";
+                legacy = "A renaissance of culture and progress.";
                 break;
             default:
-                legacy = "Your long reign, despite its end, has made an indelible mark on the kingdom's history.";
+                legacy = "A long reign that changed the kingdom forever.";
         }
     } else {
         switch (rulerType) {
             case "weak":
-                legacy = "History will remember you as a monarch who failed to maintain control of their own court.";
+                legacy = "A ruler who lost control of their court.";
                 break;
             case "tyrant":
-                legacy = "You will be remembered as a harsh and unforgiving ruler who sought power above all else.";
+                legacy = "A harsh ruler who valued power above all.";
                 break;
             case "hated":
-                legacy = "Your name will be spoken with contempt by commoners for generations to come.";
+                legacy = "A name spoken with contempt by the people.";
                 break;
             case "beloved":
-                legacy = "The people will sing songs of your kindness and fairness for many years.";
+                legacy = "A ruler cherished in folk songs.";
                 break;
             case "heretic":
-                legacy = "Religious texts will cite you as an example of the dangers of straying from the faith.";
+                legacy = "A cautionary tale of defying the faith.";
                 break;
             case "pious":
-                legacy = "You will be remembered as a devout ruler who perhaps trusted the clergy too much.";
+                legacy = "A ruler who trusted the clergy too much.";
                 break;
             case "poor":
-                legacy = "Future monarchs will study your reign as a cautionary tale of financial mismanagement.";
+                legacy = "A lesson in financial mismanagement.";
                 break;
             case "wealthy":
-                legacy = "Tales of your kingdom's riches will become legendary, though they ultimately led to your downfall.";
+                legacy = "A tale of riches leading to ruin.";
                 break;
             case "balanced":
-                legacy = "Your rule will be remembered as a time of reasonable balance and steady progress.";
+                legacy = "A time of steady progress.";
                 break;
             default:
-                legacy = `You ruled for ${reignLength} years, leaving behind a mixed legacy of successes and failures.`;
+                legacy = `${reignLength} years of mixed successes and failures.`;
         }
     }
     
