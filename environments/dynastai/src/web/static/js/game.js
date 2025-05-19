@@ -349,6 +349,9 @@ function getCharacterImageFilename(characterName) {
         'Royal Librarian': 'royal-librarian',
         'Captain of the Guard': 'captain-of-the-guard',
         'Plague Doctor': 'plague-doctor',
+        'Foreign Ambassador': 'foreign-ambassador',
+        'Peasant': 'peasant',
+        'Court Philosopher': 'court-philosopher',
         
         // Single-word titles
         'Bishop': 'cardinal',
@@ -367,9 +370,9 @@ function getCharacterImageFilename(characterName) {
         }
     }
     
-    // If no match found, return default
+    // If no match found, return no-image
     console.warn(`No image mapping found for character: ${characterName}`);
-    return 'royal-advisor';
+    return 'no-image';
 }
 
 /**
@@ -402,10 +405,10 @@ async function generateCard() {
             characterImage.src = `img/${imageFilename}.png`;
             characterImage.style.display = 'block';
             
-            // Add error handler to fallback to default if image fails to load
+            // Add error handler to fallback to no-image if image fails to load
             characterImage.onerror = () => {
-                console.warn(`Failed to load image for ${currentCard.character_name}, falling back to default`);
-                characterImage.src = 'img/royal-advisor.png';
+                console.warn(`Failed to load image for ${currentCard.character_name}, falling back to no-image`);
+                characterImage.src = 'img/no-image.png';
             };
             
             cardContent = `<span class="character-name">${currentCard.character_name}:</span> ${cardContent}`;

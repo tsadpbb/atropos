@@ -455,3 +455,9 @@ footer {
     padding: 8px;
     box-shadow: var(--shadow);
 }
+
+.character-image[src*="no-image"] {
+    padding: 16px;
+    opacity: 0.8;
+    filter: grayscale(1);
+}
