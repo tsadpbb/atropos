@@ -203,6 +203,8 @@ class DoctorEnv(BaseEnv):
             patient_msg = completion.choices[0].message.content
             # print("patient message", patient_msg)
 
+            print("patient message", patient_msg)
+
             doctor_messages.append({"role": USER_TAG, "content": patient_msg})
             patient_messages.append({"role": ASSISTANT_TAG, "content": patient_msg})
             # print("after  xai message")
@@ -222,12 +224,14 @@ class DoctorEnv(BaseEnv):
                 # print("before doctor response")
                 # print("messages", doctor_messages)
                 doctor_completions = await server.chat_completion(
-                    messages=[{"role" : USER_TAG, "content": "test"}],
+                    messages=doctor_messages,
                     n=1,
                     max_tokens=max_tokens,
                 )
 
                 doctor_msg = doctor_completions.choices[0].message.content
+                print("doctor message", doctor_msg)
+
                 # print("doctor message", doctor_msg)
 
                 doctor_messages.append({"role": ASSISTANT_TAG, "content": doctor_msg})
