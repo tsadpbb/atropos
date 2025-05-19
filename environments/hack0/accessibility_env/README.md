@@ -1,6 +1,6 @@
 # Accessibility Auto-Fixer Environment for Atropos
 
-**Team/Author:** Your Team Name / Your Name
+**Team/Author:** Accessibility Bot / Josh Garza
 **Track:** Objective (WCAG rules are specific and rule-based)
 
 ## Environment Design and Motivation
@@ -79,7 +79,6 @@ python -m environments.hack0.your_env_folder_name.accessibility_env process \
   --env.dataset_path data/accessibility_dataset.jsonl \
   --env.total_steps 6 \
   --env.group_size 1 \
-  --env.tokenizer_name "gpt2" \
   --openai.model_name "gpt-3.5-turbo" \
   --openai.api_key "$OPENAI_API_KEY"
 ```
