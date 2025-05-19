@@ -242,7 +242,7 @@ class GSM8kEnv(BaseEnv):
             to_score.append({
                         "messages": all_messages,
                     })
-            import pdb; pdb.set_trace()
+            # import pdb; pdb.set_trace()
         to_postprocess = await self.score(to_score)
         # import pdb; pdb.set_trace()
         return to_postprocess, to_backlog
