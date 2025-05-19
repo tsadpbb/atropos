@@ -34,7 +34,7 @@ def main():
             for fmt in formats:
                 question = (
                     f"What’s the best local LLM model to generate {fmt} jokes "
-                    f"in the style of {comedian}? Please explain your reasoning step by step."
+                    f"in the style of {comedian}? Please explain your reasoning step by step, and generate 3 example jokes."
                 )
                 response = client.chat.completions.create(
                     model=model_name,
