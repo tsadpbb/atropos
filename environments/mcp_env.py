@@ -31,7 +31,7 @@ class McpEnv(BaseEnv):
         self,
         config: BaseEnvConfig,
         server_configs: List[APIServerConfig],
-        slurm=True,
+        slurm=False,
         testing=False,
     ):
         super().__init__(config, server_configs, slurm, testing)
