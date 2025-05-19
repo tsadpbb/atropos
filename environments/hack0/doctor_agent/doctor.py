@@ -11,7 +11,15 @@ from atroposlib.envs.base import (
     BaseEnvConfig,
     EvalHandlingEnum,
     ScoredDataItem,
+    ScoredDataGroup,
 )
+# from atroposlib.envs.base import (
+#     BaseEnv,
+#     BaseEnvConfig,
+#     EvalHandlingEnum,
+#     Item,
+#     APIServerConfig,
+# )
 from atroposlib.type_definitions import Item
 
 from environments.hack0.doctor_agent.patient import patient_profiles
@@ -45,6 +53,7 @@ final_message_prompt = final_message + " headache"
 doctor_system_prompt = """You are a doctor. You are interacting with a patient.
 You need to diagnose the patient based on the symptoms.
 You will need to ask the patient follow up questions to diagnose them.
+Ask up to 10 follow up questions. After that make your diagnosis.
 Once you are confident in your diagnosis, provide it in the format:
 
 The diagnosis is: {possible_illness}
@@ -174,6 +183,9 @@ class DoctorEnv(BaseEnv):
         # Grab a dedicated llm server to take advantage of caching
         async with self.server.dedicated_server() as server:
 
+            scores = ScoredDataGroup()
+            scores["scores"] = list()
+
             patient_messages = []
             doctor_messages = [{"role": "system", "content": doctor_system_prompt}]
 
@@ -224,9 +236,9 @@ class DoctorEnv(BaseEnv):
                 # check output
                 if doctor_msg.startswith(final_message):
                     diagnosis = doctor_msg.strip(final_message)
-                    diagnosis = diagnosis.strip().lower()
+                    diagnosis = diagnosis.strip()
 
-                    if diagnosis.contains(item["answer"].lower()):
+                    if diagnosis.contains(item["answer"]):
                         score = 1
                     else:
                         score = 0
@@ -260,6 +272,8 @@ class DoctorEnv(BaseEnv):
                     else:
                         masks.extend(curr_tokens[len(masks) :])
 
+            scores["scores"].append(1.0 if score else -1.0)
+
         scored_data_item = ScoredDataItem(
             messages=doctor_messages,
             finish_reason=score,
@@ -267,6 +281,10 @@ class DoctorEnv(BaseEnv):
             masks=masks,
             scores=score,
         )
+        
+        for score in scores["scores"]:
+            self.percent_correct_buffer.append(max(score, 0))
+
         return scored_data_item, []
 
     async def get_next_item(self):
