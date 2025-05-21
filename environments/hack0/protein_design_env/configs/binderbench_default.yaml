@@ -1,33 +1,19 @@
-# NVIDIA NIM Environment Default Configuration for BinderBench
-
 # Debug Mode - set to true to use mock data instead of actual API calls
 debug_protein_design_calls: false
 
-# Retry settings for failed steps
-max_retries_per_internal_step: 100  # Increased to allow many retries for tool calls
+max_retries_per_internal_step: 100
 
-# API Settings
-# nim_api_key is loaded from .env file using NVIDIA_NIM_API_KEY
 nim_api_base_url: "https://health.api.nvidia.com/v1"
 api_timeout: 600
 polling_interval: 10
 
-# Protein Design Settings
 output_dir: "environments/hack0/protein_design_env/outputs"
 
-# WandB tracking settings
 use_wandb: true
 wandb_name: "binderbench"
-wandb_project: "atropos"  # Will default to this if not specified
-include_messages: true    # Include messages in WandB logs
+wandb_project: "atropos"
+include_messages: true
 
-# Dataset configuration
 dataset_name: "ronig/protein_binding_sequences"
 target_col: "receptor"
 binder_col: "peptide"
-
-# Scoring weights for final complex quality
-metric_weights:
-  plddt: 0.3
-  ptm: 0.3
-  iptm: 0.4
