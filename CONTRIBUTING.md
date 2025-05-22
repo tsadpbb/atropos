@@ -127,9 +127,9 @@ Any contributions you make will be under the Apache License 2.0. In short, when 
 Since Atropos is focused on reinforcement learning environments, we encourage contributions of new training environments. However, please adhere to the following guidelines:
 
 *   **Directory Structure**: Please create your new environment within the `environments/community/` subdirectory. This helps us organize incoming contributions and allows for a streamlined initial review process before full testing and integration.
-*   **Import Style**: We prefer that you treat your environment's directory as the package root for imports. For example, if your environment resides in `environments/community/my_new_env/` and you need to import `ServerProxy` (assuming it's in a `server_proxy.py` file at the root of your `my_new_env` directory or accessible via your Python path setup), you should be able to use a direct import like:
+*   **Import Style**: We prefer that you treat your environment's directory as the package root for imports. For example, if your environment resides in `environments/community/my_new_env/` and you need to import `SomeClass` (assuming it's in a `some_file_in_my_env.py` file at the root of your `my_new_env` directory or accessible via your Python path setup), you should be able to use a direct import like:
     ```python
-    from server_proxy import ServerProxy
+    from some_file_in_my_env import SomeClass
     ```
     This convention applies to imports within your environment's own files and any helper modules you create alongside it.
 * **Legal compliance**: Do not submit environments that involve illegal activities or content.
