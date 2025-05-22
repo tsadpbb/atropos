@@ -438,7 +438,7 @@ class BinderBenchEnv(BaseEnv):
                 workflow_state["retry_count_this_internal_step"] = 0
                 workflow_state["previous_tool_error_message"] = None
             else:
-                if workflow_state["current_internal_step"] <= 3: # Retry for steps 0, 1, 2, AND 3
+                if workflow_state["current_internal_step"] <= 3:
                     workflow_state["retry_count_this_internal_step"] += 1
                     if workflow_state["retry_count_this_internal_step"] > self.config.max_retries_per_internal_step:
                         logger.warning(f"Workflow {item_id}, Step {workflow_state['current_internal_step']} (Serve Mode): Max retries reached. Terminating.")
