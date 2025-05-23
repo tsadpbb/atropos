@@ -133,12 +133,12 @@ Environment Used: [https://github.com/NousResearch/atropos/blob/main/environment
 | Category | Description |
 |----------|------------|
 | 📁 [`atroposlib/`](atroposlib/) | Core library containing base classes and utilities |
-| 🎮 [`environments/`](environments/) | Collection of ready-to-use RL environments |
+| 🎮 [`environments/`](environments/) | Collection of ready-to-use RL environments. Community contributions are typically placed in the [`environments/community/`](environments/community/) subdirectory. |
 | 📚 [`example_trainer/`](example_trainer/) | Example training scripts and configurations |
 
 Key Documents:
 - [Base Environment Class](atroposlib/envs/README.md) - Documentation for creating custom environments
-- [Environments Overview](environments/README.md) - Documentation for existing environments
+- [Environments Overview and Contribution Guide](environments/community/README.md) - Documentation for existing environments and how to contribute new ones.
 - [Full Environment Config Options](CONFIG.md) - Documentation for creating custom environments
 - [Example Trainer](example_trainer/README.md) - Getting started with training
 - [Slurm Guide](SLURM.md) - Guide for using Atropos with Slurm for distributed inference
