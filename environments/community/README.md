@@ -110,6 +110,32 @@ A comprehensive environment for training LLMs to interact with web pages through
 
 **Requirements**: Playwright, optional Google Gemini API for evaluation
 
+### 5. Metric Card Generator Environment (`metric_card_generator/`)
+**Author**: [vivek100](https://github.com/vivek100)
+**Purpose**: Structured JSON generation for AI model evaluation dashboards
+
+A comprehensive environment for training LLMs to generate well-structured JSON configurations for Metric Card UI components. Features:
+- Closed-loop generation, evaluation, and visualization pipeline
+- Schema validation for JSON metric card configurations
+- Multi-dimensional evaluation (validity, compliance, semantic quality)
+- Support for various business domains and metric types
+- WandB integration for performance tracking
+
+**Capabilities**:
+- Generates metric cards for diverse business contexts (e-commerce, finance, healthcare, etc.)
+- Validates JSON structure against predefined schemas
+- Evaluates semantic quality and formatting consistency
+- Provides training data extraction and filtering utilities
+- Includes visualization tools for score distribution analysis
+
+**Components**:
+- `metric_card_generator.py`: Main environment implementation
+- `extract_metric_training.py`: Training data extraction utility
+- `trainingDataScript.py`: Dataset creation from collected examples
+- `show_score_distribution.py`: Performance analysis visualization
+
+**Requirements**: Pydantic, tqdm
+
 ---
 
 ## Support
