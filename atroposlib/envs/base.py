@@ -24,7 +24,6 @@ from rich import print as rprint
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from transformers import AutoTokenizer
 
-import wandb
 from atroposlib.envs.constants import ENV_NAMESPACE, NAMESPACE_SEP, OPENAI_NAMESPACE
 from atroposlib.envs.server_handling.openai_server import resolve_openai_configs
 from atroposlib.frontend.jsonl2html import generate_html
