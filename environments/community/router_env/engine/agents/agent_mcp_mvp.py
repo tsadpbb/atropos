@@ -29,7 +29,10 @@ class MyAgent(Agent):
             turn_detection=MultilingualModel(),
             mcp_servers=[
                 mcp.MCPServerHTTP(
-                    url="https://mcp.gumloop.com/gcalendar/cY3bcaFS1qNdeVBnj0XIhnP4FEp2%3Aae99858e75594251bea9e05f32bb99b3",
+                    url=(
+                        "https://mcp.gumloop.com/gcalendar/"
+                        "cY3bcaFS1qNdeVBnj0XIhnP4FEp2%3Aae99858e75594251bea9e05f32bb99b3"
+                    ),
                     timeout=5,
                     client_session_timeout_seconds=5,
                 ),

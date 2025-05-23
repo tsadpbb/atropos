@@ -4,11 +4,7 @@ import os
 
 from dotenv import load_dotenv
 from livekit.agents import mcp
-from livekit.agents.llm import (  # Removed ChatRole as using strings
-    LLM,
-    ChatContext,
-    ChatMessage,
-)
+from livekit.agents.llm import LLM, ChatContext  # Removed ChatRole as using strings
 from livekit.plugins import openai
 
 logger = logging.getLogger("text-perplexity-agent")
@@ -37,7 +33,8 @@ def get_perplexity_mcp_server():
 
         if not os.path.exists(mcp_script_path):
             logger.error(
-                f"❌ MCP script not found at {mcp_script_path}. Make sure you've run 'npm install && npm run build' in the server directory."
+                f"❌ MCP script not found at {mcp_script_path}. Make sure you've run "
+                "'npm install && npm run build' in the server directory."
             )
             logger.warning("⚠️ Perplexity tools will be unavailable.")
             return None
@@ -78,8 +75,8 @@ async def run_chat_loop(
             You are a specialized assistant for answering general knowledge questions, providing explanations,
             and performing web searches using the 'perplexity_ask' tool.
             When the user asks for information, facts, or to 'search the web', you are the designated expert.
-            When calling the 'perplexity_ask' tool, ensure the 'messages' argument is an array containing a single object
-            with 'role': 'user' and 'content' set to the user's question.
+            When calling the 'perplexity_ask' tool, ensure the 'messages' argument is an array containing
+            a single object with 'role': 'user' and 'content' set to the user's question.
             For example: {"messages": [{"role": "user", "content": "What is the capital of France?"}]}
             You do not have other tools. Do not try to delegate.
         """
@@ -192,7 +189,8 @@ if __name__ == "__main__":
         if not os.path.exists(mcp_script_path):
             logger.error(f"❌ Critical: MCP script not found at {mcp_script_path}.")
             logger.error(
-                "❌ The agent cannot use Perplexity tools. Please build the MCP server ('npm install && npm run build' in its directory)."
+                "❌ The agent cannot use Perplexity tools. Please build the MCP server "
+                "('npm install && npm run build' in its directory)."
             )
             exit(1)
 
