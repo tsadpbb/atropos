@@ -90,6 +90,26 @@ An environment focused on training models for deep philosophical inquiry and rea
 - Tracks preference consistency and reasoning quality
 - Supports WandB logging for training insights
 
+### 4. Playwright Agent Environment (`playwright_agent_env.py`)
+**Author**: [erikqu](https://github.com/erikqu)
+**Purpose**: Web automation and browser interaction for LLM agents
+
+A comprehensive environment for training LLMs to interact with web pages through browser automation. Features:
+- Playwright-based browser control with headless operation
+- Screenshot-based visual input for LLM decision making
+- JSON-based action commands (navigate, click, type, finish)
+- Video recording of browser sessions for evaluation
+- Google Gemini integration for success evaluation
+
+**Capabilities**:
+- Loads tasks from WebVoyager dataset or custom task definitions
+- Supports development mode for testing without LLM calls
+- Automatic reward computation based on success and efficiency
+- Comprehensive error handling and fallback mechanisms
+- Integration with Atropos training pipeline
+
+**Requirements**: Playwright, optional Google Gemini API for evaluation
+
 ---
 
 ## Support
