@@ -136,6 +136,47 @@ A comprehensive environment for training LLMs to generate well-structured JSON c
 
 **Requirements**: Pydantic, tqdm
 
+### 6. UFC Prediction Environment (`ufc_prediction_env/`)
+**Author**: [edmundman](https://github.com/edmundman)
+**Repository**: [UFC_FIGHT_PREDICTOR](https://github.com/edmundman/UFC_FIGHT_PREDICTOR)
+**Purpose**: UFC fight prediction with entertaining TTS-ready commentary generation
+
+A creative environment that transforms traditional fight prediction into engaging entertainment by generating dynamic, broadcast-style UFC fight commentary. Features both text-based and image-based prediction modes:
+
+**Text-Based Predictor (`ufc_server.py`)**:
+- Uses comprehensive fighter statistics (wins/losses, physical attributes, performance metrics)
+- Generates dramatic fight commentary with commentator personalities
+- TTS-ready output with natural speech patterns and emphasis markers
+- Statistical analysis wrapped in entertaining storytelling
+
+**Image-Based Predictor (`ufc_image_env.py`)**:
+- Multimodal prediction using fighter profile images
+- Visual analysis transformed into engaging commentary
+- Base64 image encoding for API compatibility
+- Creates dramatic narratives from fighter appearances
+
+**Key Features**:
+- Entertainment-first approach with broadcast-style commentary
+- Direct TTS integration compatibility (designed for models like DIA)
+- Dramatic elements including commentator phrases and pauses
+- Proper formatting for voice synthesis applications
+- Comprehensive scoring system for prediction accuracy and entertainment value
+
+**Data Components**:
+- `fighter_stats.csv`: Detailed fighter statistics and performance metrics
+- `large_dataset.csv`: Sample historical fight data (799 records from original 7,440)
+- `fighter_images/`: Profile images for visual-based predictions
+- `get_images.py`: Web scraping utility for fighter image collection
+
+**Note**: The included dataset is a sample for demonstration. The full dataset (7,440 fight records) is available in the original [UFC_FIGHT_PREDICTOR repository](https://github.com/edmundman/UFC_FIGHT_PREDICTOR).
+
+**Additional Tools**:
+- `ufc_predictor_ui.py`: Flask-based web interface for interactive predictions
+- Video demonstrations and example runs available
+- WandB integration for training tracking
+
+**Requirements**: PIL, OpenAI API, Flask (for UI), BeautifulSoup4 (for image scraping)
+
 ---
 
 ## Support
