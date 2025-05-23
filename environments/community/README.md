@@ -47,7 +47,7 @@ Once your environment is ready, please follow the guidelines in our main [CONTRI
 ## Available Environments
 
 ### 1. Lean Proof Environment (`lean_proof_env/`)
-**Author**: [GabinFay](https://github.com/GabinFay)  
+**Author**: [GabinFay](https://github.com/GabinFay)
 **Purpose**: Testing Language Learning Models (LLMs) on Lean theorem proving tasks
 
 A comprehensive environment for evaluating LLMs on formal mathematical reasoning using the Lean theorem prover. Features include:
@@ -59,7 +59,7 @@ A comprehensive environment for evaluating LLMs on formal mathematical reasoning
 **Requirements**: Lean 4 installation, OpenAI API key
 
 ### 2. Router Environment (`router_env/`)
-**Author**: [GabinFay](https://github.com/GabinFay)  
+**Author**: [GabinFay](https://github.com/GabinFay)
 **Purpose**: Multi-agent routing and coordination system
 
 A sophisticated environment for testing agent routing and coordination capabilities. Includes:
@@ -75,7 +75,7 @@ A sophisticated environment for testing agent routing and coordination capabilit
 - Router agent for intelligent task delegation
 
 ### 3. Philosophical RLAIF Environment (`philosophical_rlaif_env.py`)
-**Author**: [GabinFay](https://github.com/GabinFay)  
+**Author**: [GabinFay](https://github.com/GabinFay)
 **Purpose**: Reinforcement Learning from AI Feedback (RLAIF) for philosophical reasoning
 
 An environment focused on training models for deep philosophical inquiry and reasoning. Features:
