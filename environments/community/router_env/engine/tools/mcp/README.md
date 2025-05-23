@@ -73,4 +73,4 @@ To add a new MCP implementation:
    git submodule add <repository-url> tools/mcp/<service-name>
    ```
 
-2. Update this README.md file to include information about the new submodule 
+2. Update this README.md file to include information about the new submodule

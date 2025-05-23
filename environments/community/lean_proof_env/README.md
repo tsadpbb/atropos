@@ -61,4 +61,4 @@ The script will generate a `.jsonl` file with the trajectories and an HTML visua
 
 *   **Problem Sets**: Modify the `setup()` method in `lean_proof_env.py` to load different Lean problems or datasets.
 *   **LLM Prompts**: Adjust the `get_next_item()` method in `lean_proof_env.py` to change the prompts sent to the LLM.
-*   **Configuration**: Default configurations are defined in the `LeanProofEnvConfig` class within `lean_proof_env.py`. Most of these can be overridden by command-line arguments (e.g., `--env.max_proof_generation_tokens=256`). 
+*   **Configuration**: Default configurations are defined in the `LeanProofEnvConfig` class within `lean_proof_env.py`. Most of these can be overridden by command-line arguments (e.g., `--env.max_proof_generation_tokens=256`).

@@ -19,4 +19,4 @@ export LIVEKIT_ROOM="stone-router-voice-agent"
 
 # Start the agent
 cd engine
-python agents/stone_agent.py 
+python agents/stone_agent.py

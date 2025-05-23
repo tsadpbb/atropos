@@ -5,7 +5,7 @@ This directory contains environments contributed by the community. These environ
 ## Available Environments
 
 ### 1. Lean Proof Environment (`lean_proof_env/`)
-**Author**: GabinFay  
+**Author**: GabinFay
 **Purpose**: Testing Language Learning Models (LLMs) on Lean theorem proving tasks
 
 A comprehensive environment for evaluating LLMs on formal mathematical reasoning using the Lean theorem prover. Features include:
@@ -17,7 +17,7 @@ A comprehensive environment for evaluating LLMs on formal mathematical reasoning
 **Requirements**: Lean 4 installation, OpenAI API key
 
 ### 2. Router Environment (`router_env/`)
-**Author**: GabinFay  
+**Author**: GabinFay
 **Purpose**: Multi-agent routing and coordination system
 
 A sophisticated environment for testing agent routing and coordination capabilities. Includes:
@@ -33,7 +33,7 @@ A sophisticated environment for testing agent routing and coordination capabilit
 - Router agent for intelligent task delegation
 
 ### 3. Philosophical RLAIF Environment (`philosophical_rlaif_env.py`)
-**Author**: GabinFay  
+**Author**: GabinFay
 **Purpose**: Reinforcement Learning from AI Feedback (RLAIF) for philosophical reasoning
 
 An environment focused on training models for deep philosophical inquiry and reasoning. Features:
@@ -82,4 +82,4 @@ For questions or issues with community environments:
 
 ---
 
-*These environments are community contributions and may have different maintenance levels and support compared to core Atropos environments.* 
+*These environments are community contributions and may have different maintenance levels and support compared to core Atropos environments.*

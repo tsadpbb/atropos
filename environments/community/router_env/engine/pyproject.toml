@@ -71,4 +71,4 @@ allow-direct-references = true
 # Assuming these contain the core library code. Adjust if needed.
 packages = ["engine/agents", "engine/api", "engine/config", "engine/tools"] # Adjusted paths
 # If main.py and __init__.py should also be part of the package, might need adjustment
-# e.g., include '.' or specific file paths if they are not just scripts. 
+# e.g., include '.' or specific file paths if they are not just scripts.

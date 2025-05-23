@@ -1,37 +1,22 @@
-import sys # Import sys for sys.exit
 import logging
 import os
+import sys  # Import sys for sys.exit
 from pathlib import Path
+
+from dotenv import load_dotenv
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli, mcp
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
-from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
 logger = logging.getLogger("stone-agent")
 
 
-from livekit.agents import (
-    Agent,
-    AgentSession,
-    ChatContext,
-    JobContext,
-    WorkerOptions,
-    cli,
-    mcp,
-    RunContext,
-    function_tool,
+from typing import (  # Ensure List and Optional are imported for tool type hints
+    List,
+    Optional,
 )
-from livekit.agents.voice.agent import ModelSettings # Import ModelSettings
-from livekit.agents.llm import (
-    ChatRole,
-    LLM,
-    ChatMessage
-)
-from livekit.plugins import deepgram, openai, silero, anthropic
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
-from typing import List, Optional # Ensure List and Optional are imported for tool type hints
 
 # Import the original FunctionAgents from the official agent files
 # These files should be in the same directory as router_agent.py
@@ -43,6 +28,22 @@ from contact_agent import ContactAgent
 from gmail_agent import GmailAgent
 from go_agent import GoAgent
 from listen_agent import ListenAgent
+from livekit.agents import (
+    Agent,
+    AgentSession,
+    ChatContext,
+    JobContext,
+    RunContext,
+    WorkerOptions,
+    cli,
+    function_tool,
+    mcp,
+)
+from livekit.agents.llm import LLM, ChatMessage, ChatRole
+from livekit.agents.voice.agent import ModelSettings  # Import ModelSettings
+from livekit.plugins import anthropic, deepgram, openai, silero
+from livekit.plugins.turn_detector.multilingual import MultilingualModel
+
 # from mem_agent import MemoryAgent
 
 logger = logging.getLogger("router-agent")
@@ -51,8 +52,12 @@ load_dotenv()
 # Determine the absolute path for server scripts relative to this file
 _current_dir = os.path.dirname(os.path.abspath(__file__))
 
+
 @function_tool
-async def delegate_to_router_agent(context: RunContext, original_query: str = "User wants to talk about something else."):
+async def delegate_to_router_agent(
+    context: RunContext,
+    original_query: str = "User wants to talk about something else.",
+):
     """
     Call this function to delegate the conversation back to the main RouterAgent.
     This is used when your current task is complete, or the user asks for functionality
@@ -60,20 +65,31 @@ async def delegate_to_router_agent(context: RunContext, original_query: str = "U
     Args:
         original_query: A brief description of why the delegation is happening or the user's last relevant query.
     """
-    logger.info(f"Specialist Agent: Delegating back to RouterAgent. Reason/Query: '{original_query}'")
+    logger.info(
+        f"Specialist Agent: Delegating back to RouterAgent. Reason/Query: '{original_query}'"
+    )
     # Try to access _chat_ctx via context.session, as context.agent was problematic
-    if not hasattr(context, 'session') or context.session is None:
-        logger.error("delegate_to_router_agent: RunContext does not have a valid 'session' attribute.")
+    if not hasattr(context, "session") or context.session is None:
+        logger.error(
+            "delegate_to_router_agent: RunContext does not have a valid 'session' attribute."
+        )
         # This is a critical failure for context propagation.
         # Depending on desired behavior, could raise an error or attempt a recovery (though recovery is hard here).
-        # For now, we'll let it fail if it tries to access _chat_ctx on a None session, 
+        # For now, we'll let it fail if it tries to access _chat_ctx on a None session,
         # or re-raise a more specific error.
-        raise AttributeError("RunContext is missing the session attribute, cannot retrieve ChatContext.")
+        raise AttributeError(
+            "RunContext is missing the session attribute, cannot retrieve ChatContext."
+        )
 
-    return RouterAgent(chat_ctx=context.session._chat_ctx), "Okay, let me switch you back to the main assistant."
+    return (
+        RouterAgent(chat_ctx=context.session._chat_ctx),
+        "Okay, let me switch you back to the main assistant.",
+    )
+
 
 class RouterAgent(Agent):
     """Routes user queries to specialized agents."""
+
     def __init__(self, chat_ctx: ChatContext):
         super().__init__(
             instructions="""
@@ -101,14 +117,13 @@ class RouterAgent(Agent):
                 If uncertain, you can ask one clarifying question to determine the correct agent, but prefer to route directly if possible.
             """,
             allow_interruptions=True,
-            chat_ctx=chat_ctx
+            chat_ctx=chat_ctx,
         )
 
     async def on_enter(self):
         """Called when the RouterAgent starts. It will wait for user input."""
         logger.info("RouterAgent entered. Waiting for user query.")
         self.session.generate_reply()
-
 
     @function_tool
     async def delegate_to_math_agent(self, query: str):
@@ -117,11 +132,13 @@ class RouterAgent(Agent):
         Args:
             query: The user's original voice query that is mathematical in nature.
         """
-        logger.info(f"RouterAgent: Delegating to MathSpecialistAgent for query: '{query}'")
+        logger.info(
+            f"RouterAgent: Delegating to MathSpecialistAgent for query: '{query}'"
+        )
         # Pass the delegate_to_router_agent tool to the CalculatorAgent
         math_agent = CalculatorAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return math_agent, "Okay, I'll connect you with my math specialist for that."
 
@@ -132,13 +149,18 @@ class RouterAgent(Agent):
         Args:
             query: The user's original voice query.
         """
-        logger.info(f"RouterAgent: Delegating to AskAgent (for perplexity tasks) for query: '{query}'")
+        logger.info(
+            f"RouterAgent: Delegating to AskAgent (for perplexity tasks) for query: '{query}'"
+        )
         try:
             perplexity_agent = AskAgent(
                 chat_ctx=self.session._chat_ctx,
-                tools=[delegate_to_router_agent] # Pass the tool
+                tools=[delegate_to_router_agent],  # Pass the tool
             )
-            return perplexity_agent, "Alright, let me get my knowledge expert to help with that question."
+            return (
+                perplexity_agent,
+                "Alright, let me get my knowledge expert to help with that question.",
+            )
         except AttributeError as e:
             logger.error(f"Unexpected AttributeError: {e}")
             raise
@@ -153,7 +175,7 @@ class RouterAgent(Agent):
         logger.info(f"RouterAgent: Delegating to CalendarAgent for query: '{query}'")
         calendar_agent = CalendarAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return calendar_agent, "Okay, let me check your calendar."
 
@@ -167,7 +189,7 @@ class RouterAgent(Agent):
         logger.info(f"RouterAgent: Delegating to CallerAgent for query: '{query}'")
         caller_agent = CallerAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return caller_agent, "Sure, I can try to make that call for you."
 
@@ -181,7 +203,7 @@ class RouterAgent(Agent):
         logger.info(f"RouterAgent: Delegating to ContactAgent for query: '{query}'")
         contact_agent = ContactAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return contact_agent, "Let me look up that contact information for you."
 
@@ -195,7 +217,7 @@ class RouterAgent(Agent):
         logger.info(f"RouterAgent: Delegating to GmailAgent for query: '{query}'")
         gmail_agent = GmailAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return gmail_agent, "Okay, I'll check your emails."
 
@@ -209,7 +231,7 @@ class RouterAgent(Agent):
         logger.info(f"RouterAgent: Delegating to GoAgent for query: '{query}'")
         go_agent = GoAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return go_agent, "Let me get my navigation expert for that."
 
@@ -223,9 +245,10 @@ class RouterAgent(Agent):
         logger.info(f"RouterAgent: Delegating to ListenAgent for query: '{query}'")
         listen_agent = ListenAgent(
             chat_ctx=self.session._chat_ctx,
-            tools=[delegate_to_router_agent] # Pass the tool
+            tools=[delegate_to_router_agent],  # Pass the tool
         )
         return listen_agent, "Okay, let's get some music playing."
+
 
 async def entrypoint(ctx: JobContext):
     """Main entrypoint for the multi-agent LiveKit application."""
@@ -237,21 +260,27 @@ async def entrypoint(ctx: JobContext):
         stt=openai.STT(model="gpt-4o-mini-transcribe", detect_language=True),
         tts=openai.TTS(voice="alloy", model="tts-1-hd"),
         llm=openai.LLM(model="gpt-4o"),
-        turn_detection=MultilingualModel()
+        turn_detection=MultilingualModel(),
     )
-    logger.info("AgentSession configured. MCP servers will be managed by individual specialist agents.")
+    logger.info(
+        "AgentSession configured. MCP servers will be managed by individual specialist agents."
+    )
 
     initial_agent = RouterAgent(chat_ctx=session._chat_ctx)
     await session.start(agent=initial_agent, room=ctx.room)
     logger.info("RouterAgent session started.")
 
+
 if __name__ == "__main__":
     # Setup basic logging if running directly
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    )
     try:
         cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
-    except SystemExit: # Allow sys.exit() to pass through without logging as critical
+    except SystemExit:  # Allow sys.exit() to pass through without logging as critical
         raise
     except Exception as e:
         logger.critical(f"Unhandled exception at top level: {e}", exc_info=True)
-        sys.exit(1) # Ensure exit with error code 
+        sys.exit(1)  # Ensure exit with error code

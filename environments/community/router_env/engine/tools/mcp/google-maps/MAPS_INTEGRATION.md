@@ -51,4 +51,4 @@ The integration is implemented in `agents/stone_agent.py` within the `delegate_t
 
 ## Testing
 
-Tests for the Google Maps integration are available in `tests/ai/test_maps_integration.py`. 
+Tests for the Google Maps integration are available in `tests/ai/test_maps_integration.py`.

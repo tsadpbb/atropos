@@ -143,7 +143,7 @@ async function performChatCompletion(
     model: model, // Model identifier passed as parameter
     messages: messages,
     // Additional parameters can be added here if required (e.g., max_tokens, temperature, etc.)
-    // See the Sonar API documentation for more details: 
+    // See the Sonar API documentation for more details:
     // https://docs.perplexity.ai/api-reference/chat-completions
   };
 
@@ -182,7 +182,7 @@ async function performChatCompletion(
     throw new Error(`Failed to parse JSON response from Perplexity API: ${jsonError}`);
   }
 
-  // Directly retrieve the main message content from the response 
+  // Directly retrieve the main message content from the response
   let messageContent = data.choices[0].message.content;
 
   // If citations are provided, append them to the message content

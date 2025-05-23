@@ -1,4 +1,4 @@
 datasets
 wandb
 tqdm
-python-dotenv 
+python-dotenv

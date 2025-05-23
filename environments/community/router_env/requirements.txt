@@ -19,4 +19,4 @@ jsonlines
 markdown
 tqdm
 # For local editable install of atropos, if desired in requirements:
-# atropos @ file:./atropos#egg=atropos 
+# atropos @ file:./atropos#egg=atropos

@@ -1,15 +1,24 @@
 import logging
 import os
-from dotenv import load_dotenv
 from pathlib import Path
-from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli, mcp, ChatContext
+
+from dotenv import load_dotenv
+from livekit import api, rtc
+from livekit.agents import (
+    Agent,
+    AgentSession,
+    ChatContext,
+    JobContext,
+    RunContext,
+    WorkerOptions,
+    cli,
+    get_job_context,
+    mcp,
+)
+from livekit.agents.llm import function_tool
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
-from dotenv import load_dotenv
-from livekit.agents.llm import function_tool
-from livekit import api, rtc
-from livekit.agents import get_job_context
-from livekit.agents import RunContext
+
 
 # Add this function definition anywhere
 async def hangup_call():
@@ -17,7 +26,7 @@ async def hangup_call():
     if ctx is None:
         # Not running in a job context
         return
-    
+
     await ctx.api.room.delete_room(
         api.DeleteRoomRequest(
             room=ctx.room.name,
@@ -25,12 +34,13 @@ async def hangup_call():
     )
 
 
-load_dotenv(os.path.join(os.path.dirname(__file__), '..', '..', '.env'))
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 
 
 logger = logging.getLogger("mcp-agent")
 
-load_dotenv(dotenv_path=Path(__file__).parent.parent / '.env')
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
+
 
 class MyAgent(Agent):
     def __init__(self, chat_ctx: ChatContext) -> None:
@@ -39,7 +49,7 @@ class MyAgent(Agent):
                 "You can have phone calls. The interface is voice-based: "
                 "accept spoken user queries and respond with synthesized speech."
             ),
-            chat_ctx=chat_ctx
+            chat_ctx=chat_ctx,
         )
 
     @function_tool
@@ -65,6 +75,7 @@ class MyAgent(Agent):
     async def on_enter(self):
         self.session.generate_reply()
 
+
 async def entrypoint(ctx: JobContext):
     await ctx.connect()
 
@@ -79,10 +90,11 @@ async def entrypoint(ctx: JobContext):
     await session.start(agent=MyAgent(chat_ctx=session._chat_ctx), room=ctx.room)
 
     await session.generate_reply(
-    instructions="Greet the user and offer your assistance."
-)
+        instructions="Greet the user and offer your assistance."
+    )
 
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint,
-                              agent_name="my-telephony-agent"))
+    cli.run_app(
+        WorkerOptions(entrypoint_fnc=entrypoint, agent_name="my-telephony-agent")
+    )
