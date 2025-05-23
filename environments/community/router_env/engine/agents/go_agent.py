@@ -3,13 +3,7 @@ import os
 from typing import List, Optional
 
 from dotenv import load_dotenv
-from livekit.agents import (
-    JobContext,
-    WorkerOptions,
-    cli,
-    function_tool,
-    mcp,
-)
+from livekit.agents import JobContext, WorkerOptions, cli, function_tool, mcp
 from livekit.agents.llm import ChatChunk, ChatContext
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import deepgram, openai, silero
@@ -73,16 +67,16 @@ class GoAgent(Agent):
             "RULE FOR LOCATION REQUESTS: When a user asks about finding a location, getting directions, "
             "calculating distances, or information about a place, you MUST use the appropriate Google Maps tool.\n\n"
             "Key tools available to you (provided by Google Maps MCP):\n"
-            '- maps_geocode: Convert an address to coordinates '
+            "- maps_geocode: Convert an address to coordinates "
             '(e.g., maps_geocode address="1600 Amphitheatre Parkway, Mountain View, CA")\n'
             "- maps_reverse_geocode: Convert coordinates to an address "
             "(e.g., maps_reverse_geocode latitude=37.422 longitude=-122.084)\n"
             '- maps_search_places: Search for places (e.g., maps_search_places query="restaurants in London")\n'
-            '- maps_place_details: Get details for a place_id '
+            "- maps_place_details: Get details for a place_id "
             '(e.g., maps_place_details place_id="ChIJN1t_tDeuEmsRUsoyG83frY4")\n'
-            '- maps_directions: Get directions '
+            "- maps_directions: Get directions "
             '(e.g., maps_directions origin="San Francisco" destination="Los Angeles" mode="driving")\n'
-            '- maps_distance_matrix: Calculate distances '
+            "- maps_distance_matrix: Calculate distances "
             '(e.g., maps_distance_matrix origins="New York,Washington D.C." '
             'destinations="Boston,Philadelphia" mode="...")\n\n'
             "RULE FOR TOOL RESULTS: After you receive results from a tool, you MUST analyze the data and "

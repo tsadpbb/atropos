@@ -12,7 +12,6 @@ from livekit.agents import (
     JobContext,
     WorkerOptions,
     cli,
-    mcp,
 )
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -43,7 +42,8 @@ async def entrypoint(ctx: JobContext):
     await ctx.connect()
 
     # If a phone number was provided, then place an outbound call
-    # By having a condition like this, you can use the same agent for inbound/outbound telephony as well as web/mobile/etc.
+    # By having a condition like this, you can use the same agent for inbound/outbound telephony
+    # as well as web/mobile/etc.
     dial_info = json.loads(ctx.job.metadata)
     phone_number = dial_info["phone_number"]
 

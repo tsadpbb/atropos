@@ -33,6 +33,7 @@ if _stone_ui_dir not in sys.path:
 
 # --- Spotify Tool Input Models (Based on spotify-mcp-server README) ---
 
+
 class PlayMusicInput(BaseModel):
     uri: Optional[str] = Field(
         None,
@@ -136,8 +137,10 @@ class ListenAgent(Agent):
                 "control playback (pause, skip, etc.), manage playlists, or ask what's playing, "
                 "you MUST use the appropriate Spotify tool (like 'playMusic'). "
                 + "Be precise with parameters like 'uri' or 'type' and 'id'. "
-                "Infer parameters from the user query. If essential info is missing (like what to play), ask the user.\n\n"
-                + "RULE FOR TOOL RESULTS: After a tool is successfully executed, you MUST confirm the action to the user "
+                "Infer parameters from the user query. If essential info is missing "
+                "(like what to play), ask the user.\n\n"
+                + "RULE FOR TOOL RESULTS: After a tool is successfully executed, you MUST confirm "
+                "the action to the user "
                 "(e.g., 'Okay, playing 'Bohemian Rhapsody' now.'). "
                 + "If a tool fails or returns an error, inform the user clearly. "
                 + "If your task is complete or the user asks for something outside your Spotify capabilities "

@@ -3,21 +3,6 @@ import os
 import sys  # Import sys for sys.exit
 from pathlib import Path
 
-from dotenv import load_dotenv
-from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli, mcp
-from livekit.plugins import deepgram, openai, silero
-from livekit.plugins.turn_detector.multilingual import MultilingualModel
-
-load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
-
-logger = logging.getLogger("stone-agent")
-
-
-from typing import (  # Ensure List and Optional are imported for tool type hints
-    List,
-    Optional,
-)
-
 # Import the original FunctionAgents from the official agent files
 # These files should be in the same directory as router_agent.py
 from ask_agent import AskAgent
@@ -25,6 +10,7 @@ from calc_agent import CalculatorAgent
 from calendar_agent import CalendarAgent
 from caller_agent import CallerAgent
 from contact_agent import ContactAgent
+from dotenv import load_dotenv
 from gmail_agent import GmailAgent
 from go_agent import GoAgent
 from listen_agent import ListenAgent
@@ -37,17 +23,15 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     function_tool,
-    mcp,
 )
-from livekit.agents.llm import LLM, ChatMessage, ChatRole
-from livekit.agents.voice.agent import ModelSettings  # Import ModelSettings
-from livekit.plugins import anthropic, deepgram, openai, silero
+from livekit.plugins import openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 # from mem_agent import MemoryAgent
 
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
+
 logger = logging.getLogger("router-agent")
-load_dotenv()
 
 # Determine the absolute path for server scripts relative to this file
 _current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -97,24 +81,26 @@ class RouterAgent(Agent):
                 and delegate it to the most appropriate specialist agent.
                 - If the query is primarily about mathematics, calculations, arithmetic, or numbers,
                   you MUST use the 'delegate_to_math_agent' tool.
-                - For general knowledge questions, facts, explanations, requests to 'search the web', 'make a web search',
-                  or any other type of query not strictly mathematical, not about specific addresses/locations, and not covered by other specialists,
+                - For general knowledge questions, facts, explanations, requests to 'search the web',
+                'make a web search', or any other type of query not strictly mathematical, not about
+                specific addresses/locations, and not covered by other specialists,
                   you MUST use the 'delegate_to_perplexity_agent' tool.
-                - If the query involves calendar events, scheduling, creating appointments, or asking about your schedule,
-                  you MUST use the 'delegate_to_calendar_agent' tool.
+                - If the query involves calendar events, scheduling, creating appointments, or asking
+                about your schedule, you MUST use the 'delegate_to_calendar_agent' tool.
                 - If the user explicitly asks to make a phone call,
                   you MUST use the 'delegate_to_caller_agent' tool.
-                - If the query is about finding contact information (like phone numbers or email addresses of people),
-                  you MUST use the 'delegate_to_contact_agent' tool.
+                - If the query is about finding contact information (like phone numbers or email
+                addresses of people), you MUST use the 'delegate_to_contact_agent' tool.
                 - For tasks related to managing emails (reading, sending, searching Gmail),
                   you MUST use the 'delegate_to_gmail_agent' tool.
-                - If the query is about locations, finding places, getting directions, looking up addresses, or anything map-related,
-                  you MUST use the 'delegate_to_go_agent' tool.
+                - If the query is about locations, finding places, getting directions, looking up
+                addresses, or anything map-related, you MUST use the 'delegate_to_go_agent' tool.
                 - If the user wants to play music, control music playback, or anything related to Spotify,
                   you MUST use the 'delegate_to_listen_agent' tool.
                 Listen carefully to the user's query and make a clear decision.
                 Do not attempt to answer the question yourself. Your sole job is to route.
-                If uncertain, you can ask one clarifying question to determine the correct agent, but prefer to route directly if possible.
+                If uncertain, you can ask one clarifying question to determine the correct agent,
+                but prefer to route directly if possible.
             """,
             allow_interruptions=True,
             chat_ctx=chat_ctx,

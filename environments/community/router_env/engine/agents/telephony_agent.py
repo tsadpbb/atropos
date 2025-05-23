@@ -3,7 +3,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from livekit import api, rtc
+from livekit import api
 from livekit.agents import (
     Agent,
     AgentSession,
@@ -13,7 +13,6 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     get_job_context,
-    mcp,
 )
 from livekit.agents.llm import function_tool
 from livekit.plugins import deepgram, openai, silero
