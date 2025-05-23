@@ -1169,8 +1169,13 @@ class BaseEnv(ABC):
                 rprint(env_config)
                 rprint(openai_configs)
 
-                # Run the environment
-                asyncio.run(env.env_manager())
+                # Handle the case where we might already be in an event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    task = loop.create_task(env.env_manager())
+                    loop.run_until_complete(task)
+                except RuntimeError:
+                    asyncio.run(env.env_manager())
 
         return CliServeConfig
 
@@ -1377,8 +1382,12 @@ class BaseEnv(ABC):
                     f"{env_config.group_size} responses and "
                     f"writing to {env_config.data_path_to_save_groups}"
                 )
-
-                # Run the environment's asynchronous process manager function
-                asyncio.run(env.process_manager())
+                # Handle the case where we might already be in an event loop
+                try:
+                    loop = asyncio.get_running_loop()
+                    task = loop.create_task(env.process_manager())
+                    loop.run_until_complete(task)
+                except RuntimeError:
+                    asyncio.run(env.process_manager())
 
         return CliProcessConfig
