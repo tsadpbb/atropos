@@ -1,5 +1,4 @@
 import asyncio
-import copy
 import random
 import re  # Added import for regular expressions
 from typing import Dict, List, Optional, Tuple
@@ -25,14 +24,14 @@ judge_system_prompt = (
     "You should enclose your thoughts and internal monologue inside <think> </think> "
     "tags, and then provide your solution or response to the problem.\n\n"
 )
-judge_system_prompt += """You are allocated a maximum of 4096 tokens for your thoughts and response, please strive to use less for thinking.
-
-You will then provide your preferred response like this: \boxed{A or B}.
-
-It is important that you provide your answer in the correct format.
-If you do not, you will not receive credit for your answer.
-
-So please end your answer with \boxed{A or B}"""
+judge_system_prompt += (
+    "You are allocated a maximum of 4096 tokens for your thoughts and response, "
+    "please strive to use less for thinking.\n\n"
+    "You will then provide your preferred response like this: \\boxed{A or B}.\n\n"
+    "It is important that you provide your answer in the correct format.\n"
+    "If you do not, you will not receive credit for your answer.\n\n"
+    "So please end your answer with \\boxed{A or B}"
+)
 
 # New preference string for philosophical depth
 philosophical_preference_string = (
@@ -44,24 +43,19 @@ philosophical_preference_string = (
     "ideas are also important."
 )
 
-RLAIF_user_prompt_format_str = """[Conversation]
-{conversation}
-
-[Response A]
-{response_a}
-
-[Response B]
-{response_b}
-
-[END]
-
-Here's a conversation that has two responses. Please pick the one that is more aligned with the following desired qualities for a response:
-{rl_preference_string}
-
-The goal is to select the response that, if used for training an AI, would better steer it towards generating text with these qualities, even if neither response is a perfect example.
-Please do your best to evaluate which response better embodies or tends towards the described philosophical depth and nuance.
-
-Go ahead and think through it, then give me your answer with \boxed{{A or B}}."""
+RLAIF_user_prompt_format_str = (
+    "[Conversation]\n{conversation}\n\n"
+    "[Response A]\n{response_a}\n\n"
+    "[Response B]\n{response_b}\n\n"
+    "[END]\n\n"
+    "Here's a conversation that has two responses. Please pick the one that is more aligned "
+    "with the following desired qualities for a response:\n{rl_preference_string}\n\n"
+    "The goal is to select the response that, if used for training an AI, would better steer "
+    "it towards generating text with these qualities, even if neither response is a perfect example.\n"
+    "Please do your best to evaluate which response better embodies or tends towards the "
+    "described philosophical depth and nuance.\n\n"
+    "Go ahead and think through it, then give me your answer with \\boxed{{A or B}}."
+)
 
 
 class PhilosophicalRLAIFConfig(
@@ -147,7 +141,7 @@ class PhilosophicalRLAIFEnv(BaseEnv):
                 table.add_data(item[0], item[1], item[2])
             self.judgement_strings_buffer.clear()
             wandb_metrics["train/judgement_table"] = table
-            print(f"Logged judgement table to W&B.")
+            print("Logged judgement table to W&B.")
 
         if self.preference_scores_buffer:
             avg_pref_score = sum(self.preference_scores_buffer) / len(
@@ -155,7 +149,8 @@ class PhilosophicalRLAIFEnv(BaseEnv):
             )
             wandb_metrics["train/avg_normalized_preference_score"] = avg_pref_score
             print(
-                f"Average normalized preference score for batch: {avg_pref_score:.3f} (over {len(self.preference_scores_buffer)} scores)"
+                f"Average normalized preference score for batch: {avg_pref_score:.3f} "
+                f"(over {len(self.preference_scores_buffer)} scores)"
             )
             self.preference_scores_buffer.clear()
 
@@ -175,7 +170,8 @@ class PhilosophicalRLAIFEnv(BaseEnv):
             )  # Smaller subset
             self.iter = 0
             print(
-                f"PhilosophicalRLAIFEnv initialized with {len(self.train_dataset)} training examples from WildChat."
+                f"PhilosophicalRLAIFEnv initialized with {len(self.train_dataset)} "
+                "training examples from WildChat."
             )
         except Exception as e:
             print(f"Error loading dataset: {e}")
@@ -317,12 +313,15 @@ class PhilosophicalRLAIFEnv(BaseEnv):
         prompt_tokens = self.tokenizer.apply_chat_template(
             chat_for_generation, tokenize=True, add_generation_prompt=False
         )
-        # Max length for prompt should ensure (prompt + generated_response) fits self.config.max_token_length for tokenize_for_trainer.
+        # Max length for prompt should ensure (prompt + generated_response) fits
+        # self.config.max_token_length for tokenize_for_trainer.
         if len(prompt_tokens) > (
             self.config.max_token_length - self.config.generator_max_tokens
         ):
             print(
-                f"Skipping trajectory collection: prompt too long ({len(prompt_tokens)} tokens) for max_token_length budget ({self.config.max_token_length} - {self.config.generator_max_tokens})."
+                f"Skipping trajectory collection: prompt too long ({len(prompt_tokens)} tokens) "
+                f"for max_token_length budget ({self.config.max_token_length} - "
+                f"{self.config.generator_max_tokens})."
             )
             return None, []
 
@@ -336,7 +335,9 @@ class PhilosophicalRLAIFEnv(BaseEnv):
             effective_generator_context_window - self.config.generator_max_tokens
         ):
             print(
-                f"Skipping trajectory collection: prompt too long ({len(prompt_tokens)} tokens) for generator's own context window budget ({effective_generator_context_window} - {self.config.generator_max_tokens})."
+                f"Skipping trajectory collection: prompt too long ({len(prompt_tokens)} tokens) "
+                f"for generator's own context window budget ({effective_generator_context_window} - "
+                f"{self.config.generator_max_tokens})."
             )
             return None, []
 
@@ -474,7 +475,8 @@ class PhilosophicalRLAIFEnv(BaseEnv):
             print("Both responses A and B hit length limit.")
         elif finish_A == "length" or finish_B == "length":
             print(
-                f"One response hit length limit: A_len_limit={finish_A == 'length'}, B_len_limit={finish_B == 'length'}"
+                f"One response hit length limit: A_len_limit={finish_A == 'length'}, "
+                f"B_len_limit={finish_B == 'length'}"
             )
         # We could assign a strong negative score to the length-limited one here,
         # or let the judge decide. For now, let judge decide.
@@ -670,7 +672,8 @@ class PhilosophicalRLAIFEnv(BaseEnv):
             and scores_container["scores"][0] == scores_container["scores"][1]
         ):
             print(
-                f"Scores are the same ({scores_container['scores'][0]}) but ensure_scores_are_not_same is True. Skipping pair."
+                f"Scores are the same ({scores_container['scores'][0]}) but "
+                "ensure_scores_are_not_same is True. Skipping pair."
             )
             # This can happen if judge gives no preference or if logic results in tie.
             # For RLAIF leading to PPO, it's okay. For DPO, distinct preferred/rejected is needed.

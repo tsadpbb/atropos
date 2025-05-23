@@ -1,20 +1,15 @@
-import argparse
 import asyncio
-import json
 import os
 import random
 import re
 import tempfile
 import uuid
 from concurrent.futures import ProcessPoolExecutor
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 # import wandb # Conditionally import later
 # from datasets import load_dataset # Conditionally import later
 from pydantic import Field
-
-# Make sure to install tqdm if it's used: pip install tqdm
-from tqdm.asyncio import tqdm_asyncio
 
 from atroposlib.envs.base import (
     APIServerConfig as AtroposAPIServerConfig,  # Renamed to avoid conflict if needed later
@@ -22,10 +17,6 @@ from atroposlib.envs.base import (
 from atroposlib.envs.base import BaseEnv as AtroposBaseEnv
 from atroposlib.envs.base import BaseEnvConfig as AtroposBaseEnvConfig
 from atroposlib.envs.base import EvalHandlingEnum, ScoredDataGroup
-from atroposlib.envs.server_handling.server_manager import (  # Assuming this is how servers are managed
-    ServerManager,
-)
-from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 # Global variable to hold wandb if imported
 wandb = None
@@ -114,10 +105,11 @@ async def verify_lean_proof(
                 else "Lean verification failed with non-zero exit code and no error message."
             )
     except FileNotFoundError:
-        return (
-            False,
-            f"Lean executable not found at {lean_executable_path}. Please ensure Lean is installed and in PATH, or configure lean_executable_path.",
+        error_msg = (
+            f"Lean executable not found at {lean_executable_path}. "
+            "Please ensure Lean is installed and in PATH, or configure lean_executable_path."
         )
+        return False, error_msg
     except asyncio.TimeoutError:
         if process and process.returncode is None:  # Check if process is still running
             try:
@@ -184,7 +176,8 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
             self.mp_executor = ProcessPoolExecutor(config.num_cpus_maxtasksperchild)
         except (AttributeError, TypeError):
             print(
-                "Warning: could not create ProcessPoolExecutor with config.num_cpus_maxtasksperchild. Using default."
+                "Warning: could not create ProcessPoolExecutor with "
+                "config.num_cpus_maxtasksperchild. Using default."
             )
             self.mp_executor = ProcessPoolExecutor(
                 max_workers=(
@@ -253,7 +246,7 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
             ),
         ]
         print(
-            f"INFO: LeanProofEnv will use OpenAI model (default/from CLI) with API key from env/dotenv."
+            "INFO: LeanProofEnv will use OpenAI model (default/from CLI) with API key from env/dotenv."
         )
         return env_config, server_configs
 
@@ -312,16 +305,27 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
                 },
                 {
                     "name": "and_intro_example",
-                    "formal_statement": "theorem and_intro_example (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q :=\n  And.intro hp hq",
+                    "formal_statement": (
+                        "theorem and_intro_example (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q :=\n  And.intro hp hq"
+                    ),
                     "theorem_header": "theorem and_intro_example (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q :=",
                     "proof_prefix": "theorem and_intro_example (P Q : Prop) (hp : P) (hq : Q) : P ∧ Q :=\n",
                     "statement_to_prove": "(P Q : Prop) (hp : P) (hq : Q) : P ∧ Q",
                 },
                 {
                     "name": "list_nil_is_empty_example",
-                    "formal_statement": "theorem list_nil_is_empty_example {α : Type} : List.isEmpty ([] : List α) :=\n  rfl",
-                    "theorem_header": "theorem list_nil_is_empty_example {α : Type} : List.isEmpty ([] : List α) :=",
-                    "proof_prefix": "theorem list_nil_is_empty_example {α : Type} : List.isEmpty ([] : List α) :=\n",
+                    "formal_statement": (
+                        "theorem list_nil_is_empty_example {α : Type} : "
+                        "List.isEmpty ([] : List α) :=\n  rfl"
+                    ),
+                    "theorem_header": (
+                        "theorem list_nil_is_empty_example {α : Type} : "
+                        "List.isEmpty ([] : List α) :="
+                    ),
+                    "proof_prefix": (
+                        "theorem list_nil_is_empty_example {α : Type} : "
+                        "List.isEmpty ([] : List α) :=\n"
+                    ),
                     "statement_to_prove": "{α : Type} : List.isEmpty ([] : List α)",
                 },
             ]
@@ -335,7 +339,8 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
                 print("Successfully imported load_dataset from datasets library.")
             except ImportError:
                 print(
-                    "Error: The 'datasets' library is not installed. Please install it with 'pip install datasets' to use the MiniF2F benchmark."
+                    "Error: The 'datasets' library is not installed. "
+                    "Please install it with 'pip install datasets' to use the MiniF2F benchmark."
                 )
                 self.problems = [
                     {
@@ -352,7 +357,8 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
                 return
         if self.config.lean_problem_dataset_name:
             print(
-                f"Attempting to load dataset: {self.config.lean_problem_dataset_name} split: {self.config.lean_problem_dataset_split}"
+                f"Attempting to load dataset: {self.config.lean_problem_dataset_name} "
+                f"split: {self.config.lean_problem_dataset_split}"
             )
             try:
                 dataset = load_dataset(
@@ -387,7 +393,8 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
                         )
                     else:
                         print(
-                            f"Warning: Could not find ':=' in formal_statement for {problem_name}. Using full statement as header."
+                            f"Warning: Could not find ':=' in formal_statement for {problem_name}. "
+                            "Using full statement as header."
                         )
                         theorem_header = formal_statement.strip()
                         proof_prefix = theorem_header + "\n"
@@ -403,11 +410,13 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
                     )
                 self.problems = processed_problems
                 print(
-                    f"Loaded and processed {len(self.problems)} problems from {self.config.lean_problem_dataset_name}."
+                    f"Loaded and processed {len(self.problems)} problems from "
+                    f"{self.config.lean_problem_dataset_name}."
                 )
             except Exception as e:
                 print(
-                    f"Failed to load or process dataset {self.config.lean_problem_dataset_name}: {e}. Using hardcoded examples."
+                    f"Failed to load or process dataset {self.config.lean_problem_dataset_name}: {e}. "
+                    "Using hardcoded examples."
                 )
                 self.problems = []
         if not self.problems:
@@ -428,13 +437,15 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
                 },
             ]
             print(
-                f"Using {len(self.problems)} hardcoded problems due to failure in dataset loading or processing."
+                f"Using {len(self.problems)} hardcoded problems due to failure in "
+                "dataset loading or processing."
             )
 
     async def get_next_item(self) -> Dict[str, Any]:
         if not self.problems:
             print(
-                "Error: No problems loaded. Cannot get next item. Ensure dataset is configured and loaded correctly."
+                "Error: No problems loaded. Cannot get next item. "
+                "Ensure dataset is configured and loaded correctly."
             )
             return {
                 "history": [
@@ -457,7 +468,11 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
         history = [
             {
                 "role": "system",
-                "content": "You are an expert Lean theorem prover. Complete the given Lean proof. Only output the proof steps after the `:=` a single newline. Do not repeat the theorem statement.",
+                "content": (
+                    "You are an expert Lean theorem prover. Complete the given Lean proof. "
+                    "Only output the proof steps after the `:=` a single newline. "
+                    "Do not repeat the theorem statement."
+                ),
             },
             {"role": "user", "content": problem["proof_prefix"]},
         ]
@@ -618,7 +633,9 @@ class LeanProofEnv(AtroposBaseEnv):  # Inherit from actual Atropos BaseEnv
         else:
             for detail in step_details:
                 print(
-                    f"Problem: {detail['problem_name']}, Valid: {detail['is_valid']}, Score: {detail['score']}, Proof: {repr(detail['cleaned_proof'])}, Error: {detail['error_message']}"
+                    f"Problem: {detail['problem_name']}, Valid: {detail['is_valid']}, "
+                    f"Score: {detail['score']}, Proof: {repr(detail['cleaned_proof'])}, "
+                    f"Error: {detail['error_message']}"
                 )
         return scored_data, step_details
 
