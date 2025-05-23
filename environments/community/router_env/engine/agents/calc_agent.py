@@ -2,13 +2,11 @@ import logging  # Added logging
 import os
 from typing import List, Optional  # Add Optional & List import
 
-from dotenv import load_dotenv
 from livekit.agents import mcp  # Corrected import for mcp
 from livekit.agents import tts  # Corrected import for tts module
-from livekit.agents import (  # Changed import; Add ChatContext & RunContext import
+from livekit.agents import (  # Changed import; Add ChatContext import
     ChatContext,
     JobContext,
-    RunContext,
     WorkerOptions,
     cli,
 )
@@ -17,7 +15,6 @@ from livekit.agents.llm import (  # Added function_tool for delegate_to_router_a
     function_tool,
 )
 from livekit.agents.types import NOT_GIVEN  # Corrected import for NOT_GIVEN
-from livekit.agents.utils.misc import is_given  # Corrected import for is_given
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import deepgram, openai, silero
 

@@ -1,12 +1,7 @@
-import asyncio
 import logging
-import os
 from pathlib import Path
-from typing import Annotated, Any, Dict, List
 
-import aiohttp
 from dotenv import load_dotenv
-from livekit import api, rtc
 from livekit.agents import (
     Agent,
     AgentSession,
@@ -91,7 +86,10 @@ async def _enrich_with_memory(
                 logger.info(f"Enriching with memory: {memories_text}")
 
                 # Create the RAG message. Ensure content is a list of ChatContent (string is fine).
-                rag_msg_content = f"Relevant Memory from past interactions: {memories_text}\\nUser's current query is below."
+                rag_msg_content = (
+                    f"Relevant Memory from past interactions: {memories_text}\\n"
+                    "User's current query is below."
+                )
                 rag_msg = llm.ChatMessage(role="system", content=[rag_msg_content])
 
                 # Insert RAG message before the last user message in the context's items list
@@ -107,7 +105,8 @@ async def _enrich_with_memory(
 
                 if not inserted:
                     logger.warning(
-                        "Could not find last user message by identity in .items list. Appending RAG message."
+                        "Could not find last user message by identity in .items list. "
+                        "Appending RAG message."
                     )
                     if target_items_list and target_items_list[-1] is last_user_msg:
                         target_items_list.insert(len(target_items_list) - 1, rag_msg)
@@ -205,7 +204,8 @@ async def entrypoint(ctx: JobContext):
         system_prompt_text = """
             You are a helpful voice assistant.
             You are a travel guide named George and will help the user to plan a travel trip of their dreams.
-            You should help the user plan for various adventures like work retreats, family vacations or solo backpacking trips.
+            You should help the user plan for various adventures like work retreats, family vacations or
+            solo backpacking trips.
             You should be careful to not suggest anything that would be dangerous, illegal or inappropriate.
             You can remember past interactions and use them to inform your answers.
             Use semantic memory retrieval to provide contextually relevant responses.

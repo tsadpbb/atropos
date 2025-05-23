@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ from livekit.agents import (
     AgentSession,
     ChatContext,
     JobContext,
-    RunContext,
     WorkerOptions,
     cli,
     function_tool,
@@ -30,10 +28,13 @@ class ContactAgent(Agent):
     ) -> None:
 
         final_instructions = (
-            "You are a Contact specialist. You can help find contact information such as phone numbers, email addresses, or other details for individuals. "
-            + "You can also add new contacts or update existing ones if tools like 'get_contact_details', 'add_contact', 'update_contact' are available. "
-            + "If your task is complete or the user asks for something outside your contact management capabilities (e.g., math, web search), "
-            + "you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
+            "You are a Contact specialist. You can help find contact information such as phone "
+            "numbers, email addresses, or other details for individuals. "
+            + "You can also add new contacts or update existing ones if tools like "
+            "'get_contact_details', 'add_contact', 'update_contact' are available. "
+            + "If your task is complete or the user asks for something outside your contact "
+            "management capabilities (e.g., math, web search), you MUST use the "
+            "'delegate_to_router_agent' tool to return to the main assistant."
         )
 
         all_tools = tools if tools is not None else []

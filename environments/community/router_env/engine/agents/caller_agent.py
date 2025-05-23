@@ -1,10 +1,10 @@
 import logging
 import os
 import random
-from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
+from livekit import api
 from livekit.agents import (
     Agent,
     AgentSession,
@@ -14,14 +14,11 @@ from livekit.agents import (
     WorkerOptions,
     cli,
     function_tool,
-    mcp,
 )
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
-
-from livekit import api
 
 logger = logging.getLogger("caller-agent")
 
@@ -34,9 +31,11 @@ class CallerAgent(Agent):
         final_instructions = (
             "You are a Caller specialist. Your primary function is to initiate phone calls. "
             + "If the user asks to call someone, use the 'make_phone_call' tool. "
-            + "Currently, you can only call a predefined contact (Sam at +16467085301). Confirm with the user if they want to call this specific contact. "
-            + "If your task is complete or the user asks for something outside your calling capabilities (e.g., math, web search), "
-            + "you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
+            + "Currently, you can only call a predefined contact (Sam at +16467085301). "
+            + "Confirm with the user if they want to call this specific contact. "
+            + "If your task is complete or the user asks for something outside your calling "
+            + "capabilities (e.g., math, web search), you MUST use the 'delegate_to_router_agent' "
+            + "tool to return to the main assistant."
         )
 
         agent_tools = [self.make_phone_call]

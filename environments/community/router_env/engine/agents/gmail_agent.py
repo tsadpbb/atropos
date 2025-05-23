@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ from livekit.agents import (
     AgentSession,
     ChatContext,
     JobContext,
-    RunContext,
     WorkerOptions,
     cli,
     function_tool,
@@ -30,10 +28,12 @@ class GmailAgent(Agent):
     ) -> None:
 
         final_instructions = (
-            "You are a Gmail specialist. You can manage emails by reading, searching, sending, and updating them (e.g., marking as read/unread, moving to folders). "
+            "You are a Gmail specialist. You can manage emails by reading, searching, sending, and "
+            "updating them (e.g., marking as read/unread, moving to folders). "
             + "Use tools like 'read_emails', 'send_email', and 'update_email' to interact with Gmail. "
             + "If sending an email, you might need a recipient; you know Gabin (gabin.fay@gmail.com). "
-            + "If your task is complete or the user asks for something outside your email management capabilities (e.g., math, calendar), "
+            + "If your task is complete or the user asks for something outside your email management "
+            "capabilities (e.g., math, calendar), "
             + "you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
         )
 

@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os
 from typing import List, Optional
@@ -6,13 +5,12 @@ from typing import List, Optional
 from dotenv import load_dotenv
 from livekit.agents import (
     JobContext,
-    RunContext,
     WorkerOptions,
     cli,
     function_tool,
     mcp,
 )
-from livekit.agents.llm import ChatChunk, ChatContext, ChatMessage
+from livekit.agents.llm import ChatChunk, ChatContext
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -70,22 +68,30 @@ class GoAgent(Agent):
 
         final_instructions = (
             "You are the Go Agent, specialized in providing location-based information using Google Maps. "
-            "You MUST use the available tools to fulfill user queries about locations, directions, distances, and places.\n\n"
-            "RULE FOR LOCATION REQUESTS: When a user asks about finding a location, getting directions, calculating distances, "
-            "or information about a place, you MUST use the appropriate Google Maps tool.\n\n"
+            "You MUST use the available tools to fulfill user queries about locations, directions, "
+            "distances, and places.\n\n"
+            "RULE FOR LOCATION REQUESTS: When a user asks about finding a location, getting directions, "
+            "calculating distances, or information about a place, you MUST use the appropriate Google Maps tool.\n\n"
             "Key tools available to you (provided by Google Maps MCP):\n"
-            '- maps_geocode: Convert an address to coordinates (e.g., maps_geocode address="1600 Amphitheatre Parkway, Mountain View, CA")\n'
-            "- maps_reverse_geocode: Convert coordinates to an address (e.g., maps_reverse_geocode latitude=37.422 longitude=-122.084)\n"
+            '- maps_geocode: Convert an address to coordinates '
+            '(e.g., maps_geocode address="1600 Amphitheatre Parkway, Mountain View, CA")\n'
+            "- maps_reverse_geocode: Convert coordinates to an address "
+            "(e.g., maps_reverse_geocode latitude=37.422 longitude=-122.084)\n"
             '- maps_search_places: Search for places (e.g., maps_search_places query="restaurants in London")\n'
-            '- maps_place_details: Get details for a place_id (e.g., maps_place_details place_id="ChIJN1t_tDeuEmsRUsoyG83frY4")\n'
-            '- maps_directions: Get directions (e.g., maps_directions origin="San Francisco" destination="Los Angeles" mode="driving")\n'
-            '- maps_distance_matrix: Calculate distances (e.g., maps_distance_matrix origins="New York,Washington D.C." destinations="Boston,Philadelphia" mode="...")\n\n'
-            "RULE FOR TOOL RESULTS: After you receive results from a tool, you MUST analyze the data and provide a clear, "
-            "helpful response. Format addresses and directions in a readable way, extract key information from place details, "
-            "and always provide context for coordinates and distances.\n\n"
-            "If a tool call fails or returns no relevant information, explain clearly to the user and suggest alternatives. "
-            "If your task is complete or the user asks for something outside your location/maps capabilities (e.g., math, calendar), "
-            "you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
+            '- maps_place_details: Get details for a place_id '
+            '(e.g., maps_place_details place_id="ChIJN1t_tDeuEmsRUsoyG83frY4")\n'
+            '- maps_directions: Get directions '
+            '(e.g., maps_directions origin="San Francisco" destination="Los Angeles" mode="driving")\n'
+            '- maps_distance_matrix: Calculate distances '
+            '(e.g., maps_distance_matrix origins="New York,Washington D.C." '
+            'destinations="Boston,Philadelphia" mode="...")\n\n'
+            "RULE FOR TOOL RESULTS: After you receive results from a tool, you MUST analyze the data and "
+            "provide a clear, helpful response. Format addresses and directions in a readable way, "
+            "extract key information from place details, and always provide context for coordinates and distances.\n\n"
+            "If a tool call fails or returns no relevant information, explain clearly to the user and "
+            "suggest alternatives. "
+            "If your task is complete or the user asks for something outside your location/maps capabilities "
+            "(e.g., math, calendar), you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
         )
 
         all_tools = tools if tools is not None else []
@@ -113,7 +119,8 @@ class GoAgent(Agent):
         )
         if not self.llm:
             logger.error(
-                "GoAgentLivekit initialized, but LLM might be missing if API key was not provided to plugin."
+                "GoAgentLivekit initialized, but LLM might be missing if API key was not "
+                "provided to plugin."
             )
 
     async def llm_node(self, chat_ctx: ChatContext, tools: list, model_settings: dict):

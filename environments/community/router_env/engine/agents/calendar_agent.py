@@ -1,6 +1,5 @@
 import logging
 import os
-from pathlib import Path
 from typing import List, Optional
 
 from dotenv import load_dotenv
@@ -9,7 +8,6 @@ from livekit.agents import (
     AgentSession,
     ChatContext,
     JobContext,
-    RunContext,
     WorkerOptions,
     cli,
     function_tool,
@@ -30,10 +28,12 @@ class CalendarAgent(Agent):
     ) -> None:
 
         final_instructions = (
-            "You are a Calendar specialist. You can help with scheduling, creating, modifying, or querying calendar events, appointments, and meetings. "
+            "You are a Calendar specialist. You can help with scheduling, creating, modifying, or "
+            "querying calendar events, appointments, and meetings. "
             "Use tools like 'create_calendar_event', 'get_calendar_events', etc., when available. "
-            "If your task is complete or the user asks for something outside your calendar capabilities (e.g., math, web search), "
-            "you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
+            "If your task is complete or the user asks for something outside your calendar capabilities "
+            "(e.g., math, web search), you MUST use the 'delegate_to_router_agent' tool to return to "
+            "the main assistant."
         )
 
         all_tools = tools if tools is not None else []

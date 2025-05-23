@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 from livekit.agents import (
     ChatContext,
     JobContext,
-    RunContext,
     WorkerOptions,
     cli,
     function_tool,
@@ -16,7 +15,6 @@ from livekit.agents import (
 )
 from livekit.agents.llm import ChatChunk
 from livekit.agents.types import NOT_GIVEN
-from livekit.agents.utils.misc import is_given
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import deepgram, openai, silero
 from livekit.plugins.turn_detector.multilingual import MultilingualModel
@@ -33,10 +31,8 @@ if _stone_ui_dir not in sys.path:
 
 # Removed ANTHROPIC_API_KEY check as it seems unrelated to this OpenAI-based agent.
 
-from engine.config import settings
-
-
 # --- Spotify Tool Input Models (Based on spotify-mcp-server README) ---
+
 class PlayMusicInput(BaseModel):
     uri: Optional[str] = Field(
         None,
@@ -76,12 +72,14 @@ spotify_config_path = os.path.abspath(
 
 if not os.path.exists(mcp_script_path):
     logger.error(
-        f"❌ Spotify MCP script not found at {mcp_script_path}. Make sure you've run 'npm install && npm run build' in the server directory."
+        f"❌ Spotify MCP script not found at {mcp_script_path}. Make sure you've run "
+        "'npm install && npm run build' in the server directory."
     )
     logger.warning("⚠️ Spotify tools will be unavailable.")
 elif not os.path.exists(spotify_config_path):
     logger.error(
-        f"❌ Spotify config file not found at {spotify_config_path}. Make sure you've run 'npm run auth' after setting credentials."
+        f"❌ Spotify config file not found at {spotify_config_path}. Make sure you've run "
+        "'npm run auth' after setting credentials."
     )
     logger.warning("⚠️ Spotify tools will likely be unavailable due to missing auth.")
 else:
@@ -95,7 +93,8 @@ else:
                 or "run-npm auth" in config_content
             ):
                 logger.warning(
-                    f"⚠️ Spotify config file at {spotify_config_path} seems incomplete or unauthenticated. Run 'npm run auth'."
+                    f"⚠️ Spotify config file at {spotify_config_path} seems incomplete or "
+                    "unauthenticated. Run 'npm run auth'."
                 )
                 # We still configure the server, but it might fail at runtime
             else:
@@ -131,14 +130,19 @@ class ListenAgent(Agent):
             else (
                 "You are the Listen Agent, specialized in controlling Spotify music playback. "
                 + "You MUST use the available tools to fulfill user requests related to Spotify. "
-                + "Available tools include 'playMusic', and potentially others like 'searchSpotify', 'pausePlayback', etc.\n\n"
-                + "RULE FOR MUSIC REQUESTS: When a user asks to play music, search for music, control playback (pause, skip, etc.), "
-                + "manage playlists, or ask what's playing, you MUST use the appropriate Spotify tool (like 'playMusic'). "
-                + "Be precise with parameters like 'uri' or 'type' and 'id'. Infer parameters from the user query. If essential info is missing (like what to play), ask the user.\n\n"
-                + "RULE FOR TOOL RESULTS: After a tool is successfully executed, you MUST confirm the action to the user (e.g., 'Okay, playing 'Bohemian Rhapsody' now.'). "
+                + "Available tools include 'playMusic', and potentially others like 'searchSpotify', "
+                "'pausePlayback', etc.\n\n"
+                + "RULE FOR MUSIC REQUESTS: When a user asks to play music, search for music, "
+                "control playback (pause, skip, etc.), manage playlists, or ask what's playing, "
+                "you MUST use the appropriate Spotify tool (like 'playMusic'). "
+                + "Be precise with parameters like 'uri' or 'type' and 'id'. "
+                "Infer parameters from the user query. If essential info is missing (like what to play), ask the user.\n\n"
+                + "RULE FOR TOOL RESULTS: After a tool is successfully executed, you MUST confirm the action to the user "
+                "(e.g., 'Okay, playing 'Bohemian Rhapsody' now.'). "
                 + "If a tool fails or returns an error, inform the user clearly. "
-                + "If your task is complete or the user asks for something outside your Spotify capabilities (e.g., math, calendar), "
-                + "you MUST use the 'delegate_to_router_agent' tool to return to the main assistant."
+                + "If your task is complete or the user asks for something outside your Spotify capabilities "
+                "(e.g., math, calendar), you MUST use the 'delegate_to_router_agent' tool to return to the "
+                "main assistant."
             )
         )
 
