@@ -118,7 +118,7 @@ def adjust_model_defaults(
                 and field_info.description is not None
             ):
                 field_kwargs["description"] = field_info.description
-            
+
             # If the original field had a default_factory and we're not explicitly overriding with a value,
             # preserve the default_factory
             if field_info.default_factory is not None and defaults_dict[name] is None:
