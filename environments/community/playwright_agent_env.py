@@ -9,6 +9,9 @@ import traceback
 from pathlib import Path
 from typing import List, Optional, Tuple, TypedDict
 
+# Playwright is used for browser automation
+from playwright.async_api import Browser, Page, async_playwright
+
 from atroposlib.envs.base import (
     APIServerConfig,
     BaseEnv,
@@ -17,9 +20,6 @@ from atroposlib.envs.base import (
 )
 from atroposlib.type_definitions import GameHistory, Item
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
-
-# Playwright is used for browser automation
-from playwright.async_api import async_playwright, Browser, Page
 
 # Gemini (google-genai) – optional, only imported when used to score a rollout
 try:
@@ -71,24 +71,31 @@ class PlaywrightAgentEnv(BaseEnv):
                 for line in f:
                     if line.strip():
                         task_data = json.loads(line)
-                        self._tasks.append({
-                            "url": task_data["web"],
-                            "goal_description": task_data["ques"],
-                            # Using empty string for success_criterion as we're using Gemini to judge
-                            "success_criterion": "",  
-                        })
+                        self._tasks.append(
+                            {
+                                "url": task_data["web"],
+                                "goal_description": task_data["ques"],
+                                # Using empty string for success_criterion as we're using Gemini to judge
+                                "success_criterion": "",
+                            }
+                        )
             print(f"Loaded {len(self._tasks)} tasks from webvoyager_data.jsonl")
         except Exception as e:
             print(f"Error loading tasks from webvoyager_data.jsonl: {e}")
             # Fallback to a single example task if loading fails
-            self._tasks = [{
-                "url": "https://example.com",
-                "goal_description": "Locate and open the link that contains the text 'More information'. Then finish.",
-                "success_criterion": "More information",
-            }]
-            
+            self._tasks = [
+                {
+                    "url": "https://example.com",
+                    "goal_description": (
+                        "Locate and open the link that contains the text 'More information'. "
+                        "Then finish."
+                    ),
+                    "success_criterion": "More information",
+                }
+            ]
+
         self._iter = 0
-        
+
         # Track if we're in development/test mode
         self._dev_mode = os.environ.get("PLAYWRIGHT_ENV_DEV_MODE", "0") == "1"
         if self._dev_mode:
@@ -111,7 +118,8 @@ class PlaywrightAgentEnv(BaseEnv):
                 {
                     "role": "user",
                     "content": (
-                        f"You are an autonomous web-agent. Your goal is: {task['goal_description']}\n"
+                        f"You are an autonomous web-agent. Your goal is: "
+                        f"{task['goal_description']}\n"
                         "You will be sent browser screenshots.\n"
                         "Reply with a JSON object describing the next action.\n\n"
                         "Allowed actions:\n"
@@ -119,7 +127,7 @@ class PlaywrightAgentEnv(BaseEnv):
                         "  click <selector> – click the first element matching <selector>\n"
                         "  type <selector> <text> – type <text> into element <selector> and press Enter\n"
                         "  finish – if the goal is accomplished.\n\n"
-                        "Example: {\"action\": \"click\", \"selector\": \"text=More information\"}"
+                        'Example: {"action": "click", "selector": "text=More information"}'
                     ),
                 }.items()
             ),
@@ -131,12 +139,14 @@ class PlaywrightAgentEnv(BaseEnv):
     # core rollout – interacts with browser, builds messages & returns scores
     # ---------------------------------------------------------------------
     async def collect_trajectories(self, item: Item) -> Tuple[GameHistory | None, List[Item]]:  # type: ignore[override]
-        prompt_frozenset, success_criterion, _ = item  # we stored criterion in position 1
-        
+        prompt_frozenset, success_criterion, _ = (
+            item  # we stored criterion in position 1
+        )
+
         # Extract content string properly
         prompt_dict = dict(prompt_frozenset)
-        content = prompt_dict.get('content', '')
-        
+        content = prompt_dict.get("content", "")
+
         # Handle different content structures to extract goal description
         goal_description = ""
         if isinstance(content, str):
@@ -144,16 +154,16 @@ class PlaywrightAgentEnv(BaseEnv):
         elif isinstance(content, list):
             # If content is a list of message parts, extract text parts
             for part in content:
-                if isinstance(part, dict) and part.get('type') == 'text':
-                    goal_description += part.get('text', '')
+                if isinstance(part, dict) and part.get("type") == "text":
+                    goal_description += part.get("text", "")
         elif isinstance(content, dict):
             # Try to extract text from a dict structure
-            if 'text' in content:
-                goal_description = content['text']
-            
+            if "text" in content:
+                goal_description = content["text"]
+
         # Ensure we have a string
         goal_description = str(goal_description)
-        
+
         # If we couldn't extract a meaningful description, use a fallback
         if not goal_description:
             goal_description = "No goal description available"
@@ -171,12 +181,14 @@ class PlaywrightAgentEnv(BaseEnv):
             except Exception:
                 traceback.print_exc()
 
-        messages_for_llm: List[dict] = [dict(prompt_frozenset)]  # start conversation history
+        messages_for_llm: List[dict] = [
+            dict(prompt_frozenset)
+        ]  # start conversation history
 
         steps_taken = 0
         finished = False
         screenshot_b64 = ""
-        
+
         # In development mode, we'll just take one screenshot and finish
         if self._dev_mode:
             try:
@@ -224,7 +236,9 @@ class PlaywrightAgentEnv(BaseEnv):
                 )
 
                 assistant_content = llm_response.choices[0].message.content.strip()
-                messages_for_llm.append({"role": "assistant", "content": assistant_content})
+                messages_for_llm.append(
+                    {"role": "assistant", "content": assistant_content}
+                )
 
                 # ---- 3. Execute LLM-proposed action ----
                 try:
@@ -242,7 +256,9 @@ class PlaywrightAgentEnv(BaseEnv):
                     elif action_name == "click":
                         await page.locator(action_dict["selector"]).first.click()
                     elif action_name == "type":
-                        await page.locator(action_dict["selector"]).first.fill(action_dict["text"])
+                        await page.locator(action_dict["selector"]).first.fill(
+                            action_dict["text"]
+                        )
                         await page.keyboard.press("Enter")
                     else:
                         # unsupported → no-op
@@ -253,7 +269,11 @@ class PlaywrightAgentEnv(BaseEnv):
                 steps_taken += 1
 
                 # simple heuristic exit if success text present and Gemini not available
-                if not finished and success_criterion and success_criterion.lower() in (await page.content()).lower():
+                if (
+                    not finished
+                    and success_criterion
+                    and success_criterion.lower() in (await page.content()).lower()
+                ):
                     finished = True
 
         # Finalise the Playwright context and obtain video path
@@ -271,7 +291,13 @@ class PlaywrightAgentEnv(BaseEnv):
         # ---------------------------------------------------
         # Evaluate episode outcome – Gemini if available
         # ---------------------------------------------------
-        success = True if self._dev_mode else await self._judge_success_with_gemini(video_path, goal_description, success_criterion)
+        success = (
+            True
+            if self._dev_mode
+            else await self._judge_success_with_gemini(
+                video_path, goal_description, success_criterion
+            )
+        )
 
         reward_value = self._compute_reward(success, steps_taken)
 
@@ -282,7 +308,7 @@ class PlaywrightAgentEnv(BaseEnv):
             # In dev mode, create minimal return structure without tokenizer
             scored_group = ScoredDataGroup(
                 tokens=[[0]],  # minimal token placeholder
-                masks=[[1]],   # minimal mask placeholder
+                masks=[[1]],  # minimal mask placeholder
                 scores=[reward_value],
                 images=[screenshot_b64],
             )
@@ -335,7 +361,9 @@ class PlaywrightAgentEnv(BaseEnv):
                     ],
                 )
             ]
-            gen_config = genai_types.GenerateContentConfig(response_mime_type="text/plain")
+            gen_config = genai_types.GenerateContentConfig(
+                response_mime_type="text/plain"
+            )
             # Gemini streaming → collect text
             text_chunks: List[str] = []
             for chunk in client.models.generate_content_stream(
@@ -360,11 +388,11 @@ class PlaywrightAgentEnv(BaseEnv):
     @staticmethod
     def _extract_first_url(text: str) -> Optional[str]:
         import re
-        
+
         # Handle None or non-string type
         if text is None or not isinstance(text, str):
             return None
-            
+
         match = re.search(r"https?://[\w/.:\-]+", text)
         return match.group(0) if match else None
 
@@ -372,7 +400,7 @@ class PlaywrightAgentEnv(BaseEnv):
         """
         Evaluation method required by BaseEnv.
         Called periodically during training to assess model performance.
-        
+
         This environment doesn't use custom evaluation metrics.
         """
         return None
@@ -409,41 +437,41 @@ class PlaywrightAgentEnv(BaseEnv):
 
 if __name__ == "__main__":
     import sys
-    
+
     # Add simple development mode option
     if len(sys.argv) > 1 and sys.argv[1] == "dev":
         print("Starting PlaywrightAgentEnv in development mode...")
         os.environ["PLAYWRIGHT_ENV_DEV_MODE"] = "1"
-        
-        import asyncio
-        
+
         async def test_env():
             # Get the default configurations
             default_config, default_server_configs = PlaywrightAgentEnv.config_init()
-            
+
             # Create the environment with the default configs
             env = PlaywrightAgentEnv(
                 config=default_config,
                 server_configs=default_server_configs,
-                testing=True
+                testing=True,
             )
             await env.setup()
-            
+
             # Create a simple test item
             test_task = {
                 "url": "https://example.com",
                 "goal_description": "Locate and click on the 'More information' link.",
                 "success_criterion": "More information",
             }
-            
+
             # Create a simple prompt
-            prompt_set = frozenset({
-                "role": "user",
-                "content": f"Test goal: {test_task['goal_description']}"
-            }.items())
-            
+            prompt_set = frozenset(
+                {
+                    "role": "user",
+                    "content": f"Test goal: {test_task['goal_description']}",
+                }.items()
+            )
+
             item = (prompt_set, test_task["success_criterion"], None)
-            
+
             try:
                 result, _ = await env.collect_trajectories(item)
                 print("Successfully ran test trajectory")
@@ -453,8 +481,8 @@ if __name__ == "__main__":
                 traceback.print_exc()
             finally:
                 await env.teardown()
-        
+
         asyncio.run(test_env())
     else:
         # Run CLI helper if invoked directly (inherits from BaseEnv)
-        PlaywrightAgentEnv.cli() 
+        PlaywrightAgentEnv.cli()
