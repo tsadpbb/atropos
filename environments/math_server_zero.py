@@ -9,6 +9,7 @@ import re
 from concurrent.futures import ProcessPoolExecutor
 from typing import Dict, List, Optional, Tuple
 
+import wandb
 from datasets import load_dataset
 from latex2sympy2_extended import NormalizationConfig
 from math_verify import LatexExtractionConfig, parse, verify
@@ -16,7 +17,6 @@ from math_verify.errors import TimeoutException
 from pydantic import Field
 from tqdm.asyncio import tqdm_asyncio
 
-import wandb
 from atroposlib.envs.base import (
     BaseEnv,
     BaseEnvConfig,
@@ -412,7 +412,7 @@ class MathEnv(BaseEnv):
         )
         # check if all the same
         # print(scores['scores'])
-        # Fill in the correct/incorrect lens after so we're only looking at actual training data
+        # Fill in the correct/incorrect lenses after so we're only looking at actual training data
         self.correct_answer_len.extend(
             [
                 len(scores["tokens"][i])
