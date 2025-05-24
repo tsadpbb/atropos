@@ -1,0 +1,36 @@
+{
+    "student_id": "student001",
+    "target_grade": "11th grade",
+    "learning_goal": "Understand and apply key concepts in linear algebra",
+    "prior_knowledge_level": "intermediate",
+    "topics": [
+      {
+        "name": "vectors",
+        "proficiency": 0.65,
+        "sub_topics": ["vector addition", "scalar multiplication", "dot product", "cross product"]
+      },
+      {
+        "name": "matrices",
+        "proficiency": 0.50,
+        "sub_topics": ["matrix operations", "determinants", "inverse matrices", "matrix transformations"]
+      },
+      {
+        "name": "linear_systems",
+        "proficiency": 0.40,
+        "sub_topics": ["gaussian elimination", "cramer's rule", "homogeneous systems"]
+      },
+      {
+        "name": "eigenvalues_eigenvectors",
+        "proficiency": 0.30,
+        "sub_topics": ["characteristic polynomial", "diagonalization", "applications"]
+      }
+    ],
+    "preferred_learning_style": "visual",
+    "attention_span_minutes": 45,
+    "target_milestones": [
+      "Solve systems of linear equations confidently",
+      "Understand eigenvalues and eigenvectors conceptually",
+      "Apply matrix transformations to geometric problems"
+    ],
+    "current_avg_score": 73
+  }
