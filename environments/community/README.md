@@ -205,6 +205,46 @@ A specialized environment for training LLMs to automatically identify and fix we
 
 **Requirements**: BeautifulSoup4, lxml, OpenAI API
 
+### 8. ExamCraft - Adaptive LLM Teacher Environment (`examcraft/`)
+**Author**: [RoshanSanjeev](https://github.com/RoshanSanjeev)
+**Purpose**: Train language models to become adaptive teachers through reinforcement learning
+
+A sophisticated environment for training LLMs to be effective teachers by generating adaptive questions, providing explanations, and creating personalized lesson plans. The environment simulates realistic student-teacher interactions with comprehensive reward systems for teaching effectiveness.
+
+**Features**:
+- Adaptive question generation targeting student weak areas
+- Real-time difficulty adjustment based on student ability
+- Multiple teaching actions (questions, explanations, lesson plans)
+- Sophisticated multi-factor reward system for teaching effectiveness
+- Realistic student learning simulation with proficiency progression
+- Session momentum and learning impact tracking
+
+**Teaching Actions**:
+- **QUESTION**: Generate adaptive multiple-choice questions
+- **EXPLANATION**: Provide detailed concept explanations
+- **LESSON_PLAN**: Create personalized study plans
+
+**Reward Components**:
+- Correctness reward for student success
+- Targeting bonus for focusing on weak topics
+- Difficulty appropriateness scoring
+- Content quality assessment
+- Learning impact measurement
+
+**Student Simulation**:
+- Probabilistic responses based on topic proficiency
+- Dynamic learning from effective teaching
+- Realistic difficulty sensitivity and momentum effects
+- Configurable learning styles and goals
+
+**Applications**:
+- Adaptive AI tutoring system development
+- Personalized education at scale
+- Automated knowledge gap identification
+- Quality education accessibility improvement
+
+**Requirements**: OpenAI API, JSON configuration support
+
 ---
 
 ## Support
