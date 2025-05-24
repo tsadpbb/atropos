@@ -208,7 +208,7 @@ class SWERLEnv(BaseEnv):
             total_steps=10000,
             batch_size=512,
             steps_per_eval=100,
-            max_token_length=16384,
+            max_token_length=1024 * 15,
             inference_weight=1.0,
             wandb_name="swe_rl_env_deep_hermes_hf_dataset",  # Updated wandb_name
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
