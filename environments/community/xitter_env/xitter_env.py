@@ -1,19 +1,14 @@
-import asyncio
 import logging
-import random
-from typing import Any, Dict, List, Optional, Tuple, Union  # Added Union
 from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 from atroposlib.envs.base import (
-    APIServerConfig,  # Added
+    APIServerConfig,
     BaseEnv,
     BaseEnvConfig,
-    EvalHandlingEnum,  # Added
-    Item,  # Added
     ScoredDataGroup,
-    ScoredDataItem,  
 )
-from atroposlib.type_definitions import Message  # Added
+from atroposlib.type_definitions import Item
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 # --- Mocked Trending Topics ---
@@ -51,8 +46,8 @@ MOCK_AGENT_PROFILES = {
 
 # We'll need to define a system prompt
 SYSTEM_PROMPT_TEMPLATE = """You are '{agent_id}', an agent on Xitter, a simulated social media platform.
-Your goal is to maximize engagement by posting interesting content (Xits), liking relevant Xits, and making insightful comments.
-You can also choose to DO_NOTHING.
+Your goal is to maximize engagement by posting interesting content (Xits), liking relevant Xits,
+and making insightful comments. You can also choose to DO_NOTHING.
 Current trending topics: {trending_topics}
 
 Recent Xits in your feed (newest first):
@@ -71,29 +66,30 @@ Your response should be ONLY the action string (e.g., "POST This is my new Xit! 
 """
 
 
-
 @dataclass
 class XitterEnvConfig(BaseEnvConfig):
     """Configuration for the Xitter (Social Media) Environment."""
+
     # Reward weights
     like_reward_weight: float = 0.1
     comment_reward_weight: float = 0.5
     trending_topic_bonus: float = 0.2
-    perform_like_reward: float = 0.05 # Small reward for the act of liking
-    perform_comment_reward: float = 0.1 # Small reward for the act of commenting
-    do_nothing_reward: float = 0.0 # Reward for doing nothing
+    perform_like_reward: float = 0.05  # Small reward for the act of liking
+    perform_comment_reward: float = 0.1  # Small reward for the act of commenting
+    do_nothing_reward: float = 0.0  # Reward for doing nothing
     invalid_action_penalty: float = -0.5
-    action_cost: float = -0.01 # Small cost for any action
+    action_cost: float = -0.01  # Small cost for any action
 
     # Environment parameters
     num_agents: int = 2
     max_feed_size: int = 20
-    max_notifications_display: int = 5 # How many notifications to show in prompt
-    initial_trending_topics: List[str] = field(default_factory=lambda: ["AI in Art", "Climate Solutions", "Space Exploration"])
-    
+    max_notifications_display: int = 5  # How many notifications to show in prompt
+    initial_trending_topics: List[str] = field(
+        default_factory=lambda: ["AI in Art", "Climate Solutions", "Space Exploration"]
+    )
+
     # For wandb logging of agent-specific scores
     track_individual_agent_scores: bool = True
-
 
 
 class XitterEnv(BaseEnv):
@@ -111,9 +107,7 @@ class XitterEnv(BaseEnv):
         super().__init__(config, server_configs, slurm, testing)
         # Initialize social media state
         self.social_feed = MOCK_SOCIAL_FEED  # list of posts
-        self.agent_profiles = (
-            MOCK_AGENT_PROFILES  # dict of agent_id -> profile_data
-        )
+        self.agent_profiles = MOCK_AGENT_PROFILES  # dict of agent_id -> profile_data
         self.trending_topics = MOCK_TRENDING_TOPICS
         self.current_agent_turn = 0  # Simple round-robin for turns
         self.agent_ids = list(self.agent_profiles.keys())
@@ -164,13 +158,24 @@ class XitterEnv(BaseEnv):
         # This would include a view of the feed, notifications, and trending topics.
         # For this example, we'll use a simplified prompt.
         # The actual prompt engineering is a key part of designing the environment.
-        prompt_content = f"It's your turn, {agent_id_acting}. Recent posts: {str(observation_context.get('feed_preview', []))}. What do you do?"
+        recent_posts = str(observation_context.get("feed_preview", []))
+        prompt_content = f"It's your turn, {agent_id_acting}. Recent posts: {recent_posts}. What do you do?"
+
+        feed_preview_text = ", ".join(
+            [post["content"] for post in observation_context.get("feed_preview", [])]
+        )
+        notifications_text = ", ".join(
+            self.agent_profiles[agent_id_acting].get("notifications", [])
+        )
 
         messages_for_llm = [
             {
                 "role": "system",
-                "content": SYSTEM_PROMPT.format(
-                    trending_topics=", ".join(self.trending_topics)
+                "content": SYSTEM_PROMPT_TEMPLATE.format(
+                    agent_id=agent_id_acting,
+                    trending_topics=", ".join(self.trending_topics),
+                    feed_preview=feed_preview_text,
+                    notifications_preview=notifications_text,
                 ),
             },
             {"role": "user", "content": prompt_content},
@@ -202,9 +207,7 @@ class XitterEnv(BaseEnv):
 
         # This list will hold tuples of (full_chat_history_for_action, action_details_for_scoring)
         # where action_details_for_scoring will be passed to the `score` method.
-        trajectories_for_scoring: List[
-            Tuple[List[Dict[str, str]], Dict[str, Any]]
-        ] = []
+        trajectories_for_scoring: List[Tuple[List[Dict[str, str]], Dict[str, Any]]] = []
 
         for choice in completions_obj.choices:
             llm_generated_action_text = choice.text.strip()
@@ -213,10 +216,8 @@ class XitterEnv(BaseEnv):
             # This is a placeholder for your actual simulation logic.
             # It needs to parse llm_generated_action_text (e.g., "POST My new cat video #cats")
             # and update self.social_feed, self.agent_profiles, etc.
-            action_type, action_params, action_valid = (
-                self._parse_and_simulate_action(
-                    agent_id_acting, llm_generated_action_text
-                )
+            action_type, action_params, action_valid = self._parse_and_simulate_action(
+                agent_id_acting, llm_generated_action_text
             )
 
             if not action_valid:
@@ -248,9 +249,7 @@ class XitterEnv(BaseEnv):
             # so that the score function can later attribute likes/comments to it.
             # This implies that rewards for posts might be delayed by one or more turns.
             if action_type == "post" and "new_post_id" in action_params:
-                scoring_context["post_id_created"] = action_params[
-                    "new_post_id"
-                ]
+                scoring_context["post_id_created"] = action_params["new_post_id"]
 
             trajectories_for_scoring.append(
                 (current_trajectory_messages, scoring_context)
@@ -313,12 +312,8 @@ class XitterEnv(BaseEnv):
                         ):
                             self.agent_profiles[original_poster_id][
                                 "notifications"
-                            ].append(
-                                f"{agent_id} liked your post {post_id_to_like}"
-                            )
-                        logging.info(
-                            f"Agent {agent_id} LIKED post: {post_id_to_like}"
-                        )
+                            ].append(f"{agent_id} liked your post {post_id_to_like}")
+                        logging.info(f"Agent {agent_id} LIKED post: {post_id_to_like}")
                         return "like", {"post_id": post_id_to_like}, True
             except IndexError:
                 return "invalid_like_format", {}, False
@@ -383,9 +378,7 @@ class XitterEnv(BaseEnv):
 
     async def score(
         self,
-        trajectories_with_context: List[
-            Tuple[List[Dict[str, str]], Dict[str, Any]]
-        ],
+        trajectories_with_context: List[Tuple[List[Dict[str, str]], Dict[str, Any]]],
     ) -> Optional[ScoredDataGroup]:
         """
         Scores a group of trajectories.
@@ -416,15 +409,11 @@ class XitterEnv(BaseEnv):
                     # or that `scoring_context` is populated with likes/comments that occurred *since* this post.
                     # This is a simplification; a more realistic model would update these over subsequent turns.
                     current_reward += (
-                        scoring_context.get(
-                            "likes_received_on_post_this_turn", 0
-                        )
+                        scoring_context.get("likes_received_on_post_this_turn", 0)
                         * self.config.like_reward_weight
                     )
                     current_reward += (
-                        scoring_context.get(
-                            "comments_received_on_post_this_turn", 0
-                        )
+                        scoring_context.get("comments_received_on_post_this_turn", 0)
                         * self.config.comment_reward_weight
                     )
 
@@ -475,22 +464,16 @@ class XitterEnv(BaseEnv):
                 logging.error(
                     f"Tokenization error for agent {agent_id}, action {action_type}: {e}. Skipping trajectory."
                 )
-                logging.error(
-                    f"Problematic messages: {full_trajectory_messages}"
-                )
+                logging.error(f"Problematic messages: {full_trajectory_messages}")
                 continue
 
             final_scores_group["tokens"].append(tokenized_output["tokens"])
             final_scores_group["masks"].append(tokenized_output["masks"])
             final_scores_group["scores"].append(current_reward)
             if self.config.include_messages:
-                final_scores_group["messages"].append(
-                    tokenized_output["messages"]
-                )
+                final_scores_group["messages"].append(tokenized_output["messages"])
 
-        if not final_scores_group[
-            "tokens"
-        ]:  # If all trajectories failed tokenization
+        if not final_scores_group["tokens"]:  # If all trajectories failed tokenization
             return None
 
         # Ensure scores are not all the same if configured
@@ -499,9 +482,7 @@ class XitterEnv(BaseEnv):
             and len(set(final_scores_group["scores"])) <= 1
             and len(final_scores_group["scores"]) > 1
         ):
-            logging.info(
-                "All scores in the group are identical, returning None."
-            )
+            logging.info("All scores in the group are identical, returning None.")
             return None
 
         return final_scores_group
