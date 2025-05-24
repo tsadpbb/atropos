@@ -245,6 +245,50 @@ A sophisticated environment for training LLMs to be effective teachers by genera
 
 **Requirements**: OpenAI API, JSON configuration support
 
+### 9. Cat Behavior Communication Environment (`cat_behavior_env/`)
+**Author**: [krishpop](https://github.com/krishpop)
+**Purpose**: Train language models to communicate as cats with their caretakers
+
+A unique environment for training LLMs to express needs and desires through authentic cat behaviors and vocalizations. Models must learn to communicate without using human language, relying instead on realistic cat sounds, body language, and behaviors to convey their needs to caretakers.
+
+**Features**:
+- **Authentic Cat Behavior Database**: 35 detailed cat behaviors with scientific descriptions
+- **Diverse Scenario Coverage**: 61 cat care scenarios spanning nutrition, health, comfort, and enrichment
+- **Multi-turn Interactions**: 5-turn conversations between cat and caretaker
+- **Strict Communication Rules**: No English, no emojis - only realistic cat communication
+- **"Purrfect" Evaluation**: Cats judge whether caretakers addressed all needs perfectly
+
+**Cat Behaviors Included**:
+- **Vocalizations**: Meowing, purring, trilling, yowling, hissing, growling
+- **Body Language**: Tail position, ear orientation, back arching, slow blinking
+- **Physical Actions**: Kneading, head butting, rubbing, scratching, following
+- **Behavioral Indicators**: Hiding, litter box changes, grooming patterns
+
+**Scenario Categories**:
+- **Nutrition**: Balanced diet, feeding schedules, fresh water, treats
+- **Health Care**: Veterinary visits, grooming, dental hygiene, medications
+- **Comfort & Safety**: Sleeping areas, temperature control, secure environment
+- **Enrichment**: Mental stimulation, play, social interaction, territory
+
+**Communication Format**:
+- `Sound! (Context)`: For vocalizations with body language
+- `~Silent~ (Context)`: For non-vocal behaviors
+- Examples: `Mew! (Looks up at you)`, `~Silent~ (Rubs against your legs)`
+
+**Scoring System**:
+- **1.0**: "Purr" - Perfect caretaking with no possible improvements
+- **0.0**: "Meow" - Needs remain unmet or could be better addressed
+
+**Research Applications**:
+- Non-verbal communication modeling
+- Animal-human interaction patterns
+- Empathy and care training for AI
+- Creative roleplay and character consistency
+
+**Status**: ⚠️ Environment in active development - some code may need refinement
+
+**Requirements**: Standard Atropos dependencies, JSON file handling
+
 ---
 
 ## Support

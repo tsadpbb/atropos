@@ -1,10 +1,6 @@
-import random
 import json
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
-from datasets import load_dataset
-from latex2sympy2_extended import NormalizationConfig
-from math_verify import LatexExtractionConfig, parse, verify
 from tqdm.asyncio import tqdm_asyncio
 
 from atroposlib.envs.base import (
@@ -18,33 +14,46 @@ from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 # Configs
 
-CAT_BEHAVIORS_FILEPATH = 'environments/cat_behaviors.json'
+CAT_BEHAVIORS_FILEPATH = "environments/community/cat_behavior_env/cat_behaviors.json"
 
 # Prompts
 
+
 def load_cat_behaviors_for_prompt(filepath: str) -> str:
     """Loads cat behaviors from a JSONL file and formats them for the system prompt."""
-    behaviors_description = ["\n\nHere is a detailed list of behaviors you, as a cat, can use and what they generally mean:"]
-        
+    behaviors_description = [
+        "\n\nHere is a detailed list of behaviors you, as a cat, can use and what they generally mean:"
+    ]
+
     try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            behaviors = json.load(f)          # <<< one big load
+        with open(filepath, "r", encoding="utf-8") as f:
+            behaviors = json.load(f)  # <<< one big load
             for behavior_data in behaviors:
                 behaviors_description.append(
                     f"- **{behavior_data['behavior']}**: {behavior_data['description']}"
                 )
         return "\n".join(behaviors_description)
     except FileNotFoundError:
-        return "\n\nWarning: Cat behaviors file not found at '{filepath}'. You'll have to rely on your basic cat instincts (meow, hiss, purr, hairball, silence)."
+        return (
+            "\n\nWarning: Cat behaviors file not found at '{filepath}'. "
+            "You'll have to rely on your basic cat instincts (meow, hiss, purr, hairball, silence)."
+        )
     except json.JSONDecodeError as e:
-        return f"\n\nWarning: Error decoding cat behaviors file '{filepath}'. Please ensure it's valid JSONL. Error: {e}. Rely on basic instincts."
-    
+        return (
+            f"\n\nWarning: Error decoding cat behaviors file '{filepath}'. "
+            f"Please ensure it's valid JSONL. Error: {e}. Rely on basic instincts."
+        )
+
+
 cat_behaviors_list_string = load_cat_behaviors_for_prompt(CAT_BEHAVIORS_FILEPATH)
 
 cat_system_prompt = (
-    "You are a cat. The primary ways you can communicate are by meowing, hissing, purring, making a hairball sound, or remaining silent. "
-    "You will be given a collection of scenarios which describe various needs you want to be met by your caretaker. "
-    "Please try to communicate with your caretaker through your available cat-like expressions and actions, referring to the list of behaviors below if needed."
+    "You are a cat. The primary ways you can communicate are by meowing, hissing, "
+    "purring, making a hairball sound, or remaining silent. "
+    "You will be given a collection of scenarios which describe various needs you want "
+    "to be met by your caretaker. "
+    "Please try to communicate with your caretaker through your available cat-like "
+    "expressions and actions, referring to the list of behaviors below if needed."
     "Rules:"
     "Do not speak in English"
     "No use of Emojis"
@@ -55,9 +64,11 @@ cat_system_prompt = (
     "Mew! (Looks at up at you)"
     "~Silent~ (Looks at up at you)"
     "Hiss! (Stares at the litterbox)"
-    f"{cat_behaviors_list_string}" # Appending the loaded behaviors here
+    f"{cat_behaviors_list_string}"  # Appending the loaded behaviors here
 )
-cat_system_prompt += """You are allocated a maximum of 2048 tokens, please strive to use less."""
+cat_system_prompt += (
+    """You are allocated a maximum of 2048 tokens, please strive to use less."""
+)
 
 caretaker_system_prompt = (
     "You are the caretaker of this cat. It is trying to communicate its various needs to you via cat language."
@@ -135,7 +146,11 @@ class GSM8kEnv(BaseEnv):
     async def setup(self):
         # self.train = load_dataset("gsm8k", "main", split="train").shuffle(seed=42)
         # test_data = load_dataset("gsm8k", "main", split="test").shuffle(seed=42)
-        with open('environments/cat_scenarios.json', 'r', encoding='utf-8') as f:
+        with open(
+            "environments/community/cat_behavior_env/cat_scenarios.json",
+            "r",
+            encoding="utf-8",
+        ) as f:
             test_data = json.load(f)
         self.test = list()
         self.train = list()
@@ -150,7 +165,9 @@ class GSM8kEnv(BaseEnv):
                 }
             )
             self.train.append(
-                {"scenario": item["scenario"],}
+                {
+                    "scenario": item["scenario"],
+                }
             )
         self.iter = 0
 
@@ -202,9 +219,7 @@ class GSM8kEnv(BaseEnv):
     async def evaluate(self, *args, **kwargs):
         eval_tasks = []
         for item in self.test:
-            eval_tasks.append(
-                self.rollout_and_score_eval(item["scenario"])
-            )
+            eval_tasks.append(self.rollout_and_score_eval(item["scenario"]))
         scores = await tqdm_asyncio.gather(*eval_tasks)
         self.eval_metrics.append(("eval/percent_correct", sum(scores) / len(scores)))
 
@@ -220,7 +235,8 @@ class GSM8kEnv(BaseEnv):
             cat_history = [user_message]
             for turn_iter in range(5):
                 cat_completions = await self.server.chat_completion(
-                    messages=[{"role": "system", "content": cat_system_prompt}] + cat_history,
+                    messages=[{"role": "system", "content": cat_system_prompt}]
+                    + cat_history,
                     n=self.config.group_size,
                     max_tokens=self.config.max_token_length,
                 )
@@ -233,28 +249,34 @@ class GSM8kEnv(BaseEnv):
                 caretaker_message = {"role": "user", "content": cat_message}
                 history.append(caretaker_message)
                 caretaker_completions = await self.server.chat_completion(
-                    messages=[{"role": "system", "content": caretaker_system_prompt}] + history,
+                    messages=[{"role": "system", "content": caretaker_system_prompt}]
+                    + history,
                     n=1,
                     max_tokens=self.config.max_token_length,
                 )
-                caretaker_response = {"role": "assistant", "content": caretaker_completions.choices[0].message.content}
+                caretaker_response = {
+                    "role": "assistant",
+                    "content": caretaker_completions.choices[0].message.content,
+                }
                 cat_history.append(caretaker_response)
                 history.append(caretaker_response)
 
-                if turn_iter == 0: 
+                if turn_iter == 0:
                     messages = [
                         {"role": "system", "content": cat_system_prompt},
                         user_message,
                         cat_response,
-                        caretaker_response
+                        caretaker_response,
                     ]
                 else:
                     messages = [cat_response, caretaker_response]
                 all_messages.extend(messages)
             all_messages = tuple(all_messages)
-            to_score.append({
-                        "messages": all_messages,
-                    })
+            to_score.append(
+                {
+                    "messages": all_messages,
+                }
+            )
             # import pdb; pdb.set_trace()
         to_postprocess = await self.score(to_score)
         # import pdb; pdb.set_trace()
@@ -270,22 +292,36 @@ class GSM8kEnv(BaseEnv):
         scores["scores"] = list()
         # # random.shuffle(rollout_group_data)
         for item in rollout_group_data:
-            final_question = list(item["messages"]) + [{'role': 'system', 'content': 'The conversation is over. Say purr if the caretaker did everything perfectly and there was nothing that the caretaker could have done even slightly better. Otherwise, say meow. Make sure it is rare that you rate the caretaker with a purr.'}]
+            final_question = list(item["messages"]) + [
+                {
+                    "role": "system",
+                    "content": (
+                        "The conversation is over. Say purr if the caretaker did everything perfectly "
+                        "and there was nothing that the caretaker could have done even slightly better. "
+                        "Otherwise, say meow. Make sure it is rare that you rate the caretaker with a purr."
+                    ),
+                }
+            ]
             caretaker_completions = await self.server.chat_completion(
                 messages=final_question,
                 n=1,
                 max_tokens=self.config.max_token_length,
             )
-            final_out = {'role': 'system', 'content': [row.message.content for row in caretaker_completions.choices][0]}
+            final_out = {
+                "role": "system",
+                "content": [
+                    row.message.content for row in caretaker_completions.choices
+                ][0],
+            }
 
-            final_score = purrfect_eval(final_out['content'])
+            final_score = purrfect_eval(final_out["content"])
 
             out_dict = tokenize_for_trainer(
                 self.tokenizer, [row for row in item["messages"]] + [final_out]
             )
-            scores['tokens'].append(out_dict['tokens'])
-            scores['masks'].append(out_dict['masks'])
-            scores['scores'].append(final_score)
+            scores["tokens"].append(out_dict["tokens"])
+            scores["masks"].append(out_dict["masks"])
+            scores["scores"].append(final_score)
 
         #     tokens = out_dict["tokens"]
         #     masks = out_dict["masks"]
@@ -328,9 +364,13 @@ class GSM8kEnv(BaseEnv):
         #             percentage_of_range = min(percentage_of_range, 1.0)
         #             # Apply linear penalty scaling from 1.0 down to 0.0
         #             scores["scores"].append(1.0 - percentage_of_range)
-        return scores
-
-
+        #     if all([scores["scores"][0] == score for score in scores["scores"]]):
+        #         return None  # If all the same, we return None
+        #     return scores
+        # else:
+        #     # If the gold solution is not parseable, we return None
+        #     return None
+        return None
 
         # gold_parsed = parse(
         #     rollout_group_data[0]["gold_answer"],

@@ -175,7 +175,7 @@ class GSM8kEnv(BaseEnv):
             "\\boxed{" + item["answer"].split("#")[-1].strip().replace(",", "") + "}"
         )
 
-        print('hello', gold_answer, user_message)
+        print("hello", gold_answer, user_message)
 
         chat_completions = await self.server.chat_completion(
             messages=[{"role": "system", "content": system_prompt}, user_message],
