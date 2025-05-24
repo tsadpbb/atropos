@@ -94,7 +94,7 @@ def main():
         return
 
     # Path to student profile
-    profile_path = "example_profile.json"
+    profile_path = "config/example_profile.json"
 
     # Create environment
     env = TutorEnv(profile_path=profile_path, render_mode="human")
