@@ -177,6 +177,34 @@ A creative environment that transforms traditional fight prediction into engagin
 
 **Requirements**: PIL, OpenAI API, Flask (for UI), BeautifulSoup4 (for image scraping)
 
+### 7. Accessibility Auto-Fixer Environment (`accessibility_env/`)
+**Author**: [joshgarza](https://github.com/joshgarza)
+**Purpose**: Automated web accessibility remediation using WCAG guidelines
+
+A specialized environment for training LLMs to automatically identify and fix web accessibility issues in HTML snippets. The environment focuses on objective, rule-based WCAG compliance improvements with minimal code changes.
+
+**Features**:
+- Rule-based scoring system for WCAG 2.1 AA compliance
+- Support for multiple accessibility criteria (alt text, form labels, link text)
+- BeautifulSoup-based HTML parsing and validation
+- Automated scoring for accessibility improvements
+- Integration with common accessibility testing patterns
+
+**Targeted WCAG Criteria**:
+- **Images**: Missing or empty `alt` attributes (WCAG 1.1.1)
+- **Form Labels**: Improper `<label for="...">` associations (WCAG 1.3.1, 3.3.2, 4.1.2)
+- **Links**: Lacking discernible text or accessible name (WCAG 2.4.4, 4.1.2)
+
+**Scoring System**:
+- +1.0: All targeted issues fixed correctly
+- 0.0-0.8: Partial fixes applied
+- -0.5: Parseable HTML but no issues fixed
+- -1.0: Unparseable HTML or regressions introduced
+
+**Note**: The accessibility dataset referenced in the environment (`data/accessibility_dataset.jsonl`) was not included in the contribution. Please contact the author for access to the training dataset.
+
+**Requirements**: BeautifulSoup4, lxml, OpenAI API
+
 ---
 
 ## Support
