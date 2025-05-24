@@ -42,7 +42,7 @@ python examcraft_server.py process --env.data_path_to_save_groups demo_output.js
 # Generate SFT data
 atropos-sft-gen examcraft_sft.jsonl --tokenizer NousResearch/Hermes-3-Llama-3.1-8B
 
-# Generate DPO data  
+# Generate DPO data
 atropos-dpo-gen examcraft_dpo.jsonl --tokenizer NousResearch/Hermes-3-Llama-3.1-8B
 ```
 
@@ -55,7 +55,7 @@ atropos-dpo-gen examcraft_dpo.jsonl --tokenizer NousResearch/Hermes-3-Llama-3.1-
 
 ### Reward Components
 1. **Correctness Reward**: Base reward for student getting questions right
-2. **Targeting Bonus**: Extra points for focusing on weak topics  
+2. **Targeting Bonus**: Extra points for focusing on weak topics
 3. **Difficulty Appropriateness**: Rewards for matching difficulty to ability
 4. **Quality Bonus**: Higher scores for detailed, well-structured content
 5. **Learning Impact**: Bonuses for explanations that boost understanding
@@ -109,7 +109,7 @@ Adaptive AI tutoring can revolutionize education by:
 
 After training, teachers learn to:
 - Prioritize topics where students struggle most
-- Adapt question difficulty based on recent performance  
+- Adapt question difficulty based on recent performance
 - Generate detailed explanations that boost understanding
 - Create comprehensive lesson plans targeting weak areas
 
