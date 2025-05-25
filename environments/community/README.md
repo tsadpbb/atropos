@@ -338,6 +338,54 @@ Beef strokin off!
 
 **W&B Results**: [Training Run](https://wandb.ai/jaboggs-nous-hackathon-nc-state-university/uncategorized/runs/0vly0u4p)
 
+### 11. Selcube - Rubik's Cube Training Environment (`selcube/`)
+**Author**: [joshuajerin](https://github.com/joshuajerin) with [Tvpower](https://github.com/Tvpower)
+**Purpose**: Train LLMs to solve Rubik's cubes through structured 3D reasoning and multi-step planning
+
+A comprehensive environment for training LLMs on the challenging task of Rubik's cube solving, designed to improve spatial reasoning, strategic planning, and structured problem-solving capabilities. The environment provides measurable, domain-specific challenges that require both visualization and logical reasoning.
+
+**Features**:
+- **Multi-step Planning**: Tests ability to understand cube mechanics and develop solving strategies
+- **3D Spatial Reasoning**: Models must mentally track complex 3D spatial relationships
+- **Curriculum Learning**: Configurable difficulty based on scramble complexity (1-22 moves)
+- **Token-level Rewards**: Granular feedback system that enhances learning signal
+- **Multiple Solving Strategies**: Supports Layer-by-Layer, CFOP, and other approaches
+- **Anti-Reward Hacking**: Validates moves against actual cube state to prevent gaming
+
+**Key Components**:
+- **Environment Logic** (`rubiks_cube_environment.py`): Main training environment with curriculum support
+- **Cube Mechanics** (`rubiks_cube_logic.py`): Core Rubik's cube state management and move validation
+- **Solving Strategies** (`rubiks_strategies.py`): Multiple algorithmic approaches for teaching
+- **Token Rewards** (`rubiks_token_rewards.py`): Sophisticated reward system for quality feedback
+- **Curriculum** (`rubiks_cube_curriculum.py`): Progressive difficulty scaling
+- **Enhanced Visualizer** (`rubiks_enhanced_visualizer.py`): Comprehensive progress tracking and analysis
+
+**Training Performance**:
+- **Level 1 (1-3 moves)**: 97% solve rate
+- **Level 2 (4-7 moves)**: 85% solve rate
+- **Level 3 (8-12 moves)**: 72% solve rate
+- **Level 4 (13-17 moves)**: 53% solve rate
+- **Level 5 (18-22 moves)**: 31% solve rate
+- **Token efficiency improvement**: 34% reduction in training iterations vs episode-only rewards
+
+**Reward Design**:
+- Progress toward solution (correctly positioned cubies)
+- Pattern recognition (cross formation, completed layers)
+- Move efficiency compared to optimal solve
+- Quality of reasoning in "thinking aloud" steps
+
+**Applications**:
+- 3D spatial reasoning development
+- Multi-step strategic planning
+- Structured problem-solving training
+- Measurable progress tracking for LLM capabilities
+
+**Demo**: [1-minute demonstration video](https://youtu.be/fi4lhIyF_5M)
+
+**W&B Results**: [Training Dashboard](https://wandb.ai/joshuaxjerin-uc/atropos-environments)
+
+**Requirements**: scipy, matplotlib, torch, transformers, wandb, plotly, flask, pydantic (see requirements.txt)
+
 ---
 
 ## Support
