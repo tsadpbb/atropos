@@ -3,12 +3,15 @@ Punchline VR-CLI Environment for Atropos
 """
 
 from __future__ import annotations
-import math, random, asyncio
-from typing import List, Optional, Tuple, TypedDict, Dict
+
+import asyncio
+import math
+import random
+from typing import Dict, List, Optional, Tuple, TypedDict
 
 import torch
 from datasets import load_dataset
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from atroposlib.envs.base import (
     APIServerConfig,
@@ -84,7 +87,9 @@ class PunchlineEnv(BaseEnv):
                 "Qwen/Qwen3-1.7B-Base", torch_dtype=torch.bfloat16
             )
             .eval()
-            .to(f"cuda:{self.config.gpu_device}" if torch.cuda.is_available() else "cpu")
+            .to(
+                f"cuda:{self.config.gpu_device}" if torch.cuda.is_available() else "cpu"
+            )
         )
 
         raw = load_dataset(
@@ -103,7 +108,8 @@ class PunchlineEnv(BaseEnv):
                 and (
                     row.get("title", "").strip().startswith("What")
                     or row.get("title", "").strip().startswith("Why")
-                    or row.get("title", "").strip().startswith("How"))
+                    or row.get("title", "").strip().startswith("How")
+                )
                 and "(" not in row.get("title", "")
                 and "[" not in row.get("title", "")
                 and "\n" not in row.get("selftext", "")
@@ -131,7 +137,16 @@ class PunchlineEnv(BaseEnv):
     async def collect_trajectories(
         self, item: PunchlineRow
     ) -> Tuple[ScoredDataGroup, List[Item]]:
-        system_msg = {"role": "system", "content": "You have a strong sense of humor and answer the user's question with a punchline. You always give the funniest answer, even if it could offend some people. Consider the aspects that make a joke funny, for example the answer is usually surprising to hear but makes sense in hindsight. You shouldn't need to explain your answer, it should stand on its own."}
+        system_msg = {
+            "role": "system",
+            "content": (
+                "You have a strong sense of humor and answer the user's question with a punchline. "
+                "You always give the funniest answer, even if it could offend some people. "
+                "Consider the aspects that make a joke funny, for example the answer is usually "
+                "surprising to hear but makes sense in hindsight. You shouldn't need to explain "
+                "your answer, it should stand on its own."
+            ),
+        }
         user_msg = {"role": "user", "content": item["question"]}
 
         chat_comps = await self.server.chat_completion(
@@ -145,12 +160,13 @@ class PunchlineEnv(BaseEnv):
             assistant_content = choice.message.content
             reasoning, answer = self._parse_completion(assistant_content)
 
-            rew = self._vrcli_reward(
-                item["question"], reasoning, item["answer"]
-            )
+            rew = self._vrcli_reward(item["question"], reasoning, item["answer"])
             self._reward_buffer.append(rew)
 
-            msgs = (user_msg, {"role": "assistant", "content": f"<think>\n{reasoning}\n</think>"})
+            msgs = (
+                user_msg,
+                {"role": "assistant", "content": f"<think>\n{reasoning}\n</think>"},
+            )
             td = tokenize_for_trainer(self.tokenizer, msgs, choice.finish_reason)
 
             group["tokens"].append(td["tokens"])
@@ -215,9 +231,11 @@ class PunchlineEnv(BaseEnv):
             with torch.no_grad():
                 logits = self._ref(**ids).logits[:, :-1]
             targets = ids.input_ids[:, 1:]
-            lp = torch.log_softmax(logits, -1).gather(
-                2, targets.unsqueeze(-1)
-            ).squeeze(-1)
+            lp = (
+                torch.log_softmax(logits, -1)
+                .gather(2, targets.unsqueeze(-1))
+                .squeeze(-1)
+            )
             return math.exp(-lp[:, p_len:].mean().item())
 
         base = ppl(f"Question: {q}\nAnswer:", gold)

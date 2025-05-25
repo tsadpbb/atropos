@@ -326,8 +326,8 @@ A specialized environment for training LLMs to understand humor by generating jo
 Question: What do you call a herd of cows masturbating?
 
 <think>
-The user is asking a play-on-words question. I need to connect "herd" 
-with "masturbating" to create a pun. "Masturbating" could become 
+The user is asking a play-on-words question. I need to connect "herd"
+with "masturbating" to create a pun. "Masturbating" could become
 "stroking" and combine with "beef"...
 </think>
 
