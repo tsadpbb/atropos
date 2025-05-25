@@ -289,6 +289,55 @@ A unique environment for training LLMs to express needs and desires through auth
 
 **Requirements**: Standard Atropos dependencies, JSON file handling
 
+### 10. Punchline VR-CLI Environment (`punchline_vrcli/`)
+**Author**: [JakeBoggs](https://github.com/JakeBoggs)
+**Purpose**: Train LLMs to generate humorous punchlines using Verifiable Rewards via Completion Likelihood Improvement (VR-CLI)
+
+A specialized environment for training LLMs to understand humor by generating joke punchlines through a novel RL technique from the paper "Learning to Reason for Long-Form Story Generation" (Gurning & Lapata, 2025). The environment teaches models to first generate reasoning that leads to good punchlines, with rewards based on how much the reasoning improves the likelihood of the actual punchline.
+
+**Features**:
+- **VR-CLI Methodology**: Uses Verifiable Rewards via Completion Likelihood Improvement for reduced overfitting
+- **Reasoning-First Approach**: Models learn to generate `<think>...</think>` reasoning before punchlines
+- **Perplexity-Based Rewards**: Reward calculated by improvement in punchline likelihood given reasoning
+- **Reddit Jokes Dataset**: Uses SocialGrep/one-million-reddit-jokes filtered for quality
+- **Anti-Memorization**: Prevents overfitting by using separate reference model for evaluation
+
+**Training Process**:
+1. Model generates reasoning for joke setup
+2. Reference model calculates base perplexity of golden punchline given setup only
+3. Reference model recalculates perplexity with setup + generated reasoning
+4. Reward = `(base_perplexity - reasoning_perplexity) / base_perplexity`
+5. Positive rewards indicate helpful reasoning that improves punchline understanding
+
+**Key Components**:
+- **Dataset**: SocialGrep one-million-reddit-jokes with question-answer format filtering
+- **Model**: Qwen/Qwen3-1.7B for generation
+- **Reference**: Qwen/Qwen3-1.7B-Base for perplexity evaluation
+- **Evaluation**: 64 random jokes with greedy decoding for progress tracking
+
+**Applications Beyond Humor**:
+- Creative writing assistance
+- Code generation without execution environments
+- Business task reasoning with existing examples
+- Any domain requiring explanatory reasoning before output
+
+**Example Output**:
+```
+Question: What do you call a herd of cows masturbating?
+
+<think>
+The user is asking a play-on-words question. I need to connect "herd" 
+with "masturbating" to create a pun. "Masturbating" could become 
+"stroking" and combine with "beef"...
+</think>
+
+Beef strokin off!
+```
+
+**Requirements**: vllm>=0.8.5, torch, transformers, datasets, wandb, tenacity, pydantic
+
+**W&B Results**: [Training Run](https://wandb.ai/jaboggs-nous-hackathon-nc-state-university/uncategorized/runs/0vly0u4p)
+
 ---
 
 ## Support
