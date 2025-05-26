@@ -126,11 +126,11 @@ class SWERLEnvConfig(BaseEnvConfig):
     # New fields for evaluation dataset
     dataset_name_eval: Optional[str] = Field(
         default=None,
-        description="Optional: Name of the Hugging Face dataset to load for evaluation. If None, uses dataset_name.",
+        description="Optional: Name of the Hugging Face dataset to load for evaluation. If None, evaluation data is sampled from the training set.",  # noqa: E501
     )
     dataset_config_name_eval: Optional[str] = Field(
         default=None,
-        description="Optional: Configuration name for the Hugging Face dataset for evaluation. If None, uses dataset_config_name.",  # noqa: E501
+        description="Optional: Configuration name for the Hugging Face dataset specified by `dataset_name_eval`. Used only if `dataset_name_eval` is set. If `dataset_name_eval` is set and this is None, the default configuration of `dataset_name_eval` is used.",  # noqa: E501
     )
     max_train_samples: Optional[int] = Field(
         default=None,
@@ -230,15 +230,15 @@ class SWERLEnv(BaseEnv):
             dataset_name="NousResearch/SWE-smith-oracle",
             dataset_config_name=None,
             dataset_split_train="train",
-            dataset_split_eval="test",
             dataset_issue_column="problem_statement",
             dataset_code_context_column="text",
             dataset_oracle_patch_column="patch",
-            max_train_samples=1000,
+            max_train_samples=100000,
             max_test_samples=200,
             # Initialize new eval dataset fields
-            dataset_name_eval=None,  # Or a default eval dataset name
-            dataset_config_name_eval=None,  # Or a default eval config name
+            dataset_name_eval="princeton-nlp/SWE-bench_Lite_oracle",
+            dataset_split_eval="test",
+            dataset_config_name_eval=None,
         )
         server_configs = [
             APIServerConfig(
