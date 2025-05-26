@@ -173,7 +173,6 @@ cython_debug/
 # data
 *.json
 *.jsonl
-!rubiks_process_results_32.jsonl
 
 # wandb
 wandb
