@@ -508,6 +508,80 @@ Rejected: "Okay."
 
 **Requirements**: Standard Atropos dependencies, transformers, torch
 
+### 14. Solitaire Winning Probability Environment (`solitaire_winning_probability/`)
+**Author**: [davidedipeppe](https://github.com/davidedipeppe)
+**Purpose**: Train LLMs to analyze and predict winning probabilities in solitaire-style card games using both theoretical mathematics and empirical simulation
+
+A sophisticated environment that combines AI-powered probability analysis with Monte Carlo simulation to teach LLMs mathematical reasoning about game theory and probability. Models learn to derive mathematical formulas for exact probability calculations and validate their theoretical predictions through empirical simulation.
+
+**Features**:
+- **Dual Analysis Approach**: Both theoretical mathematical formulas and empirical Monte Carlo simulation
+- **AI Formula Derivation**: LLMs analyze game mechanics to derive exact probability formulas
+- **Mathematical Expression Evaluation**: Supports factorials, combinations, permutations, and standard operations
+- **Simulation Verification**: Runs thousands of game simulations to verify theoretical predictions
+- **QA Dataset Generation**: Creates training data for AI models by generating question-answer pairs
+- **Sophisticated Reward Function**: Evaluates prediction quality with relative error calculation and length penalties
+
+**Game Types Included**:
+- **Easy Probability Games**: Simple card draws and dice rolls (1/4, 1/6, 1/4 probabilities)
+- **Card Matching Games**: Avoid counter-card matches with cycling counters (1-4 cycles)
+- **Odd Card Game**: Draw odd-valued cards from standard deck (7/13 probability)
+- **Extensible Framework**: Easy to add new solitaire game variants
+
+**Mathematical Framework**:
+- **Formula Notation**: Supports `C(n,r)` combinations, `P(n,r)` permutations, `factorial(n)`
+- **Expression Parser**: Safe mathematical expression evaluation with asteval
+- **Probability Comparison**: Measures theoretical vs empirical accuracy
+- **Error Analysis**: Quantifies prediction quality with relative error metrics
+
+**Reward System Design**:
+1. **Base Reward**: `1 - min(abs(gt - predicted) / gt, 2)` with 0.2 bonus for valid predictions
+2. **Length Penalty**: Applied to responses exceeding 50% of max token length
+3. **Validation Checks**: Ensures proper formula formatting and mathematical syntax
+4. **Quality Metrics**: Tracks prediction accuracy and response efficiency
+
+**Training Components**:
+- **Game Predictor Class**: Core AI analysis and formula evaluation engine
+- **Simulation Engine**: Monte Carlo verification with configurable iteration counts
+- **Mathematical Evaluator**: Safe expression parsing and computation
+- **QA Data Generator**: Automated training dataset creation
+
+**Example Training Flow**:
+```
+Game: Draw from [1,2,3,4], win if card is 1
+AI Analysis: "1 favorable outcome out of 4 total..."
+Formula: "1/4"
+Calculated: 0.25
+Simulated: 0.2499 (100k runs)
+Reward: High (excellent theoretical-empirical match)
+```
+
+**Applications**:
+- **Probability Theory Education**: Practical demonstration of theoretical concepts
+- **Mathematical Reasoning Training**: Formula derivation and validation skills
+- **Game Analysis Research**: Framework for analyzing card game mechanics
+- **AI Math Capabilities**: Training models in structured mathematical thinking
+
+**Technical Implementation**:
+- **AsyncOpenAI Integration**: Efficient AI analysis with configurable models
+- **CSV Data Management**: Structured question-answer pair storage
+- **Comprehensive Error Handling**: Robust formula evaluation and validation
+- **Performance Tracking**: Detailed analysis results and comparison metrics
+
+**Quality Assessment**:
+- **Excellent Match**: < 1% difference between theory and simulation
+- **Good Match**: < 5% difference
+- **Fair Match**: < 10% difference
+- **Poor Match**: > 10% difference
+
+**Configuration Options**:
+- Simulation count (default: 100,000 runs)
+- Model selection for AI analysis
+- Token length limits and penalties
+- Mathematical expression validation rules
+
+**Requirements**: asyncio, openai, asteval, csv, datasets, math_verify, latex2sympy2_extended
+
 ---
 
 ## Support
