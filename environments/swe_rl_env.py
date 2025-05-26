@@ -234,7 +234,7 @@ class SWERLEnv(BaseEnv):
             dataset_code_context_column="text",
             dataset_oracle_patch_column="patch",
             max_train_samples=100000,
-            max_test_samples=200,
+            max_test_samples=500,
             # Initialize new eval dataset fields
             dataset_name_eval="princeton-nlp/SWE-bench_Lite_oracle",
             dataset_split_eval="test",
@@ -977,7 +977,7 @@ class SWERLEnv(BaseEnv):
             prompt=prompt_for_llm,
             n=self.config.eval_n_samples,
             max_tokens=self.config.max_token_length,
-            temperature=0.1,
+            temperature=0.2,
             stop=stop_tokens,
             split="eval",
         )
