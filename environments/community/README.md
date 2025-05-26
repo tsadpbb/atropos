@@ -440,6 +440,74 @@ A game environment that teaches LLMs strategic thinking and decision-making thro
 
 **Requirements**: poke-env, nodejs, pokemon-showdown simulator, OpenAI API
 
+### 13. Conversational Style DPO Environment (`conversational_style_dpo/`)
+**Author**: [Karthik-Ragunath](https://github.com/Karthik-Ragunath)
+**Purpose**: Train LLMs for better conversational style through Direct Preference Optimization (DPO) with chosen/rejected response pairs
+
+A specialized environment for training LLMs to adopt more engaging, empathetic, and helpful conversational styles using Direct Preference Optimization. The environment provides both synthetic and dynamically generated conversation pairs where "chosen" responses are engaging and thoughtful while "rejected" responses are blunt and unhelpful.
+
+**Features**:
+- **Two Environment Variants**: Static synthetic data and dynamic prompt generation
+- **DPO Training Ready**: Pre-configured tokenization for chosen/rejected response pairs
+- **Conversational Style Modeling**: Focus on empathy, engagement, and helpfulness
+- **Synthetic Data Generation**: Uses LLMs to create diverse conversational prompts
+- **Quality Response Pairs**: Carefully crafted chosen (good) vs rejected (poor) examples
+
+**Environment Variants**:
+
+1. **Static Synthetic Environment** (`conversational_style_dpo_env.py`):
+   - Pre-defined conversational prompts with human-crafted response pairs
+   - Focus on emotional support, explanations, excitement sharing, and help-seeking
+   - Immediate training readiness without LLM dependencies
+
+2. **Dynamic GSM8K-Style Environment** (`gsmk8k_conversational_style_dpo_env.py`):
+   - LLM-generated conversational prompts for diverse training data
+   - Real-time chosen/rejected response generation with different system prompts
+   - Scalable dataset creation with fallback to static prompts
+
+**Conversation Categories**:
+- **Emotional Support**: Responding to feelings and personal sharing
+- **Educational**: Explaining concepts clearly and engagingly
+- **Enthusiasm Sharing**: Celebrating user excitement and interests
+- **Help & Guidance**: Providing assistance with understanding problems
+- **General Conversation**: Weather, casual topics, and everyday interactions
+
+**Response Quality Characteristics**:
+- **Chosen Responses**: Empathetic, engaging, ask follow-up questions, provide detailed explanations
+- **Rejected Responses**: Blunt, minimal, dismissive, unhelpful
+
+**Example Training Pair**:
+```
+Prompt: "I'm feeling a bit down today."
+Chosen: "I'm sorry to hear that. Sometimes a little self-care can help. What's one small thing you could do for yourself right now?"
+Rejected: "Okay."
+```
+
+**Technical Implementation**:
+- **DPO Tokenization**: Ready-to-use tokenization for preference optimization
+- **Configurable Parameters**: Temperature, max tokens, and dataset size controls
+- **Modular Design**: Easy to extend with new conversation types
+- **W&B Integration**: Comprehensive logging and experiment tracking
+
+**Training Applications**:
+- Customer service AI improvement
+- Therapeutic chatbot development
+- Educational AI tutoring systems
+- General conversational AI enhancement
+- Empathy and engagement training
+
+**Configuration Options**:
+- `chosen_temperature`: Temperature for generating engaging responses (default: 0.7)
+- `rejected_temperature`: Temperature for generating blunt responses (default: 0.4)
+- `shuffle_dataset`: Whether to randomize training order
+- `data_path_to_save_groups`: Optional path for saving training artifacts
+
+**Data Artifacts**:
+- Archived training examples and HTML visualizations available (see `conversational_style_dpo_artifacts.zip`)
+- Ready for upload to Hugging Face for community access
+
+**Requirements**: Standard Atropos dependencies, transformers, torch
+
 ---
 
 ## Support
