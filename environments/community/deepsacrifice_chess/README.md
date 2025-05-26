@@ -53,30 +53,30 @@ The idea is that, over time, the agent will adapt its skill level to the user's 
 
 ## Learning Flow
 
-1. **Game is played**  
+1. **Game is played**
    The agent and user alternate actions in the chess environment. The episode ends when the game is complete.
 
-2. **Trajectory is recorded**  
+2. **Trajectory is recorded**
    Log the full sequence of states (FENs) and agent actions (SANs), including sacrificial decisions and the final outcome (win/draw/loss).
 
-3. **LLM evaluates the trajectory**  
+3. **LLM evaluates the trajectory**
    After the episode, the trajectory is passed to an LLM, which provides dense feedback using a structured prompt:
 
    > "Given the following chess game FEN history and SAN moves, evaluate each agent move for aggression/brilliance and sacrifice justification. Return a JSON array of scores and justifications."
 
-4. **Reward is computed**  
+4. **Reward is computed**
    The LLM scores are aggregated into a **scalar reward** using a weighted formula, incorporating:
    - Aggression
    - Brilliance
    - Game outcome
 
-5. **Policy is updated**  
+5. **Policy is updated**
    Based on the final reward, the agent performs **policy improvement** by adjusting its internal parameters:
    - Aggression threshold
    - Sacrifice prioritization
    - Move ordering or evaluation heuristics
 
-6. **Next episode begins**  
+6. **Next episode begins**
    The updated policy is used in the next game against the user, completing the **reinforcement loop**.
 
 ---

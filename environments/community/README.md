@@ -677,6 +677,115 @@ python environments/community/lean_proof_env/lean_env.py process
 
 **Requirements**: datasets, tqdm, wandb, PyPantograph (for full Lean integration), asyncio
 
+### 16. DeepSacrifice - Human-in-the-Loop Chess RL Environment (`deepsacrifice_chess/`)
+**Author**: [metonym](https://github.com/metonym)
+**Purpose**: Train chess agents to play aggressive, sacrificial chess through human-in-the-loop reinforcement learning with LLM-based reward modeling
+
+A unique chess environment that combines human gameplay with LLM evaluation to train agents in aggressive, sacrificial chess styles. The environment creates a reinforcement learning loop where the agent learns from direct human-vs-agent games, receiving dense feedback from language models that evaluate moves for aggression, brilliance, and sacrifice justification.
+
+**Features**:
+- **Human-in-the-Loop RL**: Users serve as the environment, directly playing against the agent
+- **LLM-Based Reward Model**: GPT-4 evaluates trajectories for aggression, brilliance, and sacrifice quality
+- **Aggressive Chess Focus**: Agent specifically trained to prioritize attacking, sacrificial play styles
+- **Real-time Web Interface**: React-based chess board with live game interaction
+- **Dense Feedback System**: Move-by-move scoring replaces sparse win/loss rewards
+- **Policy Adaptation**: Agent adjusts strategy based on post-game LLM evaluations
+
+**Core RL Components**:
+- **State**: Chess board position (FEN notation) at each move
+- **Action**: Legal chess moves by the agent (SAN notation)
+- **Trajectory**: Complete game history of states and agent actions
+- **Reward**: LLM-generated scores for aggression, brilliance, and game outcome
+- **Policy**: Move selection logic with aggression weighting and sacrifice prioritization
+- **Environment**: Human player interaction and game management system
+
+**Training Flow**:
+1. **Game Execution**: Agent and human alternate moves in chess environment
+2. **Trajectory Recording**: Log complete sequence of FENs and agent moves
+3. **LLM Evaluation**: Post-game analysis by GPT-4 for move quality assessment
+4. **Reward Computation**: Aggregate LLM scores into scalar reward signal
+5. **Policy Update**: Adjust agent parameters based on feedback (aggression threshold, sacrifice prioritization)
+6. **Next Episode**: Updated policy used in subsequent games
+
+**LLM Evaluation Criteria**:
+- **Aggression Score**: 1-10 rating for move aggressiveness and attacking intent
+- **Brilliance Assessment**: Evaluation of tactical creativity and unexpected moves
+- **Sacrifice Justification**: Analysis of whether material sacrifices are strategically sound
+- **Game Outcome Integration**: Win/loss results combined with style evaluation
+
+**Agent Strategy**:
+- **Capture Preference**: Prioritizes taking opponent pieces when available
+- **Check Generation**: Seeks moves that put opponent king in check
+- **Sacrifice Evaluation**: Learns to assess when material sacrifice leads to positional advantage
+- **Adaptive Learning**: Adjusts aggression based on success rates against human opponents
+
+**Technical Architecture**:
+- **Frontend**: React + TypeScript with Vite build system
+- **Backend**: Bun runtime with TypeScript API server
+- **Chess Engine**: chess.js library for move validation and game state
+- **LLM Integration**: OpenAI API for post-game move evaluation
+- **Real-time Communication**: REST API for move exchange and game state updates
+
+**Web Interface Features**:
+- **Interactive Chess Board**: Visual board with drag-and-drop move input
+- **Live Game State**: Real-time position updates and move history
+- **LLM Feedback Display**: Post-game analysis with move-by-move scores
+- **Game History**: Complete trajectory logging for analysis
+- **Agent Learning Visualization**: Policy update tracking over time
+
+**Example Training Session**:
+```
+Game 1: Agent plays aggressively, sacrifices queen for checkmate threat
+LLM Evaluation: High aggression (9/10), brilliant sacrifice (justified)
+Reward: +0.85 (high positive feedback)
+Policy Update: Increase sacrifice threshold, maintain aggression weighting
+
+Game 2: Agent makes conservative moves, wins material but loses initiative
+LLM Evaluation: Low aggression (3/10), missed tactical opportunities
+Reward: +0.15 (low positive feedback despite win)
+Policy Update: Decrease conservative play, increase attacking move priority
+```
+
+**Applications**:
+- **Chess AI Development**: Training agents for specific playing styles
+- **Human-AI Interaction Research**: Studying adaptive learning from human feedback
+- **Game Theory Analysis**: Understanding sacrifice and risk-taking in competitive games
+- **Educational Chess Tools**: Teaching aggressive chess principles through AI demonstration
+- **Reinforcement Learning Research**: Human-in-the-loop RL methodology development
+
+**Setup Requirements**:
+1. **Bun Runtime**: Modern JavaScript runtime and package manager
+2. **OpenAI API Key**: For LLM-based move evaluation
+3. **Web Browser**: For interactive chess interface
+4. **Node.js Environment**: For development and build tools
+
+**Installation & Usage**:
+```bash
+# Environment setup
+cp .env.template .env
+# Add OpenAI API key to .env file
+
+# Install dependencies
+bun install
+
+# Run frontend (Terminal 1)
+bun dev
+
+# Run backend (Terminal 2)
+bun dev:server
+```
+
+**Development Status**: Design prototype focusing on RL loop structure and LLM integration. Core learning algorithms are placeholder implementations ready for enhancement.
+
+**Future Enhancements**:
+- Advanced policy gradient methods for agent learning
+- Multi-agent training with different chess styles
+- Tournament mode for agent evaluation
+- Chess engine integration for stronger baseline opponents
+- Detailed analytics dashboard for training progress
+
+**Requirements**: Bun runtime, OpenAI API, React, TypeScript, chess.js, Vite
+
 ---
 
 ## Support
