@@ -1,64 +1,51 @@
-# Lean Theorem Proving Environment for Atropos
+## Overview
+The `LeanEnv` class implements an environment specifically designed for training and evaluating language models on Lean theorem proving tasks. Its primary motivation is to facilitate research in automated reasoning and to develop LLMs capable of formal mathematical deduction. The environment orchestrates the interaction between an LLM, which generates proof attempts for given theorem statements, and a Lean code checker (currently mocked as `PyPantograph`), which validates these proofs. This interaction provides the necessary feedback signal (rewards) for reinforcement learning. The environment utilizes the `brando/minif2f-lean4` dataset from Hugging Face, providing a standardized benchmark for Lean theorem proving.
 
-This environment allows testing Language Learning Models (LLMs) on Lean theorem proving tasks using `atroposlib`.
+## Quickstart / Usage
 
-## Setup
+The `lean_env.py` script is designed to be run directly from the command line, leveraging the `BaseEnv.cli()` method for easy execution.
 
-1.  **Atroposlib**: Ensure `atroposlib` is installed. If you are working within the main `atropos` repository, this is typically done by navigating to the `atropos` root directory (i.e., `cd LeanCopilot/atropos`) and running:
-    ```bash
-    pip install -e .
-    ```
+### 1. Serve Mode (Connecting to Atropos Trainer)
 
-2.  **Python Dependencies**: Navigate to this environment's directory (`LeanCopilot/atropos/environments/lean_proof_env/`) and install the required Python packages using the provided `requirements.txt`:
-    ```bash
-    pip install -r requirements.txt
-    ```
-    This will install `datasets`, `wandb`, `tqdm`, and `python-dotenv`.
-
-3.  **OpenAI API Key**: This environment requires an OpenAI API key. You can set it in one of two ways:
-    *   As an environment variable:
-        ```bash
-        export OPENAI_API_KEY="your_actual_openai_api_key"
-        ```
-    *   Create a `.env` file within this directory (`LeanCopilot/atropos/environments/lean_proof_env/.env`) with the following content:
-        ```
-        OPENAI_API_KEY=your_actual_openai_api_key
-        ```
-        The script will automatically load this if the environment variable is not set.
-
-4.  **Lean Installation**: Ensure Lean 4 is installed and the `lean` executable is in your system's PATH. You can find installation instructions on the [Lean official website](https://leanprover.github.io/lean4/doc/setup.html).
-
-## Running the Environment
-
-Make sure your current working directory is this environment's directory (`LeanCopilot/atropos/environments/lean_proof_env/`).
-
-Run the environment script using the `process` command provided by `AtroposBaseEnv`:
-
+To run the environment as a server that the Atropos trainer can connect to for distributed training or inference:
 ```bash
-python lean_proof_env.py process \
-    --env.lean_problem_dataset_name="internal_simple_test" \
-    --env.total_steps=5 \
-    --env.group_size=1 \
-    --env.wandb_name="lean_simple_test_run" \
-    --openai.model_name="gpt-4o"
+python environments/lean_env.py serve
 ```
+This command will start the environment, making it available for the Atropos training infrastructure. Ensure your LLM API server (specified in `APIServerConfig`) is running and accessible.
 
-### Command-Line Arguments:
+### 2. Process Mode (Local Testing and Data Generation)
 
-*   `--env.lean_problem_dataset_name`:
-    *   `"internal_simple_test"`: Uses a small set of hardcoded simple theorems (defined within the script).
-    *   `"Tonic/MiniF2F"`: Attempts to load the MiniF2F benchmark from Hugging Face datasets. You might need to specify `--env.lean_problem_dataset_split` (e.g., "test" or "train").
-*   `--env.total_steps`: Number of problems (or items) to process. The `internal_simple_test` set has 8 problems; if `total_steps` is less, a random subset will be chosen for that many steps.
-*   `--env.group_size`: Number of LLM attempts per problem.
-*   `--env.wandb_name`: Name for the WandB run if `use_wandb` is enabled (e.g., by passing `--env.use_wandb=True`).
-*   `--openai.model_name`: The OpenAI model to use (e.g., "gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"). This overrides the default in `config_init`.
-*   `--openai.api_key`: Can be passed explicitly, but using the environment variable or `.env` file is recommended and more secure.
-*   `--openai.base_url`: If using a custom OpenAI-compatible API endpoint.
+To run the environment locally for testing, debugging, data generation, or observing behavior with WandB (if enabled):
+```bash
+python environments/lean_env.py process
+```
+This mode is useful for:
+- Verifying that the dataset loads correctly.
+- Testing the proof generation and scoring logic with a small number of examples.
+- Generating a sample WandB run to inspect logged metrics and tables (ensure `use_wandb=True` in `BaseEnvConfig`).
+- Running a full evaluation pass locally if configured.
 
-The script will generate a `.jsonl` file with the trajectories and an HTML visualization of the rollouts. By default, these are saved in a `data/` subdirectory created within the current working directory (e.g., `LeanCopilot/atropos/environments/lean_proof_env/data/`).
+Additional arguments or configurations might be available via the CLI; refer to the `BaseEnv.cli()` implementation for more details if needed.
 
-## Customization
+## WandB Logging and Metrics
 
-*   **Problem Sets**: Modify the `setup()` method in `lean_proof_env.py` to load different Lean problems or datasets.
-*   **LLM Prompts**: Adjust the `get_next_item()` method in `lean_proof_env.py` to change the prompts sent to the LLM.
-*   **Configuration**: Default configurations are defined in the `LeanProofEnvConfig` class within `lean_proof_env.py`. Most of these can be overridden by command-line arguments (e.g., `--env.max_proof_generation_tokens=256`).
+If `use_wandb` is enabled in the configuration, the environment logs detailed metrics and proof attempts to Weights & Biases, providing insights into the training and evaluation process.
+
+### Example WandB Run
+
+You can find an example of a public WandB run generated by executing the `process` command here:
+`[Link to your public WandB run]` (Replace this with an actual link after running the environment).
+
+### Custom Metrics
+
+In addition to the standard metrics logged by the `BaseEnv`, the `LeanEnv` adds the following custom metrics:
+
+*   **`train/batch_avg_percent_compiled`**: (Logged during training steps) This metric shows the moving average percentage of successfully compiled Lean proofs within recent training batches. It provides a signal of how well the model is learning to generate valid proofs during the training process.
+*   **`eval/percent_compiled`**: (Logged during evaluation steps) This metric reports the percentage of Lean problems from the test set for which the LLM generated a successfully compiled proof. It is a key indicator of the model's generalization performance on unseen problems.
+*   **`train/lean_proof_attempts` (wandb.Table)**: (Logged during training steps, if `num_rollouts_to_keep > 0`) This is a `wandb.Table` that provides a detailed log of individual proof attempts. Each row in the table corresponds to one attempt and includes:
+    *   **Problem Statement**: The original Lean theorem statement (with `sorry`).
+    *   **Generated Proof**: The proof block generated by the LLM.
+    *   **Score**: The reward assigned to the proof attempt (1.0 for compilation, -1.0 for failure).
+    *   **Compilation Status**: A message indicating whether the proof compiled successfully or the error encountered.
+
+These metrics are crucial for understanding the model's progress in learning to generate correct and efficient Lean proofs. The detailed table of attempts allows for qualitative analysis of the model's outputs.
