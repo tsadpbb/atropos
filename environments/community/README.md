@@ -582,6 +582,101 @@ Reward: High (excellent theoretical-empirical match)
 
 **Requirements**: asyncio, openai, asteval, csv, datasets, math_verify, latex2sympy2_extended
 
+### 15. Lean Theorem Proving Environment (`lean_proof_env/`)
+**Author**: [justin5764](https://github.com/justin5764)
+**Purpose**: Train LLMs to complete formal mathematical proofs in the Lean theorem proving language using compilation feedback
+
+A comprehensive environment for training language models on formal mathematical reasoning through Lean theorem proving. Models learn to complete theorem statements by replacing `sorry` placeholders with valid proof steps, receiving immediate feedback through Lean compilation checks.
+
+**Features**:
+- **Formal Proof Completion**: LLMs complete theorem statements by replacing `sorry` with valid proofs
+- **Lean 4 Integration**: Uses the modern Lean 4 theorem proving language and Mathlib
+- **Compilation Feedback**: Real-time validation through Lean compiler integration (PyPantograph)
+- **Mathematical Dataset**: Built on `brando/minif2f-lean4` Hugging Face dataset
+- **Structured Training**: Separate validation/test splits for robust evaluation
+- **Mock Compilation**: Includes simulation framework for development without full Lean setup
+
+**Training Components**:
+- **Problem Structure**: Import statements + formal theorem statement with `sorry`
+- **Proof Generation**: LLM generates complete theorem blocks with proof steps
+- **Compilation Validation**: Lean compiler checks proof correctness and syntax
+- **Reward System**: Binary rewards (1.0 for compilation success, -1.0 for failure)
+- **Progress Tracking**: Compilation success rates and detailed attempt logging
+
+**Lean Integration**:
+- **PyPantograph Interface**: Async integration with Lean theorem prover
+- **Import Management**: Handles Mathlib imports and namespace declarations
+- **Syntax Validation**: Ensures generated proofs follow Lean syntax rules
+- **Error Reporting**: Detailed compilation error messages for debugging
+
+**Dataset Features**:
+- **MiniF2F-Lean4**: Curated collection of formal mathematics problems
+- **Problem Diversity**: Covers various mathematical domains and difficulty levels
+- **Structured Format**: Consistent header + formal statement organization
+- **Train/Test Splits**: Uses validation split for training, test split for evaluation
+
+**Example Training Flow**:
+```
+Input: "import Mathlib.Data.Nat.Basic\nopen Nat\n\ntheorem add_comm (a b : nat) : a + b = b + a := sorry"
+LLM Output: "theorem add_comm (a b : nat) : a + b = b + a := by rw [Nat.add_comm]"
+Compilation: Success ✓
+Reward: 1.0
+```
+
+**Mock Development Mode**:
+- **Simulation Framework**: Allows development without full Lean installation
+- **Keyword-Based Validation**: Basic proof structure and content checks
+- **Random Compilation**: Configurable success rates for testing
+- **Error Simulation**: Realistic error messages for training
+
+**WandB Integration**:
+- **Compilation Metrics**: Track success rates during training and evaluation
+- **Proof Attempt Tables**: Detailed logs of problem statements, generated proofs, and outcomes
+- **Progress Visualization**: Training curves and performance analytics
+- **Custom Metrics**: `train/batch_avg_percent_compiled` and `eval/percent_compiled`
+
+**Training Applications**:
+- **Formal Verification**: Training models for software and hardware verification
+- **Mathematical Education**: AI tutoring systems for formal mathematics
+- **Proof Assistant Development**: Improving automated theorem proving tools
+- **Research Acceleration**: Automating routine mathematical proofs
+
+**Technical Implementation**:
+- **Async Architecture**: Non-blocking proof compilation and validation
+- **Temperature Control**: Different settings for training diversity vs evaluation consistency
+- **Token Management**: Configurable proof length limits and generation parameters
+- **Error Handling**: Robust handling of compilation failures and edge cases
+
+**Configuration Options**:
+- **Model Selection**: Configurable LLM for proof generation (default: Qwen/Qwen3-235B-A22B)
+- **Group Size**: Number of proof attempts per problem (default: 4)
+- **Evaluation Frequency**: Steps between evaluation runs (default: 50)
+- **Token Limits**: Maximum proof length (default: 1024 tokens)
+- **Testing Mode**: Reduced dataset size for development
+
+**Quality Metrics**:
+- **Compilation Success Rate**: Primary measure of proof correctness
+- **Proof Efficiency**: Token usage and proof length analysis
+- **Error Pattern Analysis**: Common failure modes and improvement areas
+- **Mathematical Coverage**: Breadth of successfully proven theorems
+
+**Setup Requirements**:
+1. Lean 4 installation with Mathlib
+2. PyPantograph for Python-Lean integration
+3. `brando/minif2f-lean4` dataset access
+4. OpenAI-compatible LLM server
+
+**Command Line Usage**:
+```bash
+# Connect to Atropos trainer
+python environments/community/lean_proof_env/lean_env.py serve
+
+# Local testing and development
+python environments/community/lean_proof_env/lean_env.py process
+```
+
+**Requirements**: datasets, tqdm, wandb, PyPantograph (for full Lean integration), asyncio
+
 ---
 
 ## Support
