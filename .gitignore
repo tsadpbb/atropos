@@ -189,3 +189,5 @@ example_trainer/trained_model_checkpoints/
 
 # uv
 uv.lock
+
+.DS_Store

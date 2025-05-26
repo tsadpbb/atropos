@@ -1538,6 +1538,273 @@ python environments/community/helpful_doctors/doctor.py process \
 
 **Requirements**: datasets, openai, atroposlib, wandb
 
+### 21. DynastAI - Medieval Kingdom Management RL Environment with Adaptive Rewards (`dynastai/`)
+**Author**: [Slyracoon23](https://github.com/Slyracoon23) with [davidvvliet](https://github.com/davidvvliet)
+**Purpose**: Train LLMs to rule medieval kingdoms through strategic decision-making with an adaptive reward system that evolves based on player choices and outcomes
+
+A comprehensive medieval kingdom management game that challenges agents to balance four critical metrics (Power, Stability, Piety, and Wealth) while ruling their kingdom. The environment features a novel adaptive reward mechanism that creates a dynamic learning landscape where the reward function evolves based on the agent's decision patterns, encouraging strategic balance rather than metric optimization.
+
+**Features**:
+- **Atropos Integration**: Full BaseEnv interface implementation for seamless training
+- **FastAPI Backend**: REST API endpoints for game state management and card generation
+- **Modern Web Frontend**: Responsive HTML/CSS/JS interface with character portraits
+- **Adaptive Reward System**: Dynamic rewards that evolve based on player choices and outcomes
+- **Dual Card Generation**: Pre-defined cards (400+) from JSON and dynamic generation via Qwen 1.7B
+- **OpenRouter Integration**: Dynamic scenario generation using Qwen 1.7B language model
+
+**Core Game Mechanics**:
+
+**Kingdom Metrics (0-100 scale)**:
+- **Power**: Royal authority and military strength
+- **Stability**: Population happiness and social order
+- **Piety**: Religious influence and spiritual authority
+- **Wealth**: Kingdom finances and economic prosperity
+
+**Decision Framework**:
+Each turn presents scenario cards with binary choices (Yes/No) that affect multiple metrics. Cards are categorized by their primary impact area and generated based on current kingdom state and adaptive weights.
+
+**Adaptive Reward Mechanism**:
+The environment implements a novel reward formula that adapts to player behavior:
+
+```
+R = power_final * P + stability_final * S + piety_final * Pi + wealth_final * W
+```
+
+Where:
+- `power_final`, `stability_final`, `piety_final`, `wealth_final` are final metric values
+- `P`, `S`, `Pi`, `W` are counts of cards played in each category during the reign
+
+**Category Weight Evolution**:
+Weights update using exponential moving average (EMA) after each reign:
+```
+weights[category] = 0.9 * weights[category] + 0.1 * (final_metric * card_count)
+```
+
+This creates a self-adjusting reward landscape where:
+1. Players who consistently favor one category shape the reward function to value that metric more
+2. The game dynamically adjusts difficulty through card generation responding to player strengths
+3. Strategic balance is rewarded over single-metric optimization
+
+**Card Generation System**:
+
+**Static Cards**: 400+ pre-defined scenario cards covering:
+- **Power Scenarios**: Military conflicts, noble disputes, territorial expansion
+- **Stability Scenarios**: Peasant concerns, social unrest, public works
+- **Piety Scenarios**: Religious ceremonies, church politics, moral dilemmas
+- **Wealth Scenarios**: Trade agreements, taxation, economic policies
+
+**Dynamic Generation**: OpenRouter API integration with Qwen 1.7B for:
+- **Context-Aware Scenarios**: Cards generated based on current kingdom state
+- **Continuity Events**: References to previous reign outcomes (20% chance)
+- **Adaptive Difficulty**: Scenario complexity adjusts to player performance
+- **Historical Continuity**: Events that reference past decisions and outcomes
+
+**Game Over Conditions**:
+The reign ends when any metric reaches 0 or 100, representing:
+- **Power 0**: Overthrown by nobles or enemies
+- **Power 100**: Become a tyrant, assassinated
+- **Stability 0**: Peasant revolt deposes ruler
+- **Stability 100**: People establish republic
+- **Piety 0**: Declared heretic, executed
+- **Piety 100**: Church gains too much power
+- **Wealth 0**: Kingdom bankruptcy
+- **Wealth 100**: Invaded for vast wealth
+
+**Training Architecture**:
+
+**Environment Interface**:
+```python
+from environments.community.dynastai.src.dynastai_env import DynastAIEnv, DynastAIEnvConfig
+
+# Create environment
+config = DynastAIEnvConfig(
+    api_host="localhost",
+    api_port=9001,
+    openrouter_api_key="your_key",
+    web_ui=True,
+    web_port=3000
+)
+env = DynastAIEnv(config)
+
+# Training loop
+observation = await env.reset()
+action = {"session_id": observation["session_id"], "choice": "yes"}
+observation, reward, done, info = await env.step(action)
+```
+
+**Action Space**:
+- **session_id**: String identifier for game session
+- **choice**: Binary decision ("yes" or "no") for current scenario card
+
+**Observation Space**:
+- **metrics**: Current kingdom metrics (power, stability, piety, wealth, reign_year)
+- **current_card**: Active scenario card with text, options, and character information
+- **session_id**: Game session identifier
+
+**Reward Structure**:
+- **During Reign**: 0.0 reward for intermediate steps
+- **End of Reign**: Adaptive reward calculated using the formula above
+- **Category Weight Updates**: Automatic adjustment for future reigns
+
+**Web Interface Features**:
+
+**Visual Design**:
+- **Character Portraits**: Visual representation of advisors and scenario characters
+- **Metric Displays**: Real-time kingdom status with visual indicators
+- **Card Presentation**: Immersive scenario cards with medieval styling
+- **Decision Feedback**: Visual effects showing metric changes
+
+**Interactive Elements**:
+- **Binary Choices**: Clear Yes/No decision buttons
+- **Metric Tracking**: Live updates of kingdom statistics
+- **Reign History**: Track of previous reigns and outcomes
+- **Character Dialogue**: Immersive advisor interactions
+
+**Technical Implementation**:
+
+**FastAPI Endpoints**:
+- `GET /api/`: API status and health check
+- `POST /api/new_game`: Initialize new game session
+- `GET /api/state/{session_id}`: Retrieve current game state
+- `POST /api/generate_card`: Create new scenario card
+- `POST /api/card_choice`: Process player decision
+- `POST /api/end_reign`: Calculate final rewards and reset
+
+**Card Generation Pipeline**:
+1. **Category Selection**: Weighted random selection based on adaptive weights
+2. **Source Determination**: Choose between static cards or dynamic generation
+3. **Context Integration**: Include current metrics and previous reign history
+4. **Validation**: Ensure card structure and effect ranges are valid
+5. **Fallback System**: Mock cards if other sources fail
+
+**Standalone Mode**:
+The environment includes fallback classes for operation without atroposlib:
+```python
+# Automatic detection and graceful degradation
+if HAS_ATROPOSLIB:
+    from atroposlib.envs.base import BaseEnv, BaseEnvConfig
+else:
+    # Minimal stub classes for standalone operation
+    class BaseEnv: pass
+    class BaseEnvConfig: pass
+```
+
+**Configuration Options**:
+
+**Environment Configuration**:
+- **card_template_count**: Number of base card templates (default: 400)
+- **api_host/api_port**: Server configuration for API endpoints
+- **openrouter_api_key**: Optional key for dynamic card generation
+- **llm_model**: Model selection for card generation (default: qwen/Qwen1.5-7B)
+- **initial_category_weights**: Starting weights for card selection
+- **web_ui/web_port**: Web interface configuration
+
+**OpenRouter Integration**:
+- **Model Selection**: Configurable LLM for card generation
+- **Prompt Engineering**: Structured prompts for consistent card format
+- **Error Handling**: Graceful fallback to static cards on API failures
+- **Rate Limiting**: Respectful API usage patterns
+
+**Research Applications**:
+
+**Adaptive Learning**:
+- **Dynamic Reward Landscapes**: Study how agents adapt to changing reward functions
+- **Strategic Balance**: Investigate multi-objective optimization in RL
+- **Preference Learning**: Understand how reward shaping affects agent behavior
+- **Meta-Learning**: Adaptation to evolving game mechanics
+
+**Decision Making**:
+- **Long-Term Planning**: Balance immediate vs. long-term consequences
+- **Risk Management**: Navigate trade-offs between different kingdom aspects
+- **Contextual Reasoning**: Make decisions based on current kingdom state
+- **Strategic Thinking**: Develop coherent governance strategies
+
+**Human-AI Interaction**:
+- **Preference Alignment**: Train agents that match human strategic preferences
+- **Explainable Decisions**: Generate reasoning for kingdom management choices
+- **Interactive Training**: Human-in-the-loop learning for governance strategies
+- **Cultural Adaptation**: Adjust strategies based on different value systems
+
+**Performance Characteristics**:
+
+**Computational Requirements**:
+- **Memory Usage**: <1GB RAM for environment operation
+- **API Calls**: Optional OpenRouter usage for dynamic content
+- **Web Server**: Lightweight FastAPI backend
+- **Storage**: Minimal state storage for game sessions
+
+**Scalability**:
+- **Session Management**: In-memory storage with UUID-based sessions
+- **Concurrent Games**: Multiple simultaneous game sessions supported
+- **API Rate Limits**: Respectful usage of external services
+- **Fallback Systems**: Graceful degradation when services unavailable
+
+**Training Efficiency**:
+- **Episode Length**: Variable (typically 10-30 decisions per reign)
+- **Reward Frequency**: Sparse rewards at reign end encourage long-term planning
+- **State Complexity**: Manageable state space for efficient learning
+- **Action Space**: Simple binary decisions reduce exploration complexity
+
+**Setup Instructions**:
+
+**Basic Installation**:
+```bash
+# Install dependencies
+pip install -r environments/community/dynastai/requirements.txt
+
+# Optional: Set OpenRouter API key for dynamic cards
+export OPENROUTER_API_KEY="your_api_key_here"
+
+# Run standalone game
+python environments/community/dynastai/run_dynastai.py
+```
+
+**Atropos Integration**:
+```bash
+# From atropos root directory
+python -m atroposlib.envs.dynastai_env serve --slurm False
+```
+
+**Web Interface**:
+Access the game at `http://localhost:3000` when running the server.
+
+**Demo Resources**:
+- **Live Demo Video**: [DynastAI Gameplay & API Overview](https://github.com/Slyracoon23/atropos/pull/81)
+- **Screenshots**: Medieval-themed interface with character portraits and metric displays
+- **API Documentation**: Comprehensive endpoint documentation in README
+
+**Future Enhancements**:
+
+**Advanced Mechanics**:
+- **Multi-Turn Scenarios**: Complex events requiring multiple decisions
+- **Diplomatic Relations**: Interactions with neighboring kingdoms
+- **Random Events**: Natural disasters, plagues, and unexpected challenges
+- **Character Development**: Persistent advisors with evolving relationships
+
+**Enhanced Adaptation**:
+- **Player Modeling**: Deeper understanding of decision patterns
+- **Difficulty Scaling**: Automatic adjustment based on player skill
+- **Narrative Continuity**: Stronger connections between reigns
+- **Cultural Variations**: Different medieval settings and value systems
+
+**Research Extensions**:
+- **Multi-Agent Scenarios**: Competing kingdoms with shared resources
+- **Hierarchical Decision Making**: Delegation to specialized advisors
+- **Uncertainty Modeling**: Incomplete information about decision outcomes
+- **Ethical Reasoning**: Moral dilemmas in governance decisions
+
+**Educational Applications**:
+- **History Teaching**: Interactive exploration of medieval governance
+- **Ethics Education**: Moral reasoning in leadership contexts
+- **Game Design**: Example of adaptive reward systems
+- **AI Safety**: Testing alignment in complex decision environments
+
+**Research Impact**: DynastAI introduces a novel approach to RL environment design through its adaptive reward mechanism. Unlike static reward functions, this system creates a co-evolving learning landscape where both agent and environment adapt, potentially leading to more robust and generalizable decision-making strategies.
+
+**Governance Simulation**: The environment provides a rich testbed for studying AI governance and decision-making under uncertainty. The medieval setting offers familiar metaphors while the adaptive mechanics create genuine strategic challenges that mirror real-world leadership complexities.
+
+**Requirements**: fastapi, uvicorn, pydantic, requests, python-dotenv, httpx, aiohttp, jinja2, tqdm, numpy, wandb, atroposlib
+
 ---
 
 ## Support
