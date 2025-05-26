@@ -1004,7 +1004,7 @@ qml.RY(classical_data, wires=qubit)
 for layer in range(n_layers):
     for qubit in range(n_qubits):
         qml.RY(learnable_params[layer, qubit], wires=qubit)
-    
+
     # Entanglement pattern
     for i in range(n_qubits - 1):
         qml.CNOT(wires=[i, i + 1])
