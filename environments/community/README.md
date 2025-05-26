@@ -786,6 +786,138 @@ bun dev:server
 
 **Requirements**: Bun runtime, OpenAI API, React, TypeScript, chess.js, Vite
 
+### 17. Caput Mundi - Six-Seat No-Limit Hold'em Poker Environment (`poker_holdem/`)
+**Author**: [yoniebans](https://github.com/yoniebans)
+**Purpose**: Train language models to make optimal poker decisions through reinforcement learning on expert hand history data
+
+A comprehensive poker training environment that teaches LLMs to play No-Limit Hold'em poker like winning players. The environment uses processed hand histories from successful poker players to create a supervised learning framework where models learn to match expert actions in various game situations.
+
+**Features**:
+- **Expert Hand History Training**: Uses curated dataset of winning player decisions
+- **Multi-Stage Game Analysis**: Separate tracking for preflop, flop, turn, and river decisions
+- **Dual Reward System**: Combined action matching and bet sizing evaluation
+- **Comprehensive Evaluation**: Stage-specific performance metrics and cumulative tracking
+- **HuggingFace Integration**: Direct dataset loading with train/test splits
+- **WandB Monitoring**: Detailed logging of training progress and poker-specific metrics
+
+**Core Training Components**:
+- **Dataset**: `yoniebans/6max-nlh-poker` with formatted poker situations and expert actions
+- **Input Format**: Structured poker prompts with game state, player positions, and betting history
+- **Target Actions**: Expert player decisions including action type and bet sizing
+- **Reward Functions**: Specialized evaluation for poker action correctness and bet precision
+- **Evaluation Metrics**: Accuracy tracking by game stage and action distribution analysis
+
+**Poker-Specific Features**:
+- **Game Stage Tracking**: Separate analysis for preflop, flop, turn, and river decisions
+- **Action Type Recognition**: Fold, check, call, bet, raise, re-raise, all-in classification
+- **Bet Sizing Analysis**: Numerical precision evaluation for betting amounts
+- **Position Awareness**: Training on positional play and strategic considerations
+- **Hand History Format**: Realistic poker situation representation
+
+**Reward System Architecture**:
+- **Action Match Reward (60%)**: Evaluates correctness of chosen action type
+  - Exact match: 1.0 score
+  - Action type match: 0.7 score
+  - Strategic intent match: 0.5 score
+- **Bet Sizing Reward (40%)**: Evaluates precision of bet amount
+  - Perfect amount: 1.0 score
+  - Linear decay with deviation
+  - Zero score beyond 50% deviation
+
+**Training Data Structure**:
+```
+Input: "Position: BTN, Stack: 100bb, Pot: 3bb, Action: Hero faces 2bb raise..."
+Expert Action: "call 2"
+Model Output: "call 2.5"
+Action Score: 0.7 (correct action type)
+Sizing Score: 0.8 (close bet amount)
+Combined Score: 0.74
+```
+
+**Evaluation Framework**:
+- **Stage-Specific Metrics**: Separate accuracy tracking for each betting round
+- **Action Distribution**: Monitoring of fold/call/raise frequencies
+- **Cumulative Performance**: Long-term learning progress across training epochs
+- **Threshold-Based Accuracy**: Configurable correctness thresholds for evaluation
+- **Sample-Based Testing**: Efficient evaluation on dataset subsets
+
+**Dataset Features**:
+- **Six-Max Format**: Optimized for 6-player No-Limit Hold'em games
+- **Winning Player Focus**: Hand histories from profitable poker players
+- **Structured Prompts**: Consistent formatting for game state representation
+- **Action Formatting**: Standardized expert action representation
+- **Train/Test Splits**: Proper data separation for training and evaluation
+
+**WandB Integration**:
+- **Training Metrics**: Epoch tracking, stage-specific scores, action distributions
+- **Evaluation Tracking**: Cumulative accuracy, stage performance, threshold analysis
+- **Poker Analytics**: Action frequency analysis, betting pattern recognition
+- **Progress Visualization**: Learning curves and performance trends
+
+**Example Training Flow**:
+```
+Epoch 1: Load shuffled hand histories
+Hand 1: Preflop decision - Model matches expert fold (Score: 1.0)
+Hand 2: Flop decision - Model bets 8bb vs expert 10bb (Score: 0.85)
+Hand 3: River decision - Model calls vs expert raise (Score: 0.5)
+Evaluation: 73% accuracy across all stages
+```
+
+**Configuration Options**:
+- **Model Selection**: Configurable LLM for poker decision making (default: Qwen/Qwen3-1.7B)
+- **Batch Processing**: Group size and batch size for efficient training
+- **Evaluation Parameters**: Sample size, temperature, and correctness thresholds
+- **Reward Weighting**: Adjustable balance between action matching and bet sizing
+- **Dataset Management**: Epoch-based shuffling and queue management
+
+**Applications**:
+- **Poker AI Development**: Training competitive poker playing agents
+- **Decision Making Research**: Understanding strategic reasoning in uncertain environments
+- **Game Theory Applications**: Learning optimal play in multi-agent competitive settings
+- **Financial Modeling**: Risk assessment and decision making under uncertainty
+- **Educational Tools**: Teaching poker strategy through AI demonstration
+
+**Technical Implementation**:
+- **Async Processing**: Non-blocking dataset loading and model inference
+- **Memory Efficient**: Queue-based training data management
+- **Robust Parsing**: Action extraction from natural language responses
+- **Error Handling**: Graceful handling of malformed model outputs
+- **Scalable Architecture**: Support for large-scale poker dataset training
+
+**Performance Metrics**:
+- **Overall Accuracy**: Primary measure of poker decision quality
+- **Stage Accuracy**: Preflop/flop/turn/river specific performance
+- **Action Distribution**: Frequency analysis of different poker actions
+- **Bet Sizing Precision**: Numerical accuracy in betting decisions
+- **Learning Progress**: Improvement tracking across training epochs
+
+**Setup Requirements**:
+1. HuggingFace Datasets library for data loading
+2. Transformers library for tokenization
+3. OpenAI-compatible LLM server for inference
+4. WandB account for training monitoring
+
+**Command Line Usage**:
+```bash
+# Start VLLM server
+python -m vllm.entrypoints.openai.api_server \
+    --model Qwen/Qwen3-1.7B \
+    --gpu-memory-utilization 0.95 \
+    --dtype auto \
+    --port 9002
+
+# Run poker training environment
+python environments/community/poker_holdem/poker_env.py process \
+    --env.data_path_to_save_groups poker_rollouts.jsonl \
+    --openai.base_url http://localhost:9002/v1 \
+    --openai.api_key EMPTY \
+    --openai.model_name Qwen/Qwen3-1.7B
+```
+
+**Data Pipeline**: Custom data processing pipeline available at [poker-rl-data](https://github.com/yoniebans/poker-rl-data) for creating poker training datasets from raw hand histories.
+
+**Requirements**: datasets, transformers, wandb, atroposlib
+
 ---
 
 ## Support
