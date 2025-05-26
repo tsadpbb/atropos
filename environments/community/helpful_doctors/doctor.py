@@ -1,28 +1,20 @@
-import json
+import os
 import random
 from typing import Dict, List, Optional, Sequence, Tuple, TypedDict
-import os
+
 from datasets import load_dataset
 from openai import OpenAI
+from patient import patient_profiles
 
 from atroposlib.envs.base import (
     APIServerConfig,
     BaseEnv,
     BaseEnvConfig,
     EvalHandlingEnum,
-    ScoredDataItem,
     ScoredDataGroup,
+    ScoredDataItem,
 )
-# from atroposlib.envs.base import (
-#     BaseEnv,
-#     BaseEnvConfig,
-#     EvalHandlingEnum,
-#     Item,
-#     APIServerConfig,
-# )
 from atroposlib.type_definitions import Item
-
-from environments.hack0.doctor_agent.patient import patient_profiles
 
 DatasetItem = TypedDict(
     "DatasetItem",
@@ -37,18 +29,12 @@ DatasetItem = TypedDict(
     },
 )
 
-with open("environments/hack0/doctor_agent/secrets.json", "r") as f:
-    keys = json.load(f)
-    xai_key = keys["xai"]
-
-
 client = OpenAI(
-    api_key=xai_key,
+    api_key=os.environ.get("XAI_API_KEY"),
     base_url="https://api.x.ai/v1",
 )
 
 final_message = "The diagnosis is:"
-final_message_prompt = final_message + " headache"
 
 doctor_system_prompt = """You are a doctor. You are interacting with a patient.
 You need to diagnose the patient based on the symptoms.
@@ -75,6 +61,7 @@ doctor_model = "NousResearch/DeepHermes-3-Llama-3-8B-Preview"
 
 USER_TAG = "user"
 ASSISTANT_TAG = "assistant"
+
 
 class DoctorEnv(BaseEnv):
 
@@ -112,17 +99,13 @@ class DoctorEnv(BaseEnv):
             data_path_to_save_groups=None,
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
-            debug_mode=True
+            debug_mode=True,
         )
         server_configs = [
             APIServerConfig(
-                # model_name=doctor_model,
-                # base_url="http://localhost:9001/v1",
-                # api_key="x",
-                # num_requests_for_eval=256,
-                model_name="grok-3-latest",
-                base_url=None,
-                api_key=os.environ.get("OPENAI_API_KEY"),
+                model_name=doctor_model,
+                base_url="http://localhost:9001/v1",
+                api_key="EMPTY",
                 num_requests_for_eval=256,
             ),
         ]
@@ -191,7 +174,7 @@ class DoctorEnv(BaseEnv):
 
             patient_profile = random.choice(patient_profiles)
             symptoms = item["question"]
-            patient_system_prompt = patient_profile.format(symptoms = symptoms)
+            patient_system_prompt = patient_profile.format(symptoms=symptoms)
 
             patient_messages = [{"role": "system", "content": patient_system_prompt}]
             # print("before xai message")
@@ -242,7 +225,7 @@ class DoctorEnv(BaseEnv):
                     diagnosis = doctor_msg.strip(final_message)
                     diagnosis = diagnosis.strip()
 
-                    if diagnosis.contains(item["answer"]):
+                    if item["answer"] in diagnosis:
                         score = 1
                     else:
                         score = 0
@@ -285,7 +268,7 @@ class DoctorEnv(BaseEnv):
             masks=masks,
             scores=score,
         )
-        
+
         for score in scores["scores"]:
             self.percent_correct_buffer.append(max(score, 0))
 
