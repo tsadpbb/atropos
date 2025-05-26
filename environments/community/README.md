@@ -1102,6 +1102,277 @@ environments/community/quantum_hybrid/
 
 **Requirements**: pennylane, torch, transformers, datasets, numpy, pydantic, atroposlib
 
+### 19. PyTorch Optimizer Coding Environment (`pytorch_optimizer_coding/`)
+**Author**: [arihanv](https://github.com/arihanv)
+**Purpose**: Train code-generating agents to design and evaluate custom PyTorch optimizers through automated compilation, novelty assessment, and performance benchmarking
+
+A comprehensive RL environment that enables language models to explore the optimizer design space by generating PyTorch optimizer code, which is then evaluated using a multi-faceted reward system combining compilation success, novelty scoring, and performance benchmarking on neural network training tasks.
+
+**Research Question**: Can LLM coding agents automatically discover novel and effective PyTorch optimizers that outperform hand-designed alternatives?
+
+**Environment Architecture**:
+- **Agent Action**: Generate PyTorch optimizer source code as string output
+- **Compilation Reward**: Sandboxed execution with Modal Labs for safe code evaluation
+- **Novelty Assessment**: Grok API scoring for optimizer innovation (0-10 scale)
+- **Performance Benchmarking**: Automated training on MLP/CNN/Transformer architectures
+- **Composite Scoring**: Multi-dimensional reward combining all evaluation aspects
+
+**Core Components**:
+
+**1. Code Generation Interface (`optimizer_benchmark_environmenr.py`)**:
+- **BaseEnv Integration**: Full compatibility with Atropos framework
+- **Architecture Selection**: Configurable target architectures (mnist, classification_small, tabular)
+- **Evaluation Pipeline**: Automated scoring through wrapper functions
+- **Error Handling**: Graceful failure management for invalid code
+
+**2. Sandboxed Execution System (`deploy.py`)**:
+- **Modal Labs Integration**: Secure cloud-based code execution
+- **Isolation**: Complete separation from host environment
+- **Dependency Management**: Automatic PyTorch and related library installation
+- **Output Capture**: Comprehensive stdout/stderr logging for debugging
+
+**3. Multi-Dimensional Evaluation (`evaluator.py`)**:
+- **Validity Pipeline**: Expert code validator using Grok-3-Latest
+- **Novelty Pipeline**: Research conference-style novelty assessment
+- **Compilation Checking**: Syntax, runtime, and compatibility validation
+- **Scoring Aggregation**: MaxPool aggregation across multiple evaluation runs
+
+**4. Performance Benchmarking (`FOB/`)**:
+- **Framework for Optimizer Benchmarking (FOB)**: Comprehensive optimizer evaluation suite
+- **Multi-Task Evaluation**: MNIST, classification, and tabular regression tasks
+- **Automated Training**: 2-epoch training runs with performance metrics
+- **Time Tracking**: Training duration measurement for efficiency assessment
+- **Metric Collection**: Accuracy, loss, and convergence rate analysis
+
+**Evaluation Pipeline**:
+
+**Stage 1: Code Validation**
+```python
+# Validity criteria (all must pass):
+1. Zero syntax or runtime errors
+2. No undefined variables or type mismatches
+3. No memory or CUDA/CPU compatibility issues
+4. Successful import and instantiation
+5. Complete optimization step execution
+```
+
+**Stage 2: Novelty Assessment**
+```python
+# Grok-3 evaluation prompt:
+"You are a judge expert at evaluating optimizers for novelty
+as they will be accepted to a prestigious research conference.
+Rate on scale 1-10 based on novelty and impact in speeding up training."
+```
+
+**Stage 3: Performance Benchmarking**
+```python
+# FOB evaluation tasks:
+- MNIST: Image classification (accuracy maximization)
+- Classification Small: General classification (accuracy maximization)
+- Tabular: Regression tasks (loss minimization)
+```
+
+**Reward Function Design**:
+```python
+total_reward = compilation_reward + novelty_score + performance_reward
+where:
+- compilation_reward: 1 if compiles successfully, 0 otherwise
+- novelty_score: Grok assessment (0-10 scale)
+- performance_reward: Task-specific metrics (accuracy/loss) - time_penalty
+```
+
+**FOB Integration Features**:
+
+**Automated Optimizer Registration**:
+- **Dynamic Code Injection**: Runtime optimizer.py file creation
+- **Configuration Generation**: Automatic default.yaml creation with learning rates
+- **Module Initialization**: Proper Python package structure setup
+- **Experiment YAML**: Multi-task evaluation configuration
+
+**Benchmarking Tasks**:
+- **MNIST**: Handwritten digit classification (28x28 images, 10 classes)
+- **Classification Small**: Reduced-scale classification for rapid evaluation
+- **Tabular**: Regression on structured data with numerical features
+
+**Performance Metrics**:
+- **Training Time**: Wall-clock time for 2-epoch training
+- **Final Accuracy**: Test set performance after training completion
+- **Loss Convergence**: Final loss values for regression tasks
+- **Efficiency Ratio**: Performance per unit time for optimizer comparison
+
+**Technical Implementation**:
+
+**Optimizer Code Template**:
+```python
+from lightning.pytorch.utilities.types import OptimizerLRScheduler
+from torch.optim import SGD  # or custom optimizer
+from pytorch_fob.engine.parameter_groups import GroupedModel
+from pytorch_fob.engine.configs import OptimizerConfig
+
+def configure_optimizers(model: GroupedModel, config: OptimizerConfig) -> OptimizerLRScheduler:
+    lr = config.learning_rate
+    optimizer = CustomOptimizer(model.grouped_parameters(lr=lr), lr=lr)
+    return {"optimizer": optimizer}
+```
+
+**Modal Labs Deployment**:
+- **Serverless Execution**: On-demand code execution without infrastructure management
+- **Automatic Scaling**: Dynamic resource allocation based on evaluation load
+- **Security Isolation**: Complete separation from host environment
+- **Dependency Injection**: Automatic PyTorch and scientific computing stack
+
+**Grok API Integration**:
+- **Verdict Framework**: Structured evaluation pipeline with retry mechanisms
+- **Multi-Run Assessment**: 3 independent evaluations with MaxPool aggregation
+- **Prompt Engineering**: Research conference review simulation for novelty assessment
+- **Categorical Validation**: Binary valid/invalid classification with strict criteria
+
+**Environment Configuration**:
+```python
+class OptimizerBenchmarkEnvConfig(BaseEnvConfig):
+    architecture: str = "mnist"  # Target architecture for evaluation
+    max_epochs: int = 2         # Training duration
+    timeout: int = 300          # Maximum evaluation time
+    novelty_threshold: float = 7.0  # Minimum novelty for acceptance
+```
+
+**Evaluation Workflow**:
+1. **Code Generation**: Agent produces optimizer implementation
+2. **Syntax Validation**: Pre-execution syntax and import checking
+3. **Sandboxed Execution**: Modal Labs deployment and execution
+4. **Compilation Assessment**: Success/failure determination
+5. **Novelty Scoring**: Grok API evaluation for innovation
+6. **Performance Testing**: FOB benchmark execution
+7. **Reward Calculation**: Multi-dimensional scoring aggregation
+8. **Feedback Provision**: Detailed results for agent learning
+
+**Safety & Security Features**:
+- **Sandboxed Execution**: Complete isolation from host system
+- **Resource Limits**: CPU, memory, and time constraints
+- **Code Validation**: Pre-execution safety checks
+- **Error Containment**: Graceful handling of malicious or broken code
+- **Audit Logging**: Comprehensive execution tracking
+
+**Research Applications**:
+
+**Optimizer Discovery**:
+- **Novel Architectures**: Automatic discovery of new optimizer designs
+- **Hyperparameter Optimization**: Learning rate, momentum, and decay schedules
+- **Adaptive Methods**: Dynamic adjustment based on training progress
+- **Task-Specific Optimization**: Specialized optimizers for different domains
+
+**Meta-Learning**:
+- **Cross-Task Transfer**: Optimizers effective across multiple domains
+- **Few-Shot Adaptation**: Quick adaptation to new tasks
+- **Architecture Awareness**: Optimizers tailored to specific model architectures
+- **Efficiency Optimization**: Balancing performance with computational cost
+
+**Automated ML Pipeline**:
+- **End-to-End Optimization**: From code generation to performance validation
+- **Continuous Improvement**: Iterative refinement based on evaluation feedback
+- **Scalable Evaluation**: Parallel assessment across multiple architectures
+- **Production Integration**: Direct deployment of discovered optimizers
+
+**Current Limitations**:
+- **Evaluation Scope**: Limited to 2-epoch training (rapid but potentially incomplete assessment)
+- **Architecture Coverage**: Three tasks may not capture full optimizer effectiveness
+- **Novelty Subjectivity**: Grok assessment may have biases or inconsistencies
+- **Computational Cost**: Modal Labs execution adds latency and expense
+
+**Future Enhancements**:
+
+**Extended Evaluation**:
+- **Longer Training**: Multi-epoch evaluation for convergence analysis
+- **More Tasks**: Computer vision, NLP, and reinforcement learning benchmarks
+- **Real-World Datasets**: ImageNet, GLUE, and other standard benchmarks
+- **Hardware Diversity**: GPU, TPU, and distributed training evaluation
+
+**Advanced Metrics**:
+- **Convergence Analysis**: Learning curve shape and stability assessment
+- **Generalization**: Performance on held-out validation sets
+- **Robustness**: Sensitivity to hyperparameter changes
+- **Memory Efficiency**: RAM and computational resource utilization
+
+**Agent Integration**:
+- **Curriculum Learning**: Progressive difficulty in optimizer design challenges
+- **Multi-Agent Competition**: Competitive optimizer discovery
+- **Human-in-the-Loop**: Expert feedback integration for novelty assessment
+- **Transfer Learning**: Knowledge sharing across related optimization tasks
+
+**Installation & Setup**:
+```bash
+# Install core dependencies
+pip install modal verdict torch lightning
+
+# Set up API keys
+export GROK_API_KEY="your_grok_api_key"
+export MODAL_TOKEN="your_modal_token"
+
+# Deploy Modal function
+modal deploy environments/community/pytorch_optimizer_coding/deploy.py
+
+# Run evaluation
+python environments/community/pytorch_optimizer_coding/wrapper.py
+```
+
+**Example Usage**:
+```python
+from environments.community.pytorch_optimizer_coding.optimizer_benchmark_environmenr import OptimizerBenchmarkEnvironment
+
+# Initialize environment
+env = OptimizerBenchmarkEnvironment(config=config)
+
+# Generate optimizer code (from agent)
+optimizer_code = """
+class NovelOptimizer(torch.optim.Optimizer):
+    def __init__(self, params, lr=1e-3, momentum=0.9):
+        defaults = dict(lr=lr, momentum=momentum)
+        super().__init__(params, defaults)
+
+    def step(self, closure=None):
+        # Novel optimization logic here
+        pass
+"""
+
+# Evaluate optimizer
+reward = env.evaluate(optimizer_code)
+print(f"Total reward: {reward}")
+```
+
+**Repository Structure**:
+```
+environments/community/pytorch_optimizer_coding/
+├── optimizer_benchmark_environmenr.py  # Main environment interface
+├── wrapper.py                          # Evaluation orchestration
+├── evaluator.py                        # Grok-based assessment
+├── deploy.py                           # Modal Labs deployment
+├── run_optimizer_benchmark.py          # Standalone evaluation
+├── requirements.txt                    # Python dependencies
+├── FOB/                                # Framework for Optimizer Benchmarking
+│   ├── optimizer_benchmark_env.py      # FOB integration
+│   ├── pytorch_fob/                    # Core benchmarking framework
+│   ├── baselines/                      # Baseline configurations
+│   └── examples/                       # Usage examples
+└── README.md                           # Detailed documentation
+```
+
+**Key Dependencies**:
+- **Modal Labs**: Serverless code execution platform
+- **Verdict**: Structured LLM evaluation framework
+- **PyTorch Lightning**: Training framework for benchmarking
+- **Grok API**: Novelty assessment via xAI's language model
+- **FOB**: Framework for Optimizer Benchmarking
+
+**Performance Expectations**:
+- **Evaluation Time**: ~3 minutes per optimizer (compilation + 2 epoch training)
+- **Memory Usage**: ~1GB RAM per evaluation
+- **Throughput**: ~20 optimizers per hour (depending on Modal Labs capacity)
+- **Success Rate**: ~60-80% compilation success for well-formed agent outputs
+
+**Research Impact**: This environment addresses the underexplored area of automated optimizer discovery, providing a safe and comprehensive testbed for LLM-driven innovation in optimization algorithms. The multi-faceted evaluation ensures both novelty and practical effectiveness.
+
+**Requirements**: modal, verdict, torch, lightning, transformers, datasets, pydantic, atroposlib
+
 ---
 
 ## Support
