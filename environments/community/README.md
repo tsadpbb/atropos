@@ -386,6 +386,60 @@ A comprehensive environment for training LLMs on the challenging task of Rubik's
 
 **Requirements**: scipy, matplotlib, torch, transformers, wandb, plotly, flask, pydantic (see requirements.txt)
 
+### 12. Pokemon Showdown Environment (`pokemon-showdown/`)
+**Author**: [iyaja](https://github.com/iyaja)
+**Purpose**: Train LLMs to play Pokemon battles through strategic decision-making in competitive battles
+
+A game environment that teaches LLMs strategic thinking and decision-making through Pokemon battles using the Pokemon Showdown battle simulator. Models learn to analyze battle states, evaluate team compositions, predict opponent moves, and execute optimal strategies in turn-based combat scenarios.
+
+**Features**:
+- **Pokemon Showdown Integration**: Uses the official Pokemon Showdown battle simulator
+- **Strategic Decision Making**: Models must choose between attacking, switching, and using items
+- **Battle State Analysis**: Complete game state information including HP, status effects, and move sets
+- **Self-Play Training**: GPT player vs Max Damage baseline for RL training
+- **Random Battle Format**: Uses gen9randombattle for diverse team compositions
+- **Real-time Battle Simulation**: Asynchronous battle management with poke-env library
+
+**Training Components**:
+- **GPT Player**: LLM-controlled player that receives battle state and must choose actions
+- **Max Damage Player**: Baseline opponent that always selects highest damage moves
+- **Battle History**: Complete move sequences and outcomes for learning from experience
+- **Win/Loss Rewards**: Binary reward signal based on battle outcomes
+
+**Strategic Elements**:
+- **Type Effectiveness**: Understanding Pokemon type matchups and damage calculations
+- **Status Effects**: Managing poison, burn, paralysis, sleep, and other conditions
+- **Team Management**: Switching Pokemon strategically based on matchups
+- **Move Selection**: Choosing between different moves based on situation
+- **HP Management**: Risk assessment and resource management throughout battles
+
+**Technical Implementation**:
+- **Async Battle Management**: Non-blocking battle execution for training efficiency
+- **poke-env Integration**: Robust Pokemon battle simulation and state management
+- **Atropos RL Framework**: Standard reward signals and trajectory collection
+- **Battle Format Support**: Configurable battle formats and rule sets
+
+**Applications**:
+- Strategic game AI development
+- Turn-based decision making under uncertainty
+- Complex state space navigation
+- Competitive multi-agent training
+- Game theory and opponent modeling
+
+**Demo Resources**:
+- **W&B Dashboard**: [Training Results](https://wandb.ai/ajayuppili/atropos-environments_game_environments_pokemon-showdown)
+- **Overview Video**: TBD
+
+**Setup Requirements**:
+1. Pokemon Showdown server (local installation)
+2. poke-env Python library
+3. Node.js for Pokemon Showdown simulator
+4. OpenAI API access for GPT player
+
+**Battle Format**: gen9randombattle (Generation 9 Random Battles)
+
+**Requirements**: poke-env, nodejs, pokemon-showdown simulator, OpenAI API
+
 ---
 
 ## Support

@@ -1,36 +1,21 @@
-import asyncio
 import os
 import random
-import re
-from typing import Any, List, Optional, Tuple, Dict
+from typing import Any, Dict, List, Optional, Tuple
+
+from poke_env.environment.move import Move
+from poke_env.environment.pokemon import Pokemon
+from pydantic import Field
 
 from atroposlib.envs.base import (
     APIServerConfig,
     BaseEnv,
     BaseEnvConfig,
     Item,
-    ScoredDataItem,
     ScoredDataGroup,
 )
 
-from pydantic import Field
-
 # Attempt to import from helpers.py
-from helpers import (
-    create_prompt as original_create_prompt,
-    log_battle_info,
-    log_player_info,
-    log_opponent_info,
-    MaxDamagePlayer,
-    GPTPlayer,
-)
-from poke_env.player import Player
-from poke_env.environment.battle import Battle, AbstractBattle
-from poke_env.environment.move import Move
-from poke_env.environment.pokemon import Pokemon
-
-
-class (Player):
+from helpers import GPTPlayer, MaxDamagePlayer
 
 
 class PokemonEnvConfig(BaseEnvConfig):
@@ -166,7 +151,8 @@ class PokemonEnv(BaseEnv):
         # If poke-env played fewer than requested, we have a mismatch.
         if len(newly_added_battle_tags_list) != num_battles_in_group:
             print(
-                f"[{self.name}] Warning/Error: Expected {num_battles_in_group} new battles, but identified {len(newly_added_battle_tags_list)} new battle tags."
+                f"[{self.name}] Warning/Error: Expected {num_battles_in_group} new battles, "
+                f"but identified {len(newly_added_battle_tags_list)} new battle tags."
             )
             print(f"[{self.name}] Identified tags: {newly_added_battle_tags_list}")
             # Decide how to handle: return None, try to fill, or return partial (latter is hard for Atropos)
@@ -193,7 +179,8 @@ class PokemonEnv(BaseEnv):
 
             if not battle_object:
                 print(
-                    f"[{self.name}] Error: Battle object for presumed new tag {battle_tag} not found in player.battles."
+                    f"[{self.name}] Error: Battle object for presumed new tag {battle_tag} "
+                    f"not found in player.battles."
                 )
                 outcome_str = "Error: Battle data missing"
                 # reward_value remains 0.0
@@ -209,10 +196,15 @@ class PokemonEnv(BaseEnv):
                     reward_value = 0.0
 
             print(
-                f"[{self.name}] Processed Battle (Overall #{current_battle_overall_seq_num}, Group Item {i+1}/{num_battles_in_group}, Tag: {battle_tag}). Agent outcome: {outcome_str}"
+                f"[{self.name}] Processed Battle (Overall #{current_battle_overall_seq_num}, "
+                f"Group Item {i+1}/{num_battles_in_group}, Tag: {battle_tag}). "
+                f"Agent outcome: {outcome_str}"
             )
 
-            raw_prompt = f"Battle {current_battle_overall_seq_num}: Agent vs Opponent ({self.config.battle_format}, Tag: {battle_tag})"
+            raw_prompt = (
+                f"Battle {current_battle_overall_seq_num}: Agent vs Opponent "
+                f"({self.config.battle_format}, Tag: {battle_tag})"
+            )
             raw_completion = f"Outcome: {outcome_str}"
             prompt_tokens = self.tokenizer.encode(raw_prompt)
             completion_tokens = self.tokenizer.encode(raw_completion)

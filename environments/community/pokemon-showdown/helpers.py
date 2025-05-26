@@ -1,12 +1,12 @@
-from poke_env import RandomPlayer
-from poke_env.player import Player
-from poke_env.environment.pokemon import Pokemon
-from poke_env.environment.battle import Battle, AbstractBattle
-import openai
-from poke_env.environment.move import Move
-from typing import List, Union, Optional
 import json
-import asyncio
+from typing import Optional, Union
+
+import openai
+from poke_env import RandomPlayer
+from poke_env.environment.battle import AbstractBattle, Battle
+from poke_env.environment.move import Move
+from poke_env.environment.pokemon import Pokemon
+from poke_env.player import Player
 
 client = openai.OpenAI()
 
@@ -52,7 +52,9 @@ def log_pokemon(pokemon: Pokemon, is_opponent: bool = False):
     lines.append("Moves:")
     lines.extend(
         [
-            f"Move ID: `{move.id}` Base Power: {move.base_power} Accuracy: {move.accuracy * 100}% PP: ({move.current_pp}/{move.max_pp}) Priority: {move.priority}  "
+            f"Move ID: `{move.id}` Base Power: {move.base_power} "
+            f"Accuracy: {move.accuracy * 100}% PP: ({move.current_pp}/{move.max_pp}) "
+            f"Priority: {move.priority}  "
             for move in pokemon.moves.values()
         ]
     )
@@ -129,7 +131,12 @@ Here is the list of available moves:
 
 {available_moves}
 
-Reason carefully about the best move to make. Consider things like the opponent's team, the weather, the side conditions (i.e. stealth rock, spikes, sticky web, etc.). Consider the effectiveness of the move against the opponent's team, but also consider the power of the move, and the accuracy. You may also switch to a different pokemon if you think it is a better option. Given the complexity of the game, you may also sometimes choose to "sacrifice" your pokemon to put your team in a better position.
+Reason carefully about the best move to make. Consider things like the opponent's team,
+the weather, the side conditions (i.e. stealth rock, spikes, sticky web, etc.).
+Consider the effectiveness of the move against the opponent's team, but also consider
+the power of the move, and the accuracy. You may also switch to a different pokemon
+if you think it is a better option. Given the complexity of the game, you may also
+sometimes choose to "sacrifice" your pokemon to put your team in a better position.
 
 Finally, write a conclusion that includes the move you will make, and the reason you made that move.
 
@@ -139,7 +146,12 @@ Finally, write a conclusion that includes the move you will make, and the reason
 
 class GPTPlayer(Player):
 
-    def __init__(self, model_name: str, api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(
+        self,
+        model_name: str,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ):
         super().__init__()
         self.model_name = model_name
         # OpenAI client will use environment variables if api_key or base_url are None
@@ -176,13 +188,14 @@ class GPTPlayer(Player):
                             "properties": {
                                 "move_id": {
                                     "type": "string",
-                                    "description": "The id (name of move) of the move to choose. This must be one of the available move IDs.",
+                                    "description": "The id (name of move) of the move to choose. "
+                                    "This must be one of the available move IDs.",
                                 }
                             },
                             "required": ["move_id"],
                             "additionalProperties": False,
-                        }
-                    }
+                        },
+                    },
                 }
             ]
 
@@ -198,7 +211,8 @@ class GPTPlayer(Player):
                 {"role": "system", "content": system_prompt},
                 {
                     "role": "user",
-                    "content": f"Select a move based on the move id (the name of the move) {battle.available_moves}. You must use the choose_order_from_id tool.",
+                    "content": f"Select a move based on the move id (the name of the move) "
+                    f"{battle.available_moves}. You must use the choose_order_from_id tool.",
                 },
             ]
 
@@ -208,26 +222,41 @@ class GPTPlayer(Player):
                 messages=messages,
                 tools=tools,
                 temperature=1.0,
-                tool_choice={"type": "function", "function": {"name": "choose_order_from_id"}},
+                tool_choice={
+                    "type": "function",
+                    "function": {"name": "choose_order_from_id"},
+                },
             )
-            
-            if tool_selection_response.choices and tool_selection_response.choices[0].message.tool_calls:
+
+            if (
+                tool_selection_response.choices
+                and tool_selection_response.choices[0].message.tool_calls
+            ):
                 tool_call = tool_selection_response.choices[0].message.tool_calls[0]
                 if tool_call.function.name == "choose_order_from_id":
                     args = json.loads(tool_call.function.arguments)
-                    # print(f"{self.color}Available moves: {battle.available_moves}{RESET_COLOR}") # Optional: for debugging
+                    # print(f"{self.color}Available moves: {battle.available_moves}{RESET_COLOR}")
+                    # Optional: for debugging
                     chosen_order = choose_order_from_id(args["move_id"], battle)
                     # print(f"Chosen order by GPT: {chosen_order}")
                     return self.create_order(chosen_order)
                 else:
-                    print(f"Error: Unexpected tool call {tool_call.function.name}. Choosing random move.")
+                    print(
+                        f"Error: Unexpected tool call {tool_call.function.name}. "
+                        f"Choosing random move."
+                    )
                     return self.choose_random_move(battle)
             else:
                 # This case includes if choices is empty, message is None, or tool_calls is None/empty
                 error_message = "Error: No tool call found in LLM response."
-                if tool_selection_response.choices and tool_selection_response.choices[0].finish_reason:
+                if (
+                    tool_selection_response.choices
+                    and tool_selection_response.choices[0].finish_reason
+                ):
                     error_message += f" Finish reason: {tool_selection_response.choices[0].finish_reason}."
-                if tool_selection_response.usage: # Log usage for debugging if available
+                if (
+                    tool_selection_response.usage
+                ):  # Log usage for debugging if available
                     error_message += f" Usage: {tool_selection_response.usage}."
 
                 # print(f"{error_message} Choosing random move.")
