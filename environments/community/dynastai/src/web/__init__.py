@@ -1,4 +1,4 @@
-   # DynastAI web interface
+# DynastAI web interface
 from .api import api
 from .server import run_server
 

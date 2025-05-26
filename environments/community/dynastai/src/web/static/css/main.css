@@ -1,4 +1,4 @@
-/* 
+/*
    DynastAI - Main CSS Styles
    Medieval kingdom management game - Pixel Art Theme
 */
@@ -201,7 +201,7 @@ button {
 
 .choice-btn.highlight {
     transform: scale(1.1);
-    box-shadow: 
+    box-shadow:
         0 0 0 var(--pixel-size) #ffd700,
         0 0 calc(var(--pixel-size) * 4) #ffd700,
         0 6px 0 rgba(0, 0, 0, 0.5);
@@ -209,20 +209,20 @@ button {
 }
 
 @keyframes pulse-highlight {
-    0% { 
-        box-shadow: 
+    0% {
+        box-shadow:
             0 0 0 var(--pixel-size) #ffd700,
             0 0 calc(var(--pixel-size) * 4) #ffd700,
             0 6px 0 rgba(0, 0, 0, 0.5);
     }
-    50% { 
-        box-shadow: 
+    50% {
+        box-shadow:
             0 0 0 calc(var(--pixel-size) * 2) #ffd700,
             0 0 calc(var(--pixel-size) * 8) #ffd700,
             0 6px 0 rgba(0, 0, 0, 0.5);
     }
-    100% { 
-        box-shadow: 
+    100% {
+        box-shadow:
             0 0 0 var(--pixel-size) #ffd700,
             0 0 calc(var(--pixel-size) * 4) #ffd700,
             0 6px 0 rgba(0, 0, 0, 0.5);
@@ -397,16 +397,16 @@ footer {
         margin: 1rem;
         padding: 1.5rem;
     }
-    
+
     .metric {
         min-width: 120px;
     }
-    
+
     #card-options {
         flex-direction: column;
         gap: 1rem;
     }
-    
+
     .choice-btn {
         width: 100%;
     }

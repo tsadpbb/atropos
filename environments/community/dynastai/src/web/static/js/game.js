@@ -1,6 +1,6 @@
 /**
- * DynastAI - Game Client 
- * 
+ * DynastAI - Game Client
+ *
  * This JavaScript file handles the client-side logic for the DynastAI game:
  * - Communicating with the API
  * - Updating the UI based on game state
@@ -102,39 +102,39 @@ function updateMeters() {
     stabilityMeter.style.width = `${metrics.stability}%`;
     pietyMeter.style.width = `${metrics.piety}%`;
     wealthMeter.style.width = `${metrics.wealth}%`;
-    
+
     // Update displayed values
     powerValue.textContent = metrics.power;
     stabilityValue.textContent = metrics.stability;
     pietyValue.textContent = metrics.piety;
     wealthValue.textContent = metrics.wealth;
     reignYear.textContent = metrics.reign_year;
-    
+
     // Update dynasty year (base year + reign year)
     const dynastyYearElement = document.getElementById('dynasty-year');
     if (dynastyYearElement) {
         dynastyYearElement.textContent = dynastyYear + metrics.reign_year;
     }
-    
+
     // Change colors when values get dangerous
     if (metrics.power <= 20 || metrics.power >= 80) {
         powerMeter.style.backgroundColor = '#ff5252';
     } else {
         powerMeter.style.backgroundColor = 'var(--power-color)';
     }
-    
+
     if (metrics.stability <= 20 || metrics.stability >= 80) {
         stabilityMeter.style.backgroundColor = '#ff9800';
     } else {
         stabilityMeter.style.backgroundColor = 'var(--stability-color)';
     }
-    
+
     if (metrics.piety <= 20 || metrics.piety >= 80) {
         pietyMeter.style.backgroundColor = '#ff9800';
     } else {
         pietyMeter.style.backgroundColor = 'var(--piety-color)';
     }
-    
+
     if (metrics.wealth <= 20 || metrics.wealth >= 80) {
         wealthMeter.style.backgroundColor = '#ff9800';
     } else {
@@ -151,16 +151,16 @@ function displayEffects(effects) {
         console.error("Effect display elements not found");
         return;
     }
-    
+
     // Update effect values
     powerValue.innerHTML = `${metrics.power} <span class="stat-change ${effects.power >= 0 ? 'positive' : 'negative'}">${formatEffect(effects.power)}</span>`;
     stabilityValue.innerHTML = `${metrics.stability} <span class="stat-change ${effects.stability >= 0 ? 'positive' : 'negative'}">${formatEffect(effects.stability)}</span>`;
     pietyValue.innerHTML = `${metrics.piety} <span class="stat-change ${effects.piety >= 0 ? 'positive' : 'negative'}">${formatEffect(effects.piety)}</span>`;
     wealthValue.innerHTML = `${metrics.wealth} <span class="stat-change ${effects.wealth >= 0 ? 'positive' : 'negative'}">${formatEffect(effects.wealth)}</span>`;
-    
+
     // Hide effects display since we're showing them inline
     effectsDisplay.classList.add('hidden');
-    
+
     // Hide the inline effects after 3 seconds
     setTimeout(() => {
         powerValue.textContent = metrics.power;
@@ -183,17 +183,17 @@ function formatEffect(value) {
  */
 async function decideChoice(card, currentMetrics) {
     console.log("AI analyzing choices for card:", card);
-    
+
     // Get effects for both choices
     const yesEffects = card.effects.yes;
     const noEffects = card.effects.no;
-    
+
     // Calculate how "balanced" each choice would make the metrics
     const yesScore = calculateBalanceScore(currentMetrics, yesEffects);
     const noScore = calculateBalanceScore(currentMetrics, noEffects);
-    
+
     console.log("Balance scores - Yes:", yesScore, "No:", noScore);
-    
+
     // Choose the option with the better balance score
     const choice = yesScore >= noScore ? 'yes' : 'no';
     console.log("AI chose:", choice);
@@ -212,11 +212,11 @@ function calculateBalanceScore(metrics, effects) {
         piety: metrics.piety + (effects.piety || 0),
         wealth: metrics.wealth + (effects.wealth || 0)
     };
-    
+
     // Calculate how far each metric is from the ideal range (20-80)
     // Lower penalty score is better
     let penaltyScore = 0;
-    
+
     Object.values(newMetrics).forEach(value => {
         if (value < 20) {
             penaltyScore += (20 - value) * 2; // Penalize low values more
@@ -225,7 +225,7 @@ function calculateBalanceScore(metrics, effects) {
         }
         // Values between 20-80 add no penalty
     });
-    
+
     // Return inverted penalty score so higher is better
     return 1000 - penaltyScore;
 }
@@ -237,11 +237,11 @@ function highlightChoice(choice) {
     // Remove any existing highlights and indicators
     yesButton.classList.remove('highlight');
     noButton.classList.remove('highlight');
-    
+
     // Add highlight to the chosen button with pixel art style
     const buttonToHighlight = choice === 'yes' ? yesButton : noButton;
     buttonToHighlight.classList.add('highlight');
-    
+
     // Remove highlight after 1.5 seconds (before the next card appears)
     setTimeout(() => {
         buttonToHighlight.classList.remove('highlight');
@@ -259,55 +259,55 @@ async function startGame() {
             cardText.textContent = "Cannot connect to game server. Please ensure the server is running.";
             return;
         }
-        
+
         // Reset game state
         gameOver = false;
         trajectory = [];
-        
+
         // Get ruler name from input
         rulerName = rulerNameInput.value.trim() || "Anonymous Ruler";
-        
+
         // Get play mode
         const playMode = document.getElementById('play-mode').value;
         console.log("Starting game in mode:", playMode);
-        
+
         // Reset dynasty year only if this is a new game (button text check)
         if (startGameButton.textContent !== "Continue Dynasty") {
             dynastyYear = 0;
         }
-        
+
         // Create new game session
         const response = await fetch(`${API_URL}new_game`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 session_id: sessionId
             })
         });
-        
+
         const data = await response.json();
         sessionId = data.session_id;
         metrics = data.metrics;
-        
+
         updateMeters();
-        
+
         // Hide start screen, show game screen
         startScreen.classList.add('hidden');
         gameOverScreen.classList.add('hidden');
         cardContainer.classList.remove('hidden');
-        
+
         // Reset the start button text for future new games
         startGameButton.textContent = "Start New Game";
-        
+
         // Show/hide AI choice button based on play mode
         const aiChoiceButton = document.getElementById('ai-choice-button');
         if (aiChoiceButton) {
             aiChoiceButton.style.display = playMode === 'ai' ? 'none' : 'block';
         }
-        
+
         // Generate first card
         await generateCard();
-        
+
         // If AI mode is selected, start making choices automatically after a 2-second delay
         if (playMode === 'ai') {
             console.log("AI mode selected, making first choice...");
@@ -315,7 +315,7 @@ async function startGame() {
                 await letAIMakeChoice();
             }, 1400);
         }
-        
+
     } catch (error) {
         console.error("Error starting game:", error);
         alert("Failed to start game. Please check your connection to the game server.");
@@ -351,7 +351,7 @@ function getCharacterImageFilename(characterName) {
         'Foreign Ambassador': 'foreign-ambassador',
         'Peasant': 'peasant',
         'Court Philosopher': 'court-philosopher',
-        
+
         // Single-word titles
         'Bishop': 'cardinal',
         'General': 'general',
@@ -368,7 +368,7 @@ function getCharacterImageFilename(characterName) {
             return filename;
         }
     }
-    
+
     // If no match found, return no-image
     console.warn(`No image mapping found for character: ${characterName}`);
     return 'no-image';
@@ -382,47 +382,47 @@ async function generateCard() {
         // Clear any existing highlights first
         yesButton.classList.remove('highlight');
         noButton.classList.remove('highlight');
-        
+
         const response = await fetch(`${API_URL}generate_card`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId })
         });
-        
+
         currentCard = await response.json();
-        
+
         // Update card UI
         let cardContent = currentCard.text;
-        
+
         // Handle character image
         const characterImage = document.getElementById('character-image');
         if (currentCard.character_name) {
             // Get the correct image filename based on character title
             const imageFilename = getCharacterImageFilename(currentCard.character_name);
-            
+
             // Set image source and show it
             characterImage.src = `img/${imageFilename}.png`;
             characterImage.style.display = 'block';
-            
+
             // Add error handler to fallback to no-image if image fails to load
             characterImage.onerror = () => {
                 console.warn(`Failed to load image for ${currentCard.character_name}, falling back to no-image`);
                 characterImage.src = 'img/no-image.png';
             };
-            
+
             cardContent = `<span class="character-name">${currentCard.character_name}:</span> ${cardContent}`;
         } else {
             characterImage.style.display = 'none';
         }
-        
+
         cardText.innerHTML = cardContent;
         yesButton.textContent = currentCard.yes_option;
         noButton.textContent = currentCard.no_option;
-        
+
         // Update category indicator
         categoryIndicator.className = '';
         categoryIndicator.classList.add(currentCard.category);
-        
+
         // Attach AI choice button event listener after rendering
         const aiChoiceButton = document.getElementById('ai-choice-button');
         if (aiChoiceButton) {
@@ -450,16 +450,16 @@ async function letAIMakeChoice() {
         console.log("AI is making a choice...");
         const choice = await decideChoice(currentCard, metrics);
         console.log("AI chose:", choice);
-        
+
         // Wait for 2 seconds to simulate thinking, then show choice and highlight
         setTimeout(() => {
             // Add AI choice text indicator with text shadow for better readability
             const choiceText = choice === 'yes' ? currentCard.yes_option : currentCard.no_option;
             cardText.innerHTML += `<div class="ai-choice-indicator" style="margin-top: 1rem; color: #ffd700; font-family: var(--header-font); font-size: 0.8em; text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;">AI chooses: ${choiceText}</div>`;
-            
+
             // Highlight the chosen button
             highlightChoice(choice);
-            
+
             // Make the choice after a brief pause
             setTimeout(() => makeChoice(choice), 500);
         }, 1500);
@@ -480,17 +480,17 @@ async function makeChoice(choice) {
                 choice: choice
             })
         });
-        
+
         if (!response.ok) {
             throw new Error(`Server error: ${response.status}`);
         }
-        
+
         const data = await response.json();
         console.log("Choice processed successfully:", data);
-        
+
         // Display choice effects
         displayEffects(currentCard.effects[choice]);
-        
+
         // Record this move in trajectory
         trajectory.push({
             card_id: String(currentCard.id || "unknown"),
@@ -510,22 +510,22 @@ async function makeChoice(choice) {
                 reign_year: Number(data.metrics.reign_year)
             }
         });
-        
+
         // Update game state
         metrics = data.metrics;
         updateMeters();
-        
+
         // Debug log metrics
         console.log("Current metrics after choice:", metrics);
-        
+
         // Check for game over conditions
         let reignEnded = false;
-        
+
         if (data.game_over === true) {
             console.log("Game over signal from server");
             reignEnded = true;
         }
-        
+
         if (metrics.power <= 0 || metrics.power >= 100 ||
             metrics.stability <= 0 || metrics.stability >= 100 ||
             metrics.piety <= 0 || metrics.piety >= 100 ||
@@ -533,23 +533,23 @@ async function makeChoice(choice) {
             console.log("Game over due to metrics limit reached");
             reignEnded = true;
         }
-        
+
         if (reignEnded) {
             console.log("Ending reign due to game over condition");
             await endReign();
             return;
         }
-        
+
         // Generate next card
         await generateCard();
-        
+
         // If in AI mode, let AI make the next choice after a 2-second delay
         if (document.getElementById('play-mode').value === 'ai') {
             setTimeout(async () => {
                 await letAIMakeChoice();
             }, 1400);
         }
-        
+
     } catch (error) {
         console.error("Error processing choice:", error);
         cardText.textContent = "Something went wrong processing your choice. Please try again.";
@@ -563,10 +563,10 @@ async function endReign() {
     try {
         // Determine cause of end
         let cause = "old_age"; // Default cause
-        
+
         // Log current metrics for debugging
         console.log("End reign metrics:", metrics);
-        
+
         if (metrics.power <= 0) cause = "power_low";
         else if (metrics.power >= 100) cause = "power_high";
         else if (metrics.stability <= 0) cause = "stability_low";
@@ -575,12 +575,12 @@ async function endReign() {
         else if (metrics.piety >= 100) cause = "piety_high";
         else if (metrics.wealth <= 0) cause = "wealth_low";
         else if (metrics.wealth >= 100) cause = "wealth_high";
-        
+
         console.log("Determined cause of end:", cause);
-        
+
         // Debug log trajectory data
         console.log("Trajectory data:", JSON.stringify(trajectory));
-        
+
         // Ensure trajectory data has the correct structure
         const cleanTrajectory = trajectory.map(item => ({
             card_id: String(item.card_id),
@@ -600,7 +600,7 @@ async function endReign() {
                 reign_year: Number(item.post_metrics.reign_year || 1)
             }
         }));
-        
+
         // Send end reign data to server with all required fields
         const response = await fetch(`${API_URL}end_reign`, {
             method: 'POST',
@@ -619,12 +619,12 @@ async function endReign() {
                 cause_of_end: cause
             })
         });
-        
+
         // Debug log for API response
         console.log("End reign response status:", response.status);
-        
+
         let data = { reward: 0 };
-        
+
         if (response.ok) {
             data = await response.json();
             console.log("End reign response data:", data);
@@ -632,25 +632,25 @@ async function endReign() {
             console.error("End reign failed with status:", response.status);
             // Even if the API call fails, we should still show the game over screen
         }
-        
+
         // Force game over state
         gameOver = true;
-        
+
         // Show game over screen
         cardContainer.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
-        
+
         // Set the final metric values
         finalPower.textContent = metrics.power;
         finalStability.textContent = metrics.stability;
         finalPiety.textContent = metrics.piety;
         finalWealth.textContent = metrics.wealth;
-        
+
         // Set reason based on metrics and get detailed ending
         let reason = "";
         let detailedText = "";
         let legacyText = "";
-        
+
         // Set reason based on cause
         if (cause === "power_low") {
             reason = "You lost all authority. The nobles overthrew you!";
@@ -689,32 +689,32 @@ async function endReign() {
             detailedText = `After ${metrics.reign_year} years, you passed peacefully. The kingdom mourns a balanced ruler.`;
             legacyText = determineRulerLegacy("balanced");
         }
-        
+
         // Generate epithet
         const epithet = generateEpithet(cause, metrics);
-        
+
         // Make sure to display reward information
         gameOverReason.textContent = reason;
         detailedEnding.textContent = detailedText;
         legacyMessage.textContent = legacyText;
-        
+
         // Format the reward nicely
         const formattedReward = data.reward !== undefined ? data.reward.toFixed(2) : "0.00";
         reignSummary.textContent = `${rulerName} "${epithet}" ruled for ${metrics.reign_year} years. Final reward: ${formattedReward}`;
-        
+
         // Display the adaptive weights if available
         if (data.new_weights) {
             console.log("New category weights:", data.new_weights);
             // You could display these weights in the UI if desired
         }
-        
+
         // Clean up for next game
         currentCard = null;
-        
+
     } catch (error) {
         console.error("Error ending reign:", error);
         gameOverReason.textContent = "Something went wrong when calculating your legacy.";
-        
+
         // Force display of game over screen even if there was an error
         cardContainer.classList.add('hidden');
         gameOverScreen.classList.remove('hidden');
@@ -729,32 +729,32 @@ async function continueGame() {
         // Reset game state but keep session ID for continuity
         gameOver = false;
         trajectory = [];
-        
+
         // Update dynasty year before starting new reign
         dynastyYear += metrics.reign_year;
-        
+
         // Clear the ruler name input to allow entering a new name
         rulerNameInput.value = '';
-        
+
         // Create new game session with the same session ID to maintain reign history
         const response = await fetch(`${API_URL}new_game`, { // Removed the / for consistency
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ session_id: sessionId })
         });
-        
+
         const data = await response.json();
         metrics = data.metrics;
-        
+
         updateMeters();
-        
+
         // Hide game over screen, show name input and start screen
         gameOverScreen.classList.add('hidden');
         startScreen.classList.remove('hidden');
-        
+
         // Focus the name input for convenience
         rulerNameInput.focus();
-        
+
         // Update start screen text for a new ruler
         const startHeader = document.querySelector('#start-screen h2');
         if (startHeader) {
@@ -773,7 +773,7 @@ async function continueGame() {
 function determineRulerLegacy(rulerType) {
     const reignLength = metrics.reign_year;
     let legacy = "";
-    
+
     if (reignLength < 5) {
         legacy = "A brief footnote in history.";
     } else if (reignLength > 30) {
@@ -823,7 +823,7 @@ function determineRulerLegacy(rulerType) {
                 legacy = `${reignLength} years of mixed successes and failures.`;
         }
     }
-    
+
     return legacy;
 }
 
@@ -835,11 +835,11 @@ function generateEpithet(cause, metrics) {
     if (metrics.reign_year <= 3) {
         return "the Brief";
     }
-    
+
     if (metrics.reign_year >= 30) {
         return "the Ancient";
     }
-    
+
     // Causes of death
     switch(cause) {
         case "power_low":
@@ -866,14 +866,14 @@ function generateEpithet(cause, metrics) {
                 { name: "the Wise", value: metrics.piety },
                 { name: "the Wealthy", value: metrics.wealth }
             ];
-            
+
             // Sort stats by value (highest first)
             stats.sort((a, b) => b.value - a.value);
-            
+
             // Return epithet based on highest stat
             return stats[0].name;
     }
-    
+
     // Default epithet if no specific condition is met
     return "the Monarch";
 }
