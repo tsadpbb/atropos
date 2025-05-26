@@ -16,7 +16,7 @@ for name in os.listdir(base_dir):
         # print(f"Found directory: {name}")
         stl_file_fpath = os.path.join(stl_dir, name)
         stl_file_fpath += ".stl"
-        #print(stl_file_path)
+        # print(stl_file_path)
         ds_stl_fpath = os.path.join(ds_stl_path, name)
         ds_stl_fpath += ".stl"
         shutil.copy(stl_file_fpath, ds_stl_path)
@@ -24,7 +24,4 @@ for name in os.listdir(base_dir):
         ds_img_fpath = os.path.join(ds_img_path, name)
         ds_img_fpath += "_0001.png"
         shutil.copy(base_img_fpath, ds_img_fpath)
-        #print(base_img_fpath, ds_img_fpath)
-
-        
-
+        # print(base_img_fpath, ds_img_fpath)

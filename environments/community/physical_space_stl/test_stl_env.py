@@ -2,10 +2,10 @@
 """
 Test script for the PhysicalEnv that loads and processes STL files
 """
-import os
 import asyncio
-import random
-from physical_env import PhysicalEnv, BaseEnvConfig, APIServerConfig, EvalHandlingEnum
+
+from physical_env import APIServerConfig, BaseEnvConfig, EvalHandlingEnum, PhysicalEnv
+
 
 async def test_render_stl():
     """Test loading and rendering an STL file"""
@@ -22,7 +22,7 @@ async def test_render_stl():
         max_token_length=2048,
         wandb_name="physical_test",
     )
-    
+
     server_configs = [
         APIServerConfig(
             model_name="google/gemma-3-27b-it",
@@ -31,13 +31,13 @@ async def test_render_stl():
             num_requests_for_eval=256,
         ),
     ]
-    
+
     print("Creating test environment")
     env = PhysicalEnv(env_config, server_configs, slurm=False, testing=True)
-    
+
     print("Setting up environment")
     await env.setup()
-    
+
     # Test get_next_item
     print("Testing get_next_item")
     try:
@@ -47,8 +47,9 @@ async def test_render_stl():
         print(f"STL path: {item['stl_path']}")
     except Exception as e:
         print(f"Error getting next item: {e}")
-    
+
     print("Test completed successfully")
 
+
 if __name__ == "__main__":
-    asyncio.run(test_render_stl()) 
+    asyncio.run(test_render_stl())

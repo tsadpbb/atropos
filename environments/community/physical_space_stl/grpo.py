@@ -15,11 +15,12 @@ import numpy as np
 import requests
 import torch
 import torch.nn.functional as F
-import wandb  # Added for logging
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential
 from torch.optim import AdamW
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+import wandb  # Added for logging
 
 # Global variable to keep track of the vLLM process
 vllm_process = None
@@ -538,7 +539,7 @@ if __name__ == "__main__":
         training_steps=20,
         vllm_restart_interval=3,
         use_wandb=True,
-        wandb_project="grpo-physical-trainer"
+        wandb_project="grpo-physical-trainer",
     )
 
     train(training_config)

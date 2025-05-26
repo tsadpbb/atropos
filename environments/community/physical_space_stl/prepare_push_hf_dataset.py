@@ -1,8 +1,8 @@
-import os
 import json
-import numpy as np
+import os
+
 import trimesh
-from datasets import Dataset, Features, Value, Image
+from datasets import Dataset, Features, Image, Value
 from huggingface_hub import login
 
 # Log in to HF Hub (optional if you've already done `huggingface-cli login`)
@@ -23,10 +23,10 @@ for image_filename in os.listdir(image_dir):
     if not image_filename.endswith(".png"):
         continue
     image_path = os.path.join(image_dir, image_filename)
-    
+
     # Extract base ID
     base_id = image_filename.split("_")[0]
-    
+
     stl_path = os.path.join(stl_dir, f"{base_id}.stl")
     label = labels.get(base_id, "unknown")
 
@@ -42,20 +42,24 @@ for image_filename in os.listdir(image_dir):
         except Exception as e:
             print(f"⚠️ Failed to process {stl_path}: {e}")
 
-    data.append({
-        "image": image_path,
-        "label": label,
-        "stl_features": stl_features,
-        "id": base_id,
-    })
+    data.append(
+        {
+            "image": image_path,
+            "label": label,
+            "stl_features": stl_features,
+            "id": base_id,
+        }
+    )
 
 # Define dataset schema
-features = Features({
-    "id": Value("string"),
-    "image": Image(),                     # Load images from file paths
-    "label": Value("string"),
-    "stl_features": Value("string"),      # Store as JSON string for simplicity
-})
+features = Features(
+    {
+        "id": Value("string"),
+        "image": Image(),  # Load images from file paths
+        "label": Value("string"),
+        "stl_features": Value("string"),  # Store as JSON string for simplicity
+    }
+)
 
 # Convert stl_features to JSON strings for compatibility
 for item in data:
@@ -66,4 +70,3 @@ dataset = Dataset.from_list(data).cast(features)
 
 # Push to Hub
 dataset.push_to_hub("venkatacrc/stl-image-dataset", private=True)
-
