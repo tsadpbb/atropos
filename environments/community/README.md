@@ -1807,6 +1807,239 @@ Access the game at `http://localhost:3000` when running the server.
 
 ---
 
+### 22. Physical Space STL CAD RL Environment (`physical_space_stl/`)
+
+**Contributors**: ecsbeats, venkatacrc
+**PR**: [#76](https://github.com/NousResearch/atropos/pull/76)
+**Integration Status**: ✅ Integrated
+
+**Description**: A reinforcement learning environment for training language models to generate STL (stereolithography) files from 3D wireframe views and technical drawings. This environment bridges the gap between visual 3D understanding and CAD file generation, enabling AI systems to learn computer-aided design skills.
+
+**Core Features**:
+
+**3D Rendering Pipeline**:
+- **PyRender Integration**: Offline 3D rendering with GPU acceleration (EGL) or CPU fallback (OSMesa)
+- **Multi-View Generation**: Automatic generation of front, top, and diagonal wireframe views
+- **Blueprint Styling**: Technical drawing aesthetics with blue wireframes on light backgrounds
+- **Mesh Processing**: Support for complex STL files with automatic centering and scaling
+
+**STL Generation Training**:
+- **ASCII STL Format**: Focus on human-readable STL file generation
+- **Template Variety**: Multiple query templates to encourage diverse reasoning approaches
+- **Geometric Understanding**: Training on shape analysis, dimensions, and 3D spatial relationships
+- **Quality Assessment**: Multi-metric evaluation of generated vs. original meshes
+
+**Evaluation System**:
+- **CLIP-Based Scoring**: Visual similarity assessment between rendered views
+- **Geometric Metrics**: Comparison of vertices, faces, volume, and surface area
+- **Mesh Validation**: Automatic validation of generated STL file structure
+- **Progressive Difficulty**: Adaptive training with increasing geometric complexity
+
+**Technical Architecture**:
+
+**Environment Interface**:
+```python
+from environments.community.physical_space_stl.physical_env import PhysicalEnv
+
+# Initialize environment
+env_config, server_configs = PhysicalEnv.config_init()
+env = PhysicalEnv(env_config, server_configs)
+
+# Training loop
+await env.setup()
+item = await env.get_next_item()
+# item contains: prompt, image (rendered views), stl_path
+```
+
+**Data Pipeline**:
+- **STL File Loading**: Automatic discovery and loading of STL files from sample_data directory
+- **Train/Test Split**: 80/20 split with reproducible random seeding
+- **Image Rendering**: Real-time generation of wireframe views for each STL file
+- **Query Generation**: Dynamic prompt creation with multiple template variations
+
+**Rendering System**:
+```python
+from environments.community.physical_space_stl.pyrender_utils import PyRenderOffline
+
+# Initialize renderer
+renderer = PyRenderOffline(width=224, height=224)  # CLIP-compatible size
+
+# Render mesh to multiple views
+images = renderer.render_mesh_to_images(mesh)
+# Returns: [front_view, top_view, diagonal_view]
+```
+
+**Camera Configuration**:
+- **Front View**: Standard orthographic projection along Z-axis
+- **Top View**: Overhead perspective for plan view understanding
+- **Diagonal View**: 3D perspective for spatial relationship comprehension
+- **Lighting Setup**: Multi-point lighting for clear wireframe visibility
+
+**STL Processing**:
+
+**File Format Support**:
+- **ASCII STL**: Primary focus for human-readable generation
+- **Binary STL**: Loading support for existing files
+- **Mesh Validation**: Automatic checking of facet normals and vertex ordering
+- **Error Handling**: Graceful degradation for malformed files
+
+**Quality Metrics**:
+```python
+def score_meshes_similarity(original_mesh, generated_mesh):
+    # Multi-dimensional similarity assessment
+    metrics = {
+        "vertex_ratio": min(gen_vertices / orig_vertices, 1.0),
+        "face_ratio": min(gen_faces / orig_faces, 1.0),
+        "volume_ratio": min(gen_volume / orig_volume, 1.0),
+        "area_ratio": min(gen_area / orig_area, 1.0)
+    }
+    return sum(metrics.values()) / len(metrics)
+```
+
+**Training Data Generation**:
+
+**Dataset Creation Pipeline**:
+```bash
+# Generate training dataset
+python dataset_scr.py  # Create directory structure
+python render_stl.py   # Generate images from STL files
+python llm_label.py    # Create text descriptions
+python prepare_push_hf_dataset.py  # Upload to Hugging Face
+```
+
+**Data Structure**:
+```
+dataset/
+├── stls/           # Original STL files
+│   ├── model_0001.stl
+│   └── model_0002.stl
+├── images/         # Rendered wireframe views
+│   ├── model_0001.png
+│   └── model_0002.png
+└── labels.json     # Text descriptions and metadata
+```
+
+**Hugging Face Integration**:
+- **Dataset Upload**: Automatic preparation and upload to HF Hub
+- **Feature Extraction**: STL geometric features (centroid, bounding box, volume)
+- **Image Processing**: Standardized image formats for training
+- **Metadata Storage**: JSON-serialized geometric properties
+
+**System Prompt Design**:
+
+**Expert Persona**: "You are an expert in 3D modeling and computer-aided design..."
+
+**Task Specification**:
+- **Input**: Wireframe views and technical drawings
+- **Output**: Valid ASCII STL file content
+- **Reasoning**: Encouraged use of `<think>` tags for geometric analysis
+- **Format**: Strict `<stl>` tag enclosure for generated content
+
+**Example Templates**:
+- "Create a 3D model (STL file) for the object shown in these technical drawings. Be precise with the geometry."
+- "Based on these wireframe views, generate the STL code for this 3D object. Pay attention to all visible features."
+- "Using these blueprint images as reference, provide the STL file format data to recreate this 3D model."
+
+**Performance Optimization**:
+
+**Rendering Efficiency**:
+- **Headless Operation**: EGL/OSMesa for server environments
+- **GPU Acceleration**: Automatic detection and utilization
+- **Memory Management**: Efficient mesh processing and cleanup
+- **Batch Processing**: Support for multiple STL files
+
+**Computational Requirements**:
+- **Dependencies**: pyrender, trimesh, pyglet, matplotlib, torch, transformers
+- **System Libraries**: libglfw3-dev, libgles2-mesa-dev (Ubuntu)
+- **GPU Support**: Optional but recommended for rendering performance
+- **Memory Usage**: Scales with STL file complexity and batch size
+
+**Research Applications**:
+
+**3D Understanding**:
+- **Spatial Reasoning**: Training models to understand 3D geometry from 2D projections
+- **CAD Generation**: Automated creation of manufacturable 3D models
+- **Design Iteration**: Rapid prototyping through AI-assisted design
+- **Geometric Constraints**: Learning physical and manufacturing constraints
+
+**Vision-Language Integration**:
+- **Multi-Modal Learning**: Combining visual and textual understanding of 3D objects
+- **Technical Communication**: Bridging natural language and CAD representations
+- **Design Documentation**: Automatic generation of technical specifications
+- **Educational Tools**: Interactive learning for 3D modeling concepts
+
+**Manufacturing Applications**:
+- **Rapid Prototyping**: AI-assisted design for 3D printing
+- **Quality Control**: Automated verification of CAD file accuracy
+- **Design Optimization**: Iterative improvement of 3D models
+- **Accessibility**: Democratizing CAD design through natural language interfaces
+
+**Setup Instructions**:
+
+**Environment Setup**:
+```bash
+# Install Python dependencies
+pip install pyrender trimesh pyglet matplotlib torch transformers pydantic vllm numpy requests tenacity wandb
+
+# Ubuntu system dependencies for rendering
+sudo apt-get install libglfw3-dev libgles2-mesa-dev libnvidia-gl-570-server
+
+# Set rendering backend (choose one)
+export PYOPENGL_PLATFORM=egl    # For GPU acceleration
+export PYOPENGL_PLATFORM=osmesa # For CPU-only environments
+```
+
+**Data Preparation**:
+```bash
+# Create sample data directory
+mkdir sample_data
+# Add STL files to sample_data/ directory
+
+# Test rendering system
+python test_renderer_example.py
+python test_stl_env.py
+```
+
+**Training Configuration**:
+- **Model**: google/gemma-3-27b-it (configurable)
+- **Batch Size**: 12 (adjustable based on memory)
+- **Max Tokens**: 2048 (sufficient for complex STL files)
+- **Evaluation**: Every 100 steps with 10 test files
+
+**Demo Resources**:
+- **Training Run**: [W&B Run dlexyg5r](https://wandb.ai/csxl/atropos-environments_hack0/runs/dlexyg5r)
+- **GRPO Training**: [W&B Run t61am7gu](https://wandb.ai/csxl/grpo-physical-trainer/runs/t61am7gu)
+- **Test Images**: Rendered sphere views demonstrating wireframe quality
+- **Sample Data**: HTML visualization of training conversations
+
+**Future Enhancements**:
+
+**Advanced Rendering**:
+- **Texture Support**: Material and surface property visualization
+- **Animation**: Time-series rendering for dynamic objects
+- **Cross-Sections**: Internal structure visualization
+- **Assembly Views**: Multi-part object rendering
+
+**Enhanced Evaluation**:
+- **Geometric Accuracy**: More sophisticated similarity metrics
+- **Manufacturing Constraints**: Validation of printability and structural integrity
+- **User Studies**: Human evaluation of generated designs
+- **Benchmark Datasets**: Standardized test suites for CAD generation
+
+**Integration Opportunities**:
+- **CAD Software**: Direct integration with professional design tools
+- **3D Printing**: Seamless workflow to physical prototypes
+- **Simulation**: Physics-based validation of generated designs
+- **Collaborative Design**: Multi-agent design environments
+
+**Research Impact**: This environment represents a significant step toward AI-assisted computer-aided design, potentially revolutionizing how 3D models are created and iterated. The combination of visual understanding and structured output generation opens new possibilities for democratizing design tools and accelerating product development cycles.
+
+**Educational Value**: The environment serves as an excellent introduction to 3D graphics programming, mesh processing, and the intersection of AI with traditional engineering disciplines. The clear separation between rendering, evaluation, and generation components makes it suitable for educational use and research extension.
+
+**Requirements**: pyrender, trimesh, pyglet, matplotlib, torch, transformers, pydantic, vllm, numpy, requests, tenacity, wandb, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
