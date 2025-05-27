@@ -2727,6 +2727,173 @@ python environments/community/starmap_compression/visualize_starmap.py
 
 ---
 
+### 29. Humor Generation Environment (`humor_generation/`)
+
+**Contributors**: kirilligum
+**PR**: [#87](https://github.com/NousResearch/atropos/pull/87)
+**Integration Status**: ✅ Integrated
+
+**Description**: A reinforcement learning environment for training language models to generate humor in the style of specific comedians and formats. The environment uses a comprehensive multi-dimensional scoring rubric to evaluate joke quality across relevance, style consistency, creativity, humor effectiveness, virality, and cognitive coherence.
+
+**Core Features**:
+
+**Multi-Comedian Training**:
+- **Diverse Comedian Styles**: Supports various comedian voices (Norm Macdonald, John Mulaney, Hasan Minhaj, Dave Chappelle, Ali Wong, Chris Rock)
+- **Format Diversity**: Trains on different humor formats (haiku, one-liner, q/a over SMS)
+- **Style Transfer Learning**: Models learn to adapt humor generation to specific comedian characteristics
+- **Cross-Format Adaptation**: Training across multiple humor formats for versatility
+
+**Comprehensive Scoring System**:
+- **6-Dimensional Evaluation**: Multi-faceted assessment of joke quality
+- **LLM-Based Judging**: Uses GPT-4o-mini for detailed rubric-based scoring
+- **Weighted Scoring**: Balanced evaluation across different humor aspects
+- **Automated Assessment**: Real-time scoring during training for rapid feedback
+
+**Scoring Rubric Dimensions**:
+1. **Relevance to Format** (0-2 points): How well the joke fits the specified format (haiku, one-liner, SMS)
+2. **Style Consistency** (0-2 points): Adherence to the target comedian's distinctive style and voice
+3. **Creativity** (0-3 points): Originality, inventiveness, and unexpected elements in the humor
+4. **Humor Effectiveness** (0-3 points): How funny, engaging, and entertaining the joke is
+5. **Virality Potential** (0-3 points): Likelihood of widespread appeal and social sharing
+6. **Cognitive Coherence** (0-3 points): Logical structure, clarity, and comprehensibility
+
+**Dataset Generation**:
+- **Automated Creation**: Script for generating training datasets using GPT-4o-mini
+- **Comedian-Format Matrix**: Systematic coverage of all comedian/format combinations
+- **Example Generation**: Each dataset entry includes 3 example jokes for reference
+- **Reasoning Explanations**: Detailed explanations of model recommendations and approaches
+
+**Training Architecture**:
+- **Dual LLM Setup**: Separate models for generation and evaluation
+- **Group-Based Training**: Multiple completions per prompt for comparison
+- **WandB Integration**: Comprehensive experiment tracking and visualization
+- **Iterative Improvement**: Continuous refinement based on scoring feedback
+
+**Technical Implementation**:
+
+**Environment Configuration**:
+- **Model Selection**: GPT-4o-mini for both generation and evaluation
+- **Group Size**: 2 completions per prompt for diversity
+- **Token Limits**: 2048 for generation, 512 for scoring
+- **Evaluation Frequency**: Regular assessment during training
+
+**Dataset Structure**:
+Each training record contains:
+- **comedian**: Target comedian style (e.g., "Norm Macdonald")
+- **format**: Humor format (e.g., "haiku", "one-liner", "q/a over sms")
+- **question**: Prompt asking for model recommendations and example jokes
+- **response**: GPT-4o-mini generated response with explanations and examples
+
+**Scoring Process**:
+1. **Joke Extraction**: Parse generated content to identify the joke
+2. **Rubric Application**: Apply 6-dimensional scoring criteria
+3. **LLM Evaluation**: Use GPT-4o-mini to score each dimension
+4. **Score Aggregation**: Calculate average score across all dimensions
+5. **Feedback Integration**: Use scores for training signal
+
+**Research Applications**:
+
+**Creative AI Development**:
+- **Style Transfer**: Learning to mimic specific creative voices and personalities
+- **Format Adaptation**: Generating content within structural constraints
+- **Quality Assessment**: Training models to evaluate creative output
+- **Entertainment AI**: Developing systems for comedy and entertainment content
+
+**Computational Humor**:
+- **Humor Understanding**: Teaching AI systems to recognize and generate humor
+- **Cultural Adaptation**: Learning humor styles specific to different comedians
+- **Format Constraints**: Working within specific structural requirements
+- **Audience Awareness**: Understanding what makes content shareable and viral
+
+**Natural Language Generation**:
+- **Creative Writing**: Extending beyond factual content to creative expression
+- **Personality Modeling**: Capturing distinctive voice and style characteristics
+- **Multi-Modal Generation**: Adapting content to different formats and contexts
+- **Quality Evaluation**: Developing better metrics for creative content assessment
+
+**Training Performance**:
+- **Comedian Coverage**: 6 different comedian styles for diverse training
+- **Format Variety**: 3 distinct humor formats for structural learning
+- **Dataset Size**: 18 total combinations (6 comedians × 3 formats)
+- **Scoring Granularity**: 16-point scale (0-16) across 6 dimensions
+
+**Configuration Options**:
+- **Model Selection**: Configurable LLM for generation (default: GPT-4o-mini)
+- **Scoring Model**: Separate model for evaluation (default: GPT-4o-mini)
+- **Group Size**: Number of completions per prompt (default: 2)
+- **Token Limits**: Configurable generation and scoring token limits
+- **Evaluation Frequency**: Steps between scoring evaluations
+
+**Future Enhancements**:
+
+**Extended Comedian Library**:
+- **More Comedians**: Expand to include additional comedian styles
+- **International Humor**: Include comedians from different cultures and languages
+- **Historical Styles**: Classic comedians and vintage humor styles
+- **Emerging Voices**: Contemporary and social media comedy styles
+
+**Advanced Formats**:
+- **Long-Form Content**: Stand-up routines, comedy sketches, and stories
+- **Interactive Humor**: Conversational comedy and improvisation
+- **Visual Comedy**: Integration with image and video content
+- **Contextual Humor**: Situation-specific and topical comedy
+
+**Enhanced Evaluation**:
+- **Human Evaluation**: Integration of human judges for validation
+- **Audience Testing**: Real-world testing with actual audiences
+- **Cultural Sensitivity**: Evaluation for appropriateness and inclusivity
+- **Temporal Relevance**: Assessment of humor that ages well
+
+**Setup Requirements**:
+
+**API Access**:
+- **OpenAI API Key**: Required for GPT-4o-mini access (`OPENAI_API_KEY` environment variable)
+- **Rate Limiting**: Respectful API usage patterns for training
+- **Cost Management**: Efficient token usage for large-scale training
+
+**Dependencies**:
+```bash
+pip install openai python-dotenv datasets wandb atroposlib
+```
+
+**Usage Examples**:
+
+**Running the Environment**:
+```bash
+# Set up API key
+export OPENAI_API_KEY="your_openai_api_key"
+
+# Run humor generation environment
+python environments/community/humor_generation/humor_env.py serve
+```
+
+**Generating New Datasets**:
+```bash
+cd environments/community/humor_generation/
+python generate_humor_dataset.py
+```
+
+**Training Applications**:
+- **Comedy Writing AI**: Automated generation of jokes and humorous content
+- **Entertainment Industry**: AI assistance for comedy writers and performers
+- **Social Media**: Automated generation of engaging, shareable content
+- **Educational Tools**: Teaching humor and creative writing through AI examples
+- **Therapeutic Applications**: Humor therapy and mood enhancement systems
+
+**Research Impact**: This environment addresses the challenging domain of computational humor, providing a structured framework for training AI systems in creative content generation. The multi-dimensional evaluation approach offers insights into what makes humor effective and how AI can learn creative expression.
+
+**Educational Value**: The environment demonstrates the intersection of AI and creativity, showing how structured evaluation can be applied to subjective domains like humor. It provides practical experience with creative AI, style transfer, and quality assessment in natural language generation.
+
+**Limitations**:
+- **Subjective Evaluation**: Humor appreciation varies significantly across individuals and cultures
+- **Limited Dataset**: Currently covers only 6 comedians and 3 formats
+- **API Dependency**: Requires OpenAI API access for both generation and evaluation
+- **Cultural Bias**: May reflect biases present in training data and evaluation models
+
+**Requirements**: openai, python-dotenv, datasets, wandb, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
