@@ -2271,6 +2271,188 @@ config = SanskritPoetryEnvConfig(
 
 ---
 
+### 26. OpenVLA Robotics Environment (`openvla_robotics/`)
+
+**Contributors**: RahulSChand
+**PR**: [#65](https://github.com/NousResearch/atropos/pull/65)
+**Integration Status**: ✅ Integrated
+
+**Description**: A robotics reinforcement learning environment that integrates OpenVLA (Vision-Language-Action) models with robosuite simulation for training embodied AI agents. This environment enables language models to learn robotic manipulation tasks through vision-based action prediction and continuous control.
+
+**Core Features**:
+
+**OpenVLA Integration**:
+- **Vision-Language-Action Model**: Uses OpenVLA-7B for multimodal robot control
+- **Visual Input Processing**: Processes camera observations from robosuite environments
+- **Action Prediction**: Generates continuous robot actions from visual and language inputs
+- **Robosuite Simulation**: Integrates with robosuite for realistic robot simulation
+
+**Robotics Simulation**:
+- **Robosuite Environment**: Configurable robot tasks (Lift, NutAssemblySquare, etc.)
+- **Panda Robot**: Simulated Franka Emika Panda robot arm
+- **Camera Observations**: Front-view camera with 640x480 resolution
+- **Continuous Control**: 7-DOF action space for robot manipulation
+
+**Action Tokenization**:
+- **Continuous to Discrete**: Custom action tokenizer for converting continuous actions to tokens
+- **Uniform Binning**: 256 bins per action dimension with configurable ranges
+- **Token Mapping**: Maps actions to least-used vocabulary tokens
+- **Bidirectional Conversion**: Encode actions to tokens and decode back to continuous values
+
+**Training Architecture**:
+- **Vision-Language Input**: Processes camera images with text prompts
+- **Action Generation**: Predicts robot actions using OpenVLA model
+- **Reward Collection**: Gathers rewards from robosuite environment
+- **Trajectory Scoring**: Scores action sequences based on task performance
+
+**Technical Implementation**:
+
+**Model Configuration**:
+- **OpenVLA Model**: `openvla/openvla-7b` with bfloat16 precision
+- **GPU Acceleration**: CUDA support for model inference
+- **Vision Processing**: AutoProcessor for image and text input handling
+- **Action Space**: 7-dimensional continuous action space (position + gripper)
+
+**Environment Setup**:
+```python
+# Robosuite environment configuration
+self.robosuite_env = suite.make(
+    "Lift",  # Task: pick up cube
+    robots="Panda",  # Franka Emika Panda arm
+    has_renderer=False,  # Headless simulation
+    has_offscreen_renderer=True,  # Camera rendering
+    use_camera_obs=True,  # Visual observations
+    camera_names="frontview",  # Front camera
+    camera_heights=640,  # Image height
+    camera_widths=480   # Image width
+)
+```
+
+**Action Processing Pipeline**:
+1. **Visual Observation**: Extract camera image from robosuite
+2. **Prompt Construction**: Create task-specific text prompt
+3. **Model Inference**: Generate action using OpenVLA model
+4. **Action Adjustment**: Scale and transform actions for robosuite
+5. **Environment Step**: Execute action in simulation
+6. **Reward Collection**: Gather task performance feedback
+
+**Action Tokenizer Features**:
+- **Discretization**: Converts continuous actions to discrete tokens
+- **Vocabulary Mapping**: Uses least-frequent tokens for action representation
+- **Configurable Binning**: Adjustable number of bins and action ranges
+- **Efficient Encoding**: Minimal vocabulary overhead for action space
+
+**Research Applications**:
+
+**Embodied AI**:
+- **Vision-Language-Action Learning**: Training models to understand and act in physical environments
+- **Multimodal Control**: Combining visual perception with language understanding for robot control
+- **Sim-to-Real Transfer**: Foundation for transferring learned policies to real robots
+- **Task Generalization**: Learning manipulation skills across different robotic tasks
+
+**Robotics Research**:
+- **Manipulation Learning**: Training robots to perform complex manipulation tasks
+- **Visual Servoing**: Learning to control robots based on visual feedback
+- **Language-Conditioned Control**: Following natural language instructions for robot tasks
+- **Continuous Control**: Learning smooth, continuous robot motions
+
+**Technical Challenges Addressed**:
+- **Action Space Discretization**: Converting continuous robot actions to discrete tokens
+- **Vision-Language Integration**: Combining visual and linguistic information for control
+- **Simulation Integration**: Bridging language models with physics simulation
+- **Real-time Control**: Generating robot actions at appropriate frequencies
+
+**Current Implementation Status**:
+- **Prototype Stage**: Basic integration with OpenVLA and robosuite
+- **Single Task**: Currently configured for cube lifting task
+- **Development Mode**: Includes TODO comments for future enhancements
+- **GPU Required**: Requires CUDA-capable GPU for OpenVLA inference
+
+**Configuration Options**:
+- **Robot Tasks**: Configurable robosuite environments (Lift, NutAssemblySquare, etc.)
+- **Action Binning**: Adjustable discretization parameters (bins, ranges)
+- **Model Settings**: Configurable OpenVLA model parameters
+- **Simulation Parameters**: Camera settings, rendering options, robot configuration
+
+**Future Enhancements**:
+
+**Multi-Task Learning**:
+- **Task Variety**: Support for multiple robosuite manipulation tasks
+- **Task Conditioning**: Language-conditioned task specification
+- **Curriculum Learning**: Progressive difficulty in manipulation tasks
+- **Transfer Learning**: Knowledge sharing across different robot tasks
+
+**Advanced Features**:
+- **Multi-Step Planning**: Long-horizon task planning and execution
+- **Error Recovery**: Robust handling of action failures and retries
+- **Real Robot Integration**: Extension to physical robot platforms
+- **Human Demonstrations**: Integration of human demonstration data
+
+**Performance Optimization**:
+- **Batch Processing**: Parallel trajectory collection for efficiency
+- **Model Optimization**: Quantization and acceleration for faster inference
+- **Memory Management**: Efficient handling of visual observations
+- **Distributed Training**: Multi-GPU and multi-node training support
+
+**Setup Requirements**:
+
+**Hardware**:
+- **GPU**: CUDA-capable GPU with sufficient VRAM (8GB+ recommended)
+- **Memory**: 16GB+ RAM for model loading and simulation
+- **Storage**: Space for OpenVLA model weights (~14GB)
+
+**Software Dependencies**:
+```bash
+# Core robotics and ML libraries
+pip install robosuite torch transformers pillow
+
+# OpenVLA model (requires trust_remote_code=True)
+# Model will be downloaded automatically on first run
+```
+
+**Installation & Usage**:
+```bash
+# Navigate to environment directory
+cd environments/community/openvla_robotics/
+
+# Run the robotics environment
+python open_robot_env.py
+
+# Note: First run will download OpenVLA-7B model (~14GB)
+```
+
+**Example Training Flow**:
+```python
+# Initialize environment
+env = RobotSimEnv(config, server_configs)
+await env.setup()
+
+# Training loop
+for episode in range(num_episodes):
+    # Get next training item (resets environment)
+    item = await env.get_next_item()
+
+    # Collect robot trajectory
+    scored_data, backlog = await env.collect_trajectories(item)
+
+    # Process rewards and update policy
+    # (Policy update logic would be implemented here)
+```
+
+**Research Impact**: This environment represents an important step toward training language models for embodied AI tasks. By combining OpenVLA's vision-language-action capabilities with robosuite's realistic simulation, it provides a foundation for developing robots that can understand and execute complex manipulation tasks based on natural language instructions.
+
+**Educational Value**: The environment demonstrates the integration of multiple complex systems (vision-language models, robotics simulation, action tokenization) and serves as a practical example of how modern AI techniques can be applied to robotics challenges.
+
+**Limitations**:
+- **Single Task Focus**: Currently limited to cube lifting task
+- **Prototype Implementation**: Contains placeholder code and TODO items
+- **GPU Dependency**: Requires significant computational resources
+- **No Evaluation Data**: Lacks standardized evaluation benchmarks
+
+**Requirements**: robosuite, torch, transformers, pillow, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
