@@ -2040,6 +2040,65 @@ python test_stl_env.py
 
 ---
 
+### 23. Protein Design Environment (`protein_design/`)
+
+**Contributors**: hallerite, promachina
+**PR**: [#70](https://github.com/NousResearch/atropos/pull/70)
+**Integration Status**: ✅ Integrated
+
+**Description**: A comprehensive reinforcement learning environment for de novo protein design through a staged simulation loop. This environment enables AI systems to learn the complete protein design workflow from target structure prediction to binder evaluation, using state-of-the-art protein modeling tools.
+
+**Core Features**:
+
+**Multi-Stage Protein Design Pipeline**:
+- **AlphaFold2 Structure Prediction**: Predicts 3D structure of target proteins from amino acid sequences
+- **RFDiffusion Backbone Generation**: Generates novel protein binder backbones conditioned on target structures
+- **ProteinMPNN Sequence Design**: Designs optimal amino acid sequences for generated backbones
+- **AlphaFold2-Multimer Evaluation**: Evaluates binding complex quality with pLDDT scoring
+
+**Advanced Workflow Management**:
+- **State-Based Progression**: Tracks workflow state through 4 distinct internal steps
+- **Retry Logic**: Configurable retry mechanisms for failed tool executions
+- **Validation Systems**: Comprehensive input validation for contigs, hotspots, and sequences
+- **Error Handling**: Robust error recovery and detailed logging
+
+**NVIDIA NIM Integration**:
+- **API-Based Execution**: Leverages NVIDIA NIM APIs for protein modeling tools
+- **Async Processing**: Non-blocking API calls with configurable timeouts and polling
+- **Debug Mode**: Mock data generation for development and testing
+- **Result Caching**: Saves intermediate PDB files and FASTA sequences
+
+**Reward System**:
+- **Format Rewards**: 0.2 points for correct tool usage in steps 0-2
+- **Quality Rewards**: pLDDT-based scoring (0.0-1.0) for final complex evaluation
+- **Progressive Scoring**: Cumulative rewards across workflow stages
+
+**Data Management**:
+- **Hugging Face Integration**: Loads protein binding datasets (ronig/protein_binding_sequences)
+- **File Organization**: Structured output directory with timestamped results
+- **Comprehensive Logging**: Detailed workflow tracking and performance metrics
+
+**Research Applications**:
+- **Drug Discovery**: Design novel protein binders for therapeutic targets
+- **Protein Engineering**: Optimize protein-protein interactions
+- **Structural Biology**: Explore protein design space systematically
+- **AI Training**: Develop protein design capabilities in language models
+
+**Technical Requirements**:
+- NVIDIA NIM API access for protein modeling tools
+- Python environment with protein analysis libraries
+- Sufficient storage for PDB files and intermediate results
+
+**Environment Configuration**:
+- Configurable retry limits and timeout settings
+- Debug mode for development without API calls
+- Flexible dataset selection and column mapping
+- WandB integration for experiment tracking
+
+**Requirements**: pydantic, datasets, python-dotenv, pyyaml, wandb, atroposlib, nvidia-nim-api-client
+
+---
+
 ## Support
 
 For questions or issues with community environments:
