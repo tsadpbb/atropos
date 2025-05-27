@@ -2431,10 +2431,10 @@ await env.setup()
 for episode in range(num_episodes):
     # Get next training item (resets environment)
     item = await env.get_next_item()
-    
+
     # Collect robot trajectory
     scored_data, backlog = await env.collect_trajectories(item)
-    
+
     # Process rewards and update policy
     # (Policy update logic would be implemented here)
 ```
