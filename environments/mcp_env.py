@@ -278,11 +278,7 @@ class McpEnv(BaseEnv):
         )
 
         to_score = list()
-        # OLD:
-        # for i, completion_choice in enumerate(completions.choices): 
-        # For loop needs to be re-indented when re-enabling
-
-        for i, completion_choice in enumerate(completions.choices):
+        for completion_choice in completions.choices:
             # Create a copy of the prompt messages
             trajectory_messages = []
             for role_dict in item[0]:
