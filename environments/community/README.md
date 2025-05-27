@@ -2453,6 +2453,228 @@ for episode in range(num_episodes):
 
 ---
 
+### 27. StarMapCompression Environment (`starmap_compression/`)
+
+**Contributors**: caradmico
+**PR**: [#66](https://github.com/NousResearch/atropos/pull/66)
+**Integration Status**: ✅ Integrated
+
+**Description**: A reinforcement learning environment for compressing 3D Gaia star data for efficient Three.js browser rendering. This environment trains agents to optimize data compression while preserving points relevant to user viewpoints, achieving ~95% compression while maintaining visual quality for astronomical visualization.
+
+**Core Features**:
+
+**3D Data Compression Pipeline**:
+- **Gaia Star Data Processing**: Handles real astronomical data from the Gaia space observatory
+- **Octree-Based Compression**: Hierarchical spatial data structure for efficient 3D point reduction
+- **PCA Dimensionality Reduction**: Principal component analysis for optimal data representation
+- **Quantization**: Bit-level compression with configurable precision (4-8 bits)
+
+**View-Aware Optimization**:
+- **User Viewpoint Analysis**: Considers multiple Three.js camera positions for optimization
+- **Spatial Relevance Scoring**: Prioritizes star points visible from user viewpoints
+- **Adaptive View Radius**: Dynamic adjustment based on data distribution and viewing distance
+- **Quality Preservation**: Maintains visual fidelity for important astronomical features
+
+**Advanced Compression Techniques**:
+- **Density-Based Sampling**: Intelligent point selection based on local star density
+- **Adaptive Thresholding**: Dynamic density thresholds for different spatial regions
+- **Multi-Scale Processing**: Hierarchical compression with configurable depth levels
+- **Grid-Based Partitioning**: Spatial partitioning with multiple grid size strategies
+
+**Reinforcement Learning Framework**:
+- **Action Space**: Three partition methods with different grid sizes (0.5x, 1x, 1.5x view radius)
+- **State Representation**: Current compression method and data size metrics
+- **Reward Function**: Balances compression ratio, point retention, view relevance, and quality
+- **Multi-Objective Optimization**: Simultaneous optimization of size, quality, and viewpoint coverage
+
+**Technical Implementation**:
+
+**Data Processing Pipeline**:
+```python
+# Environment initialization with Gaia data
+env = StarMapCompressionEnv(
+    data_path="galaxy_subset.npy",    # 1000 3D star positions
+    views_path="user_views.npy"       # 10 user viewpoints
+)
+
+# Compression workflow
+sampled_data = env._density_sample(original_data)      # Density-based sampling
+pca_data = env._apply_pca(sampled_data, views)         # PCA reduction
+octree_data = env._build_octree(pca_data)              # Octree construction
+quantized_data = env._quantize_data(octree_data)       # Bit quantization
+final_data = env._map_to_original(quantized_data)     # Map back to original space
+```
+
+**Compression Metrics**:
+- **Input**: 1000 3D star positions (24KB galaxy_subset.npy)
+- **Output**: ~47 points after 5 RL steps (~95% compression)
+- **Processing Time**: ~3 seconds CPU for 5 RL optimization steps
+- **Memory Usage**: <1GB RAM for typical datasets
+
+**Reward Function Design**:
+```python
+reward = (
+    -avg_data_size / 1000                           # Compression incentive
+    + 5 * len(compressed_data) / len(original_data) # Retention bonus
+    + total_points_in_view / len(original_data)     # Viewpoint relevance
+    - quality_metric / 1e6                          # Quality preservation
+)
+```
+
+**Multi-Threaded RL Optimization**:
+- **Parallel Action Evaluation**: Concurrent testing of all three partition methods
+- **Timeout Management**: Configurable timeout (60s default) for action evaluation
+- **Best Action Selection**: Reward-based selection with random tiebreaking
+- **Progressive Improvement**: Iterative refinement over multiple RL steps
+
+**Visualization and Analysis**:
+
+**3D Visualization Tools**:
+- **Static Scatter Plots**: Before/after compression comparison with original Gaia data
+- **Animation Generation**: Step-by-step compression progression visualization
+- **Multi-View Rendering**: Original data, compressed data, and user viewpoints
+- **Quality Assessment**: Visual comparison of compression artifacts
+
+**Performance Metrics**:
+- **Compression Ratio**: Percentage reduction in data points
+- **View Coverage**: Number of points visible from user viewpoints
+- **Data Size**: Estimated Three.js rendering payload size
+- **Quality Score**: Distance-based quality preservation metric
+
+**Browser Integration**:
+- **Three.js Compatibility**: Optimized for WebGL rendering pipelines
+- **Cell-Based Rendering**: Grid partitioning for efficient GPU processing
+- **Adaptive LOD**: Level-of-detail optimization based on viewing distance
+- **Memory Efficiency**: Reduced GPU memory usage for large astronomical datasets
+
+**Research Applications**:
+
+**Astronomical Visualization**:
+- **Interactive Star Maps**: Real-time exploration of Gaia catalog data
+- **Educational Tools**: Accessible astronomical data visualization for students
+- **Scientific Analysis**: Efficient rendering of large-scale astronomical surveys
+- **Virtual Observatories**: Web-based astronomical data exploration platforms
+
+**3D Data Compression**:
+- **Point Cloud Optimization**: General techniques for 3D point cloud compression
+- **Spatial Data Structures**: Advanced octree and spatial indexing methods
+- **View-Dependent Rendering**: Optimization based on observer perspective
+- **Multi-Resolution Analysis**: Hierarchical data representation techniques
+
+**Web Graphics Optimization**:
+- **WebGL Performance**: Efficient rendering of large 3D datasets in browsers
+- **Progressive Loading**: Adaptive data streaming based on user interaction
+- **Memory Management**: GPU memory optimization for web applications
+- **Real-Time Visualization**: Interactive 3D graphics with large datasets
+
+**Machine Learning Applications**:
+- **Reinforcement Learning**: Multi-objective optimization in continuous spaces
+- **Spatial Intelligence**: Learning spatial relationships and importance
+- **Adaptive Algorithms**: Self-adjusting compression based on data characteristics
+- **Quality-Aware Optimization**: Balancing multiple competing objectives
+
+**Configuration Options**:
+
+**Compression Parameters**:
+- **Density Sampling**: Sample fraction (default: 0.1), radius (default: 50.0)
+- **PCA Components**: Dimensionality reduction (default: 2 components)
+- **Octree Settings**: Max depth (3-5), min points (1-2), density threshold (adaptive)
+- **Quantization**: Bit precision (4-8 bits), adaptive scaling
+
+**RL Training Settings**:
+- **Action Space**: Three partition methods with configurable grid size ratios
+- **Reward Weights**: Adjustable balance between compression, retention, and quality
+- **Timeout Settings**: Configurable evaluation timeout (default: 60 seconds)
+- **Step Limits**: Maximum RL steps per episode (default: 50)
+
+**Visualization Options**:
+- **Plot Resolution**: Configurable figure size and DPI for output images
+- **Animation Settings**: Frame rate, duration, and compression format
+- **Color Schemes**: Customizable color mapping for different data categories
+- **Subsampling**: Adjustable point density for visualization clarity
+
+**Future Enhancements**:
+
+**Advanced Compression**:
+- **Temporal Compression**: Time-series optimization for moving astronomical objects
+- **Semantic Awareness**: Content-aware compression preserving important stellar features
+- **Adaptive Quantization**: Variable bit precision based on local data importance
+- **Hierarchical LOD**: Multi-resolution representation with smooth transitions
+
+**Enhanced RL Training**:
+- **Continuous Action Space**: Fine-grained control over compression parameters
+- **Multi-Agent Optimization**: Collaborative compression across multiple viewpoints
+- **Transfer Learning**: Knowledge transfer across different astronomical datasets
+- **Curriculum Learning**: Progressive difficulty in compression challenges
+
+**Real-World Integration**:
+- **Gaia DR3 Support**: Full integration with latest Gaia data releases
+- **Streaming Optimization**: Real-time compression for live astronomical data
+- **Cloud Processing**: Distributed compression for massive astronomical catalogs
+- **Mobile Optimization**: Compression tuned for mobile device constraints
+
+**Setup Requirements**:
+
+**Core Dependencies**:
+```bash
+pip install numpy scipy scikit-learn openai python-dotenv matplotlib pillow
+```
+
+**Optional Visualization**:
+```bash
+pip install matplotlib pillow  # For 3D plotting and animation generation
+```
+
+**Data Requirements**:
+- **galaxy_subset.npy**: 1000 3D star positions (included, ~24KB)
+- **user_views.npy**: 10 user viewpoint positions (included, ~368B)
+- **Synthetic data**: Generated from Gaia subset with assumed MIT license
+
+**Usage Examples**:
+
+**Basic Compression**:
+```python
+from environments.community.starmap_compression.starmap_compression import StarMapCompressionEnv
+
+# Initialize environment
+env = StarMapCompressionEnv("galaxy_subset.npy", "user_views.npy")
+
+# Run RL optimization
+for step in range(5):
+    env.run_rl_step(timeout_seconds=60)
+    print(f"Step {step+1}: {len(env.data)} points remaining")
+```
+
+**Visualization**:
+```python
+# Generate compression visualization
+python environments/community/starmap_compression/visualize_starmap.py
+
+# Creates:
+# - starmap_compression_static.png (before/after comparison)
+# - starmap_compression_animation.gif (step-by-step progression)
+```
+
+**Performance Benchmarks**:
+- **Compression Efficiency**: 95% reduction (1000 → 47 points) in 5 RL steps
+- **Processing Speed**: ~3 seconds total for 5-step optimization
+- **Memory Usage**: <1GB RAM for typical astronomical datasets
+- **Quality Preservation**: Maintains visual fidelity for user viewpoints
+
+**Research Impact**: This environment demonstrates practical application of RL to real-world data compression challenges. The view-aware optimization approach has applications beyond astronomy, including 3D graphics, virtual reality, and any domain requiring efficient 3D data representation.
+
+**Educational Value**: The environment provides hands-on experience with spatial data structures, 3D compression algorithms, and multi-objective optimization. The astronomical context makes it engaging for students while teaching fundamental computer graphics and data science concepts.
+
+**Limitations**:
+- **Dataset Size**: Currently limited to 1000-point subsets of Gaia data
+- **Static Viewpoints**: Fixed user viewpoints rather than dynamic camera paths
+- **Compression Artifacts**: Some visual quality loss in highly compressed regions
+- **Processing Time**: Sequential RL optimization may be slow for large datasets
+
+**Requirements**: numpy, scipy, scikit-learn, openai, python-dotenv, matplotlib, pillow, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
