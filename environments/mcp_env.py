@@ -121,7 +121,7 @@ class McpEnv(BaseEnv):
         #     split="train",
         # )
         with open(self.config.dataset_path, "r") as f:  # Load dataset from path
-            full_dataset_list = json.load(f)
+            _ = json.load(f)
 
         full_dataset = load_dataset(
             "json", data_files={"train": self.config.dataset_path}
@@ -279,7 +279,8 @@ class McpEnv(BaseEnv):
 
         to_score = list()
         # OLD:
-        # for i, completion_choice in enumerate(completions.choices): # For loop needs to be re-indented when re-enabling
+        # for i, completion_choice in enumerate(completions.choices): 
+        # For loop needs to be re-indented when re-enabling
 
         for i, completion_choice in enumerate(completions.choices):
             # Create a copy of the prompt messages
