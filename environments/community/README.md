@@ -2894,6 +2894,207 @@ python generate_humor_dataset.py
 
 ---
 
+### 30. Meteorology Forecast RL Environment (`meteorology_forecast/`)
+
+**Contributors**: FahrenheitResearch, drewsny
+**PR**: [#68](https://github.com/NousResearch/atropos/pull/68)
+**Integration Status**: ✅ Integrated
+
+**Description**: A reinforcement learning environment designed to train LLMs on interpreting numerical weather prediction (NWP) model sounding data and making informed meteorological forecast assessments. The environment moves beyond static graphical outputs to a text-structured, LLM-readable format that enables programmatic reasoning and analysis of weather data.
+
+**Core Features**:
+
+**NWP Model Data Processing**:
+- **Real Weather Data Integration**: Uses actual numerical weather prediction model sounding data (RAP, HRRR)
+- **Multi-Location Support**: Processes weather data from multiple geographical locations
+- **Time Series Analysis**: Analyzes forecast data across multiple UTC time periods (6, 9, 12, 15, 18 hours)
+- **Area Forecast Discussion (AFD) Integration**: Incorporates human forecaster discussions for evaluation context
+
+**Meteorological Reasoning Framework**:
+- **Three-Phase Analysis**: Detailed reasoning, tool calling, and forecast summarization
+- **Conceptual Tool Integration**: Available tools include surface observations, radar imagery, satellite data, and upper-air soundings
+- **Severe Weather Focus**: Specialized assessment of severe weather potential and risks
+- **Professional Format**: Output format matches professional meteorological analysis standards
+
+**Dual LLM Architecture**:
+- **Agent LLM**: Analyzes sounding data and generates forecasts (default: Qwen/Qwen3-8B)
+- **Judge LLM**: Expert meteorologist evaluation using Gemini-2.5-Flash-Preview via OpenRouter
+- **Separate API Endpoints**: Independent configuration for agent and judge models
+- **Comprehensive Scoring**: 10-point scale evaluation across multiple meteorological criteria
+
+**Expert Evaluation System**:
+- **Meteorological Soundness** (0-5 points): Correct interpretation of sounding parameters, logical weather connections, depth of analysis
+- **Tool Call Relevance** (0-3 points): Appropriate tool usage given model data and reasoning
+- **Forecast Summary Quality** (0-2 points): Clarity, conciseness, alignment with reasoning and AFDs
+- **Professional Justification**: Detailed textual feedback on forecast quality
+
+**Technical Implementation**:
+
+**Data Structure and Processing**:
+- **JSONL Sounding Data**: Structured format optimized for LLM consumption
+- **Pattern Matching**: Automated discovery of sounding files by location and time
+- **AFD Text Processing**: Area Forecast Discussion integration with encoding handling
+- **Case Generation**: Systematic creation of forecast scenarios with target times
+
+**Environment Configuration**:
+```python
+sounding_data_root: str = "environments/community/meteorology_forecast/data/"
+target_date: str = "20250314"  # YYYYMMDD format
+judge_model_name: str = "google/gemini-2.5-flash-preview"
+nwp_models_to_use: List[str] = ["RAP"]
+forecast_hours_to_sample: List[int] = [6, 9, 12, 15, 18]
+max_reasoning_tokens_llm: int = 3000
+max_tokens_judge: int = 2000
+```
+
+**Agent System Prompt**:
+The environment instructs the agent to:
+1. Provide detailed step-by-step meteorological reasoning
+2. Identify trends in atmospheric parameters and connect them to weather phenomena
+3. Call conceptual tools when additional observational data would improve assessment
+4. Generate professional forecast summaries using "FORECAST_SUMMARY:" format
+
+**Judge Evaluation Process**:
+1. **Input Analysis**: Receives agent output and relevant human forecaster AFDs
+2. **Multi-Criteria Assessment**: Evaluates reasoning quality, tool appropriateness, and forecast clarity
+3. **Structured Scoring**: Provides numerical scores in standardized format
+4. **Professional Justification**: Detailed explanation of scoring decisions
+
+**Training and Evaluation Workflow**:
+
+**Data Collection Loop**:
+- **Case Sampling**: Random selection from available weather scenarios
+- **Prompt Generation**: Dynamic creation of location-specific forecast prompts
+- **Agent Inference**: LLM analysis of sounding data with reasoning and tool calls
+- **Judge Evaluation**: Expert assessment of agent performance
+- **Score Integration**: Tokenization and score assignment for RL training
+
+**WandB Metrics Tracking**:
+- `train/avg_judge_total_score`: Overall forecast quality (0-10 scale)
+- `train/avg_judge_reasoning_score`: Depth and accuracy of reasoning (0-5)
+- `train/avg_judge_tool_score`: Tool usage relevance (0-3)
+- `train/avg_judge_forecast_score`: Forecast clarity and alignment (0-2)
+- `train/detailed_rollouts`: Comprehensive logging of prompts, reasoning, tools, and justifications
+
+**Research Applications**:
+
+**Meteorological AI Development**:
+- **Professional Weather Analysis**: Training AI systems for operational meteorology
+- **Decision Support Systems**: AI assistance for human forecasters during severe weather
+- **Automated Forecast Generation**: Custom forecasts for arbitrary geographic locations
+- **Meteorological Education**: Teaching weather analysis and forecasting principles
+
+**Multi-Modal Reasoning**:
+- **Tool-Augmented Analysis**: Learning when and how to request additional observational data
+- **Contextual Decision Making**: Integrating model data with human forecaster insights
+- **Structured Output Generation**: Professional-format meteorological communication
+- **Domain Expertise Transfer**: Incorporating specialized meteorological knowledge
+
+**Real-World Integration Potential**:
+- **National Weather Service Integration**: Complementing operational forecast workflows
+- **Emergency Management**: Enhanced severe weather warning systems
+- **Aviation Meteorology**: Specialized forecasts for flight planning and safety
+- **Agricultural Applications**: Crop-specific weather analysis and forecasting
+
+**Data Requirements**:
+
+**Sounding Data Format**:
+- **Location Structure**: `data/YYYYMMDD/{location_id}/`
+- **File Pattern**: `{location_id}_{model}_{timestamp}.jsonl`
+- **AFD Files**: `AFD_*.txt` for human forecaster context
+- **JSONL Format**: Structured atmospheric profile data optimized for LLM processing
+
+**Example Data Structure**:
+```
+environments/community/meteorology_forecast/data/
+└── 20250314/
+    ├── KOKC/  # Oklahoma City
+    │   ├── KOKC_RAP_20250314_12Z.buf_default_llm_optimized.jsonl
+    │   ├── AFD_OUN.txt
+    │   └── ...
+    └── KORD/  # Chicago O'Hare
+        ├── KORD_RAP_20250314_12Z.buf_default_llm_optimized.jsonl
+        ├── AFD_LOT.txt
+        └── ...
+```
+
+**Setup and Usage**:
+
+**Environment Variables**:
+- `AGENT_LLM_MODEL_NAME`: Agent model selection (default: Qwen/Qwen3-8B)
+- `AGENT_LLM_API_KEY`: API key for agent model
+- `AGENT_LLM_BASE_URL`: Base URL for agent model API
+- `OPENROUTER_API_KEY`: Required for judge model (Gemini-2.5-Flash-Preview)
+
+**Command Line Usage**:
+```bash
+# Set up required API keys
+export AGENT_LLM_API_KEY="your_agent_api_key"
+export OPENROUTER_API_KEY="your_openrouter_api_key"
+
+# Run meteorology forecast environment
+python environments/community/meteorology_forecast/meteorology_env.py serve \
+    --env.group_size 2 \
+    --env.use_wandb True \
+    --env.target_date 20250314 \
+    --openai.api_key $AGENT_LLM_API_KEY \
+    --openai.base_url http://localhost:8080/v1 \
+    --openai.model_name Qwen/Qwen3-8B
+```
+
+**Performance Characteristics**:
+
+**Computational Requirements**:
+- **Agent Model**: Qwen/Qwen3-8B or similar (configurable)
+- **Judge Model**: Gemini-2.5-Flash-Preview via OpenRouter API
+- **Memory Usage**: Moderate (depends on sounding data volume)
+- **Processing Time**: Variable based on number of locations and time periods
+
+**Training Metrics**:
+- **Episode Length**: Variable based on available weather cases
+- **Reward Signal**: Expert judge scores (0-10 scale)
+- **Evaluation Frequency**: Configurable steps per evaluation (default: 100)
+- **Data Throughput**: Thousands of location-specific soundings per model run
+
+**Demo and Results**:
+- **W&B Dashboard**: [Example training run](https://wandb.ai/fahrenheitagi-fahrenheitagi/my_atropos_rl_experiments/runs/dsubhw9i/overview)
+- **Performance Tracking**: Real-time monitoring of forecast quality improvements
+- **Detailed Logging**: Complete conversation histories with expert evaluations
+
+**Future Enhancements**:
+
+**Extended Weather Data**:
+- **Additional NWP Models**: HRRR, GFS, NAM integration
+- **Satellite Data**: Direct integration of satellite imagery analysis
+- **Radar Data**: Real-time radar interpretation capabilities
+- **Ensemble Forecasting**: Multi-model consensus analysis
+
+**Advanced Meteorological Features**:
+- **Mesoscale Analysis**: High-resolution weather pattern recognition
+- **Climate Integration**: Long-term climate data context
+- **Specialized Domains**: Marine, aviation, agricultural meteorology
+- **Real-Time Integration**: Live weather data processing
+
+**Professional Applications**:
+- **Forecast Verification**: Automated accuracy assessment
+- **Warning Systems**: Severe weather alert generation
+- **Briefing Generation**: Automated meteorological briefings
+- **Educational Tools**: Interactive weather analysis training
+
+**Research Impact**: This environment represents a significant advancement in applying AI to meteorological analysis, providing a framework for training language models on real weather data with expert-level evaluation. The integration of professional meteorological workflows with RL training opens new possibilities for AI-assisted weather forecasting.
+
+**Educational Value**: The environment serves as an excellent example of domain-specific RL applications, demonstrating how specialized knowledge can be incorporated into AI training through expert evaluation systems and structured data formats.
+
+**Limitations**:
+- **Data Dependency**: Requires access to NWP model sounding data
+- **Expert Evaluation Cost**: Judge model API calls for evaluation
+- **Domain Specificity**: Focused on meteorological applications
+- **Real-Time Constraints**: Historical data training vs. operational forecasting
+
+**Requirements**: wandb, pydantic, httpx, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
