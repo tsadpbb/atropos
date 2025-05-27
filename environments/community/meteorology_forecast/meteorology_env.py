@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import wandb
 from pydantic import Field
 
+import wandb
 from atroposlib.envs.base import (
     APIServer,
     APIServerConfig,
@@ -37,7 +37,9 @@ class MetRLConfig(BaseEnvConfig):
     max_token_length: int = Field(default=2048)
     inference_weight: float = Field(default=1.0)
     wandb_name: Optional[str] = Field(default=None)
-    data_path_to_save_groups: Optional[str] = Field(default="data/MeteorologyForecastRL.jsonl")
+    data_path_to_save_groups: Optional[str] = Field(
+        default="data/MeteorologyForecastRL.jsonl"
+    )
     eval_handling: EvalHandlingEnum = Field(default=EvalHandlingEnum.STOP_TRAIN)
     eval_limit_ratio: float = Field(default=0.5)
     num_eval_samples: int = Field(default=20)
@@ -52,11 +54,12 @@ class MetRLConfig(BaseEnvConfig):
     max_batches_offpolicy: int = Field(default=3)
 
     sounding_data_root: str = Field(
-        default="/Users/hackathon/atropos/environments/hack0/data/",
+        default="environments/community/meteorology_forecast/data/",
         description="Root directory for all sounding and AFD data.",
     )
     target_date: str = Field(
-        default="20250314", description="The specific date to load data for (YYYYMMDD format)."
+        default="20250314",
+        description="The specific date to load data for (YYYYMMDD format).",
     )
     judge_model_name: str = Field(
         default="google/gemini-2.5-flash-preview",
@@ -82,7 +85,8 @@ class MetRLConfig(BaseEnvConfig):
         description="Offset from the latest provided sounding hour to set the target forecast time.",
     )
     max_afds_for_judge: int = Field(
-        default=3, description="Maximum number of AFD files to provide to the judge model."
+        default=3,
+        description="Maximum number of AFD files to provide to the judge model.",
     )
     max_reasoning_tokens_llm: int = Field(
         default=3000, description="Max tokens for the agent LLM's generation."
@@ -92,25 +96,35 @@ class MetRLConfig(BaseEnvConfig):
     )
 
 
-AGENT_SYSTEM_PROMPT = """You are a highly skilled AI meteorologist. Your task is to analyze numerical weather prediction (NWP) model sounding data for a specific location and time period.
+AGENT_SYSTEM_PROMPT = """You are a highly skilled AI meteorologist. Your task is to analyze
+numerical weather prediction (NWP) model sounding data for a specific location and time period.
 Based on your analysis, you must:
-1.  Provide a detailed step-by-step reasoning process. This should include identifying trends, interpreting meteorological parameters, and connecting them to potential weather phenomena.
-2.  If you determine that additional real-time observational data is crucial for a more accurate assessment, specify the tools you would use. For each tool, output a line in the exact format: TOOL_CALL: {{"tool_name": "tool_name_here", "arguments": {{"param1": "value1", ...}}}}
-    Available conceptual tools: get_surface_observations, get_latest_radar_imagery, get_satellite_imagery, get_upper_air_sounding.
-3.  Conclude with a concise forecast summary for the specified target time. Start this summary with "FORECAST_SUMMARY: ".
+1.  Provide a detailed step-by-step reasoning process. This should include identifying trends,
+    interpreting meteorological parameters, and connecting them to potential weather phenomena.
+2.  If you determine that additional real-time observational data is crucial for a more accurate
+    assessment, specify the tools you would use. For each tool, output a line in the exact format:
+    TOOL_CALL: {{"tool_name": "tool_name_here", "arguments": {{"param1": "value1", ...}}}}
+    Available conceptual tools: get_surface_observations, get_latest_radar_imagery,
+    get_satellite_imagery, get_upper_air_sounding.
+3.  Conclude with a concise forecast summary for the specified target time. Start this summary
+    with "FORECAST_SUMMARY: ".
 
 Analyze the provided data thoroughly. Your reasoning should be comprehensive."""
 
 AGENT_USER_PROMPT_TEMPLATE = """Please analyze the following NWP model sounding data for station {location_id}.
-The soundings provided are from the {model_name} model, run on {run_date_full_z}, valid at the following UTC times: {sounding_times_str}.
-Your goal is to make a preliminary forecast assessment focusing on severe weather potential for {location_id} around {target_forecast_time_utc}.
+The soundings provided are from the {model_name} model, run on {run_date_full_z}, valid at the
+following UTC times: {sounding_times_str}.
+Your goal is to make a preliminary forecast assessment focusing on severe weather potential for
+{location_id} around {target_forecast_time_utc}.
 
 Sounding Data:
 {soundings_json_blob}
 
-Remember to include your reasoning, any TOOL_CALL: {{"tool_name": "tool_name_here", "arguments": {{"param1": "value1", ...}}}} lines, and a final FORECAST_SUMMARY: statement."""
+Remember to include your reasoning, any TOOL_CALL: {{"tool_name": "tool_name_here",
+"arguments": {{"param1": "value1", ...}}}} lines, and a final FORECAST_SUMMARY: statement."""
 
-JUDGE_SYSTEM_PROMPT = """You are an expert meteorologist acting as a judge. You will evaluate an AI assistant's analysis of model sounding data.
+JUDGE_SYSTEM_PROMPT = """You are an expert meteorologist acting as a judge. You will evaluate
+an AI assistant's analysis of model sounding data.
 The AI was asked to provide reasoning, call tools if necessary, and give a forecast summary.
 You will be given the AI's output and relevant Area Forecast Discussions (AFDs) from human forecasters for context.
 
@@ -126,9 +140,11 @@ Your evaluation should focus on:
     *   Were critical tool calls missed?
 3.  **Forecast Summary Quality (0-2 points):**
     *   Clarity and conciseness.
-    *   Alignment with the AI's own reasoning and the provided AFDs (or sensible deviation if model data strongly suggested it).
+    *   Alignment with the AI's own reasoning and the provided AFDs (or sensible deviation if model
+        data strongly suggested it).
 
-Provide a numerical score for each category and a total score (max 10.0). Also, provide a brief overall justification for your scores.
+Provide a numerical score for each category and a total score (max 10.0). Also, provide a brief
+overall justification for your scores.
 Your output MUST be in the following exact format:
 REASONING_SCORE: {{{{0-5 score}}}}
 TOOL_CALL_SCORE: {{{{0-3 score}}}}
@@ -146,7 +162,8 @@ Contextual Area Forecast Discussions (AFDs):
 {afds_blob}
 ---
 
-Please evaluate the AI assistant's output based on the criteria and provide your scores and justification in the specified format."""
+Please evaluate the AI assistant's output based on the criteria and provide your scores and
+justification in the specified format."""
 
 
 @dataclass
@@ -196,9 +213,13 @@ class MeteorologyForecastRLEnv(BaseEnv):
     @classmethod
     def config_init(cls) -> Tuple[MetRLConfig, List[APIServerConfig]]:
         env_config = MetRLConfig()
-        agent_model_name = os.environ.get("AGENT_LLM_MODEL_NAME", env_config.tokenizer_name)
+        agent_model_name = os.environ.get(
+            "AGENT_LLM_MODEL_NAME", env_config.tokenizer_name
+        )
         agent_api_key = os.environ.get("AGENT_LLM_API_KEY", "EMPTY_KEY_IF_LOCAL_VLLM")
-        agent_base_url = os.environ.get("AGENT_LLM_BASE_URL", "http://localhost:8080/v1")
+        agent_base_url = os.environ.get(
+            "AGENT_LLM_BASE_URL", "http://localhost:8080/v1"
+        )
         judge_api_key = os.environ.get(env_config.judge_api_key_env_var)
         if not judge_api_key:
             logging.warning(
@@ -206,7 +227,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
             )
         server_configs = [
             APIServerConfig(
-                model_name=agent_model_name, base_url=agent_base_url, api_key=agent_api_key
+                model_name=agent_model_name,
+                base_url=agent_base_url,
+                api_key=agent_api_key,
             ),
             APIServerConfig(
                 model_name=env_config.judge_model_name,
@@ -247,7 +270,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
                         soundings.append(data)
                         sounding_times.append(f"{line_hour:02d}00Z")
                         found_hours.add(line_hour)
-                        if len(found_hours) == len(self.config.forecast_hours_to_sample):
+                        if len(found_hours) == len(
+                            self.config.forecast_hours_to_sample
+                        ):
                             break
                 if len(found_hours) == len(self.config.forecast_hours_to_sample):
                     break
@@ -258,12 +283,19 @@ class MeteorologyForecastRLEnv(BaseEnv):
             sounding_times = [p[0] for p in pairs]
             soundings = [p[1] for p in pairs]
             afd_texts = []
-            for afd_path in sorted(loc.glob("AFD_*.txt"))[: self.config.max_afds_for_judge]:
+            for afd_path in sorted(loc.glob("AFD_*.txt"))[
+                : self.config.max_afds_for_judge
+            ]:
                 with open(afd_path, encoding="utf-8", errors="replace") as f:
-                    afd_texts.append("".join(c for c in f.read() if c.isprintable() or c.isspace()))
+                    afd_texts.append(
+                        "".join(c for c in f.read() if c.isprintable() or c.isspace())
+                    )
             latest_hour = int(sounding_times[-1][:2])
             target_hour = latest_hour + self.config.target_forecast_hour_offset
-            target_time = f"{target_hour:02d}00Z on {self.config.target_date[4:6]}/{self.config.target_date[6:8]}/{self.config.target_date[0:4]}"
+            target_time = (
+                f"{target_hour:02d}00Z on {self.config.target_date[4:6]}/"
+                f"{self.config.target_date[6:8]}/{self.config.target_date[0:4]}"
+            )
             run_time = soundings[0].get("tm", "00/00Z").split("/")[1][:2] + "Z"
             run_date_full_z = f"{self.config.target_date} at {run_time}"
             case = CaseData(
@@ -293,7 +325,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
 
     @staticmethod
     def _parse_llm_output(text: str) -> Dict[str, Any]:
-        think_match = re.search(r"<think>(.*?)</think>", text, re.DOTALL | re.IGNORECASE)
+        think_match = re.search(
+            r"<think>(.*?)</think>", text, re.DOTALL | re.IGNORECASE
+        )
         think_content = think_match.group(1).strip() if think_match else ""
         forecast_summary = ""
         tool_calls: List[Dict[str, Any]] = []
@@ -315,7 +349,12 @@ class MeteorologyForecastRLEnv(BaseEnv):
 
     @staticmethod
     def _parse_judge_output(text: str) -> Tuple[float, Dict[str, float], str]:
-        scores = {"reasoning": 0.0, "tool_call": 0.0, "forecast_summary": 0.0, "total": 0.0}
+        scores = {
+            "reasoning": 0.0,
+            "tool_call": 0.0,
+            "forecast_summary": 0.0,
+            "total": 0.0,
+        }
         for key in scores:
             match = re.search(rf"{key.upper()}_SCORE:\s*([0-9.]+)", text)
             if match:
@@ -373,7 +412,12 @@ class MeteorologyForecastRLEnv(BaseEnv):
         ]
         outputs = await self._call_agent(agent_messages)
 
-        group: ScoredDataGroup = {"tokens": [], "masks": [], "scores": [], "overrides": []}
+        group: ScoredDataGroup = {
+            "tokens": [],
+            "masks": [],
+            "scores": [],
+            "overrides": [],
+        }
 
         for llm_output in outputs:
             parsed = self._parse_llm_output(llm_output)
@@ -381,7 +425,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
             judge_prompt = JUDGE_USER_PROMPT_TEMPLATE.format(
                 llm_full_output=llm_output,
                 afds_blob=(
-                    "\n\n---\n\n".join(item.afd_texts) if item.afd_texts else "No AFDs provided."
+                    "\n\n---\n\n".join(item.afd_texts)
+                    if item.afd_texts
+                    else "No AFDs provided."
                 ),
             )
             judge_messages = [
@@ -389,7 +435,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
                 {"role": "user", "content": judge_prompt},
             ]
             judge_out = await self._call_judge(judge_messages)
-            final_score, judge_scores, justification = self._parse_judge_output(judge_out)
+            final_score, judge_scores, justification = self._parse_judge_output(
+                judge_out
+            )
             self.judge_scores_buffer.append(final_score)
 
             tokenized = tokenize_for_trainer(
@@ -450,7 +498,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
             llm_output = await self._call_agent(agent_messages)
             judge_prompt = JUDGE_USER_PROMPT_TEMPLATE.format(
                 llm_full_output=llm_output,
-                afds_blob="\n\n---\n\n".join(case.afd_texts) if case.afd_texts else "No AFDs.",
+                afds_blob=(
+                    "\n\n---\n\n".join(case.afd_texts) if case.afd_texts else "No AFDs."
+                ),
             )
             judge_messages = [
                 {"role": "system", "content": JUDGE_SYSTEM_PROMPT},
@@ -464,9 +514,9 @@ class MeteorologyForecastRLEnv(BaseEnv):
         if metrics is None:
             metrics = {}
         if self.judge_scores_buffer:
-            metrics["train/avg_judge_total_score"] = sum(self.judge_scores_buffer) / len(
+            metrics["train/avg_judge_total_score"] = sum(
                 self.judge_scores_buffer
-            )
+            ) / len(self.judge_scores_buffer)
             self.judge_scores_buffer.clear()
         if self.eval_scores_buffer:
             avg_total = sum(x["total"] for x in self.eval_scores_buffer) / len(
