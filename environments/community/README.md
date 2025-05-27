@@ -2179,6 +2179,98 @@ python test_stl_env.py
 
 ---
 
+### 25. Sanskrit Poetry Environment (`sanskrit_poetry/`)
+
+**Contributors**: KhoomeiK
+**PR**: [#71](https://github.com/NousResearch/atropos/pull/71)
+**Integration Status**: ✅ Integrated
+
+**Description**: A specialized reinforcement learning environment for generating Sanskrit poetry that adheres to traditional metrical patterns. This environment trains language models to compose authentic Sanskrit verse using the chandas (meter) classification system, combining linguistic knowledge with poetic creativity.
+
+**Core Features**:
+
+**Metrical Poetry Generation**:
+- **Chandas Meter Validation**: Uses the `chandas` classifier to verify adherence to traditional Sanskrit meters
+- **IAST Transliteration**: Supports International Alphabet of Sanskrit Transliteration for accurate representation
+- **SLP1 Conversion**: Automatic conversion from IAST to SLP1 encoding for meter analysis
+- **Multiple Meter Support**: Configurable target meters including tristubh, anushtubh, and others
+
+**Reward System Integration**:
+- **Registry-Based Rewards**: Leverages Atropos reward function registry for modular scoring
+- **ChandasMeterReward**: Custom reward function that scores poetry based on metrical accuracy
+- **Weighted Scoring**: Configurable reward weights for different aspects of poetic quality
+- **Real-Time Feedback**: Immediate scoring during training for rapid learning
+
+**Environment Configuration**:
+- **Flexible Meter Selection**: Easy configuration of target Sanskrit meters
+- **Temperature Control**: Adjustable creativity vs accuracy balance (default 0.7)
+- **Token Limits**: Configurable maximum poem length (default 256 tokens)
+- **System Prompts**: Customizable instructions for different poetic styles
+
+**Technical Implementation**:
+- **Pydantic Configuration**: Type-safe environment configuration with validation
+- **Async Processing**: Non-blocking completion generation for efficient training
+- **Trajectory Collection**: Comprehensive conversation tracking for RL training
+- **Tokenization Support**: Integration with Atropos tokenization utilities
+
+**Sanskrit Linguistic Features**:
+- **Character Mapping**: Comprehensive IAST to SLP1 character conversion
+- **Digraph Handling**: Proper processing of Sanskrit consonant clusters
+- **Unicode Support**: Full support for Sanskrit diacritical marks
+- **Meter Classification**: Integration with scholarly meter analysis tools
+
+**Training Workflow**:
+- **Prompt Generation**: Automatic creation of meter-specific composition prompts
+- **Multi-Sample Generation**: Parallel generation of diverse poetic attempts
+- **Metrical Scoring**: Real-time evaluation of generated verses against target meters
+- **Iterative Improvement**: RL-based refinement of poetic capabilities
+
+**Research Applications**:
+- **Computational Linguistics**: Study of AI understanding of prosodic patterns
+- **Cultural Preservation**: Digital preservation and generation of traditional verse forms
+- **Cross-Lingual Poetry**: Exploration of metrical patterns across languages
+- **Educational Tools**: Interactive learning systems for Sanskrit prosody
+
+**External Dependencies**:
+- **Chandas Package**: Must be built from [source](https://github.com/sanskrit/chandas) for meter classification
+- **Sanskrit Corpus**: Access to traditional texts for training data (optional)
+- **Unicode Libraries**: Proper handling of Sanskrit character encoding
+
+**Configuration Examples**:
+```python
+# Tristubh meter (11 syllables per quarter)
+config = SanskritPoetryEnvConfig(
+    meter="tristubh",
+    temperature=0.7,
+    max_tokens=256
+)
+
+# Anushtubh meter (8 syllables per quarter)
+config = SanskritPoetryEnvConfig(
+    meter="anushtubh",
+    temperature=0.8,
+    max_tokens=128
+)
+```
+
+**Evaluation Metrics**:
+- **Metrical Accuracy**: Percentage of verses matching target meter
+- **Linguistic Quality**: Grammatical correctness and vocabulary usage
+- **Poetic Coherence**: Thematic consistency and aesthetic appeal
+- **Training Efficiency**: Convergence speed and sample efficiency
+
+**Future Enhancements**:
+- **Multi-Meter Compositions**: Training on mixed metrical patterns
+- **Semantic Constraints**: Content-aware poetry generation with thematic guidance
+- **Historical Styles**: Emulation of specific periods or authors
+- **Interactive Composition**: Real-time collaborative poetry creation
+
+**Educational Value**: This environment serves as an excellent introduction to computational prosody, Sanskrit linguistics, and the intersection of AI with traditional literary forms. It demonstrates how modern ML techniques can be applied to preserve and extend classical cultural knowledge.
+
+**Requirements**: pydantic, chandas (from source), atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
