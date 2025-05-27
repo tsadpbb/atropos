@@ -1,15 +1,14 @@
-import os
-import logging
-import aiohttp
-import json
 import asyncio
-from typing import Dict, List, Any, Optional, Union
-from pathlib import Path
+import logging
+from typing import Any, Dict, List, Optional
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_URL = "https://health.api.nvidia.com/v1/biology/ipd/proteinmpnn/predict"
 DEFAULT_STATUS_URL = "https://health.api.nvidia.com/v1/status"
+
 
 async def call_proteinmpnn(
     input_pdb: str,
@@ -20,7 +19,7 @@ async def call_proteinmpnn(
     url: str = DEFAULT_URL,
     status_url: str = DEFAULT_STATUS_URL,
     polling_interval: int = 10,
-    timeout: int = 60
+    timeout: int = 60,
 ) -> Optional[Dict[str, Any]]:
     """
     Call the NVIDIA NIM ProteinMPNN API.
@@ -49,16 +48,13 @@ async def call_proteinmpnn(
         "input_pdb": input_pdb,
         "ca_only": ca_only,
         "use_soluble_model": use_soluble_model,
-        "sampling_temp": sampling_temp
+        "sampling_temp": sampling_temp,
     }
 
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                url,
-                json=data,
-                headers=headers,
-                timeout=timeout
+                url, json=data, headers=headers, timeout=timeout
             ) as response:
                 if response.status == 200:
                     return await response.json()
@@ -71,7 +67,7 @@ async def call_proteinmpnn(
                             headers=headers,
                             status_url=status_url,
                             polling_interval=polling_interval,
-                            timeout=timeout
+                            timeout=timeout,
                         )
                     else:
                         logger.error("No request ID in response headers")
@@ -85,12 +81,13 @@ async def call_proteinmpnn(
         logger.error(f"Error calling ProteinMPNN API: {e}")
         return None
 
+
 async def _poll_job_status(
     req_id: str,
     headers: Dict[str, str],
     status_url: str,
     polling_interval: int = 10,
-    timeout: int = 60
+    timeout: int = 60,
 ) -> Optional[Dict[str, Any]]:
     """
     Poll the status endpoint until the job completes.
@@ -109,18 +106,20 @@ async def _poll_job_status(
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{status_url}/{req_id}",
-                    headers=headers,
-                    timeout=timeout
+                    f"{status_url}/{req_id}", headers=headers, timeout=timeout
                 ) as response:
                     if response.status == 200:
                         logger.info(f"ProteinMPNN job {req_id} completed")
                         return await response.json()
                     elif response.status == 202:
-                        logger.debug(f"ProteinMPNN job {req_id} still running, polling...")
+                        logger.debug(
+                            f"ProteinMPNN job {req_id} still running, polling..."
+                        )
                         await asyncio.sleep(polling_interval)
                     else:
-                        logger.error(f"Error checking ProteinMPNN job status: {response.status}")
+                        logger.error(
+                            f"Error checking ProteinMPNN job status: {response.status}"
+                        )
                         text = await response.text()
                         logger.error(f"Response: {text}")
                         return None

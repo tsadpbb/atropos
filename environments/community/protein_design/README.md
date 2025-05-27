@@ -38,7 +38,7 @@ Each episode consists of an LLM navigating a 4-step design pipeline, using state
 ### Step 4: Evaluate Binding (`AlphaFold-Multimer`)
 - **Input:** Target + binder sequences
 - **Output:** Complex structure prediction
-- **Reward:** 
+- **Reward:**
   - Format OK
   - No steric clashes
   - **Bonus:** Contact interface, binding affinity metrics (Not yet implemented)
@@ -48,9 +48,9 @@ Each episode consists of an LLM navigating a 4-step design pipeline, using state
 ## 🏆 Reward Function
 
 The reward is cumulative:
-- **+0.2**: Successfully generate output in correct format at each step  
+- **+0.2**: Successfully generate output in correct format at each step
 - **+0.0 to +1.0:** Structural reward based on complex validity smoothly interpolated on AlphaFold2 multimere confidence
-- **+1**: High predicted binding affinity (Not yet implemented)  
+- **+1**: High predicted binding affinity (Not yet implemented)
 
 Sparse, but real. LLMs must *plan* tool use, not just spam actions.
 

@@ -1,9 +1,12 @@
 import logging
-from typing import Dict, Tuple, List, Set, Union
+from typing import Dict, Set, Tuple, Union
 
 logger = logging.getLogger(__name__)
 
-def get_pdb_chain_details(pdb_content: str, preview_lines: int = 10) -> Tuple[Dict[str, Dict[str, int]], str]:
+
+def get_pdb_chain_details(
+    pdb_content: str, preview_lines: int = 10
+) -> Tuple[Dict[str, Dict[str, int]], str]:
     """
     Parses PDB content to extract detailed information for each chain.
 
@@ -27,7 +30,8 @@ def get_pdb_chain_details(pdb_content: str, preview_lines: int = 10) -> Tuple[Di
         if line.startswith("ATOM"):
             atom_lines.append(line)
             chain_id = line[21:22].strip()
-            if not chain_id: chain_id = " "
+            if not chain_id:
+                chain_id = " "
             atom_name = line[12:16].strip()
             try:
                 residue_num = int(line[22:26].strip())
@@ -39,7 +43,11 @@ def get_pdb_chain_details(pdb_content: str, preview_lines: int = 10) -> Tuple[Di
             except ValueError:
                 logger.warning(f"Could not parse residue number from PDB line: {line}")
                 continue
-        elif line.startswith("HEADER") or line.startswith("TITLE") or line.startswith("COMPND"):
+        elif (
+            line.startswith("HEADER")
+            or line.startswith("TITLE")
+            or line.startswith("COMPND")
+        ):
             header_lines.append(line)
 
     chain_details: Dict[str, Dict[str, int]] = {}
@@ -51,14 +59,16 @@ def get_pdb_chain_details(pdb_content: str, preview_lines: int = 10) -> Tuple[Di
             chain_details[chain_id] = {
                 "min_residue": min_res,
                 "max_residue": max_res,
-                "length": length
+                "length": length,
             }
         else:
             logger.warning(f"Chain {chain_id} had no parseable ATOM residue numbers.")
 
-    preview_str_parts = header_lines[:min(len(header_lines), preview_lines // 2)]
+    preview_str_parts = header_lines[: min(len(header_lines), preview_lines // 2)]
     remaining_preview_lines = preview_lines - len(preview_str_parts)
-    preview_str_parts.extend(atom_lines[:min(len(atom_lines), remaining_preview_lines)])
+    preview_str_parts.extend(
+        atom_lines[: min(len(atom_lines), remaining_preview_lines)]
+    )
     pdb_preview = "\n".join(preview_str_parts)
     if len(pdb_content.splitlines()) > preview_lines:
         pdb_preview += "\n..."

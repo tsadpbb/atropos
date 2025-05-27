@@ -1,36 +1,42 @@
-import os
-import logging
-import aiohttp
-import json
 import asyncio
-from typing import Dict, List, Any, Optional, Union
-from pathlib import Path
+import logging
+from typing import Any, Dict, List, Optional
+
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_URL = "https://health.api.nvidia.com/v1/biology/ipd/rfdiffusion/generate"
+DEFAULT_URL = "https://health.api.nvidia.com/v1/biology/deepmind/alphafold2"
 DEFAULT_STATUS_URL = "https://health.api.nvidia.com/v1/status"
 
-async def call_rfdiffusion(
-    input_pdb: str,
+
+async def call_alphafold2(
+    sequence: str,
     api_key: str,
-    contigs: str = None,
-    hotspot_res: List[str] = None,
-    diffusion_steps: int = 15,
+    algorithm: str = "mmseqs2",
+    e_value: float = 0.0001,
+    iterations: int = 1,
+    databases: List[str] = ["small_bfd"],
+    relax_prediction: bool = False,
+    skip_template_search: bool = True,
     url: str = DEFAULT_URL,
     status_url: str = DEFAULT_STATUS_URL,
     polling_interval: int = 10,
-    timeout: int = 60
+    timeout: int = 600,
+    max_retries: int = 3,
 ) -> Optional[Dict[str, Any]]:
     """
-    Call the NVIDIA NIM RFDiffusion API.
+    Call the NVIDIA NIM AlphaFold2 API.
 
     Args:
-        input_pdb: PDB structure as a string
+        sequence: Protein sequence in one-letter code
         api_key: NVIDIA NIM API key
-        contigs: Contig string (e.g. "A20-60/0 50-100")
-        hotspot_res: List of hotspot residues (e.g. ["A50","A51"])
-        diffusion_steps: Number of diffusion steps
+        algorithm: MSA search algorithm, "mmseqs2" or "jackhmmer"
+        e_value: E-value threshold for template search
+        iterations: Number of iterations for template search
+        databases: List of databases to search
+        relax_prediction: Whether to relax the prediction
+        skip_template_search: Whether to skip template search
         url: API endpoint URL
         status_url: Status URL for checking job completion
         polling_interval: Seconds between status checks
@@ -46,54 +52,55 @@ async def call_rfdiffusion(
     }
 
     data = {
-        "input_pdb": input_pdb,
-        "diffusion_steps": diffusion_steps
+        "sequence": sequence,
+        "algorithm": algorithm,
+        "e_value": e_value,
+        "iterations": iterations,
+        "databases": databases,
+        "relax_prediction": relax_prediction,
+        "skip_template_search": skip_template_search,
     }
-
-    if contigs:
-        data["contigs"] = contigs
-    if hotspot_res:
-        data["hotspot_res"] = hotspot_res
 
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(
-                url,
-                json=data,
-                headers=headers,
-                timeout=timeout
+                url, json=data, headers=headers, timeout=timeout
             ) as response:
                 if response.status == 200:
                     return await response.json()
                 elif response.status == 202:
                     req_id = response.headers.get("nvcf-reqid")
                     if req_id:
-                        logger.info(f"RFDiffusion job submitted, request ID: {req_id}")
+                        logger.info(f"AlphaFold2 job submitted, request ID: {req_id}")
                         return await _poll_job_status(
                             req_id=req_id,
                             headers=headers,
                             status_url=status_url,
                             polling_interval=polling_interval,
-                            timeout=timeout
+                            timeout=timeout,
                         )
                     else:
                         logger.error("No request ID in response headers")
                         return None
                 else:
-                    logger.error(f"Error calling RFDiffusion API: {response.status}")
+                    logger.error(f"Error calling AlphaFold2 API: {response.status}")
                     text = await response.text()
                     logger.error(f"Response: {text}")
                     return None
     except Exception as e:
-        logger.error(f"Error calling RFDiffusion API: {e}")
+        import traceback
+
+        logger.error(f"Error calling AlphaFold2 API: {e}")
+        logger.error(traceback.format_exc())
         return None
+
 
 async def _poll_job_status(
     req_id: str,
     headers: Dict[str, str],
     status_url: str,
     polling_interval: int = 10,
-    timeout: int = 60
+    timeout: int = 60,
 ) -> Optional[Dict[str, Any]]:
     """
     Poll the status endpoint until the job completes.
@@ -112,21 +119,23 @@ async def _poll_job_status(
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(
-                    f"{status_url}/{req_id}",
-                    headers=headers,
-                    timeout=timeout
+                    f"{status_url}/{req_id}", headers=headers, timeout=timeout
                 ) as response:
                     if response.status == 200:
-                        logger.info(f"RFDiffusion job {req_id} completed")
+                        logger.info(f"AlphaFold2 job {req_id} completed")
                         return await response.json()
                     elif response.status == 202:
-                        logger.debug(f"RFDiffusion job {req_id} still running, polling...")
+                        logger.debug(
+                            f"AlphaFold2 job {req_id} still running, polling..."
+                        )
                         await asyncio.sleep(polling_interval)
                     else:
-                        logger.error(f"Error checking RFDiffusion job status: {response.status}")
+                        logger.error(
+                            f"Error checking AlphaFold2 job status: {response.status}"
+                        )
                         text = await response.text()
                         logger.error(f"Response: {text}")
                         return None
         except Exception as e:
-            logger.error(f"Error polling RFDiffusion job status: {e}")
+            logger.error(f"Error polling AlphaFold2 job status: {e}")
             return None
