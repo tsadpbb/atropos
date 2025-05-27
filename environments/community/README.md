@@ -2099,6 +2099,86 @@ python test_stl_env.py
 
 ---
 
+### 24. MCP Tool Calling Environment (`mcp_tool_calling/`)
+
+**Contributors**: ODAncona, ady-bhai, way2key, pranceraz
+**PR**: [#80](https://github.com/NousResearch/atropos/pull/80)
+**Integration Status**: ✅ Integrated
+
+**Description**: A reinforcement learning environment focused on improving agent tool calls using the Model Context Protocol (MCP). The environment trains LLMs to dynamically discover and invoke tools more effectively, leveraging MCP for context-aware decision-making in tool selection and execution.
+
+**Core Features**:
+
+**MCP-Based Tool Calling**:
+- **Dynamic Tool Discovery**: Agents learn to identify appropriate tools from available MCP servers
+- **Context-Aware Selection**: Tool selection based on user prompts and available capabilities
+- **Structured Tool Execution**: JSON-formatted tool calls with proper argument handling
+- **Multi-Tool Scenarios**: Complex tasks requiring multiple tool interactions
+
+**Training Framework**:
+- **GRPO Implementation**: Group Relative Policy Optimization for efficient RL training
+- **Single Tool Environment**: Based on proven Atropos single tool calling framework
+- **Comparison-Based Scoring**: Expected vs actual MCP call evaluation
+- **Deep Thinking Integration**: Systematic reasoning processes with `<think>` tags
+
+**Dataset and Evaluation**:
+- **MCP Servers Dataset**: Uses DeepNLP/mcp-servers for tool discovery training
+- **Synthetic Prompt Generation**: Contextually appropriate prompts for various server types
+- **Tool-Specific Actions**: Predefined action sets for different MCP server categories
+- **JSON Validation**: Structured comparison of expected vs generated tool calls
+
+**Key Components**:
+- **Tool Calling Server** (`tool_calling_server.py`): Main environment implementation with MCP integration
+- **GRPO Trainer** (`grpo.py`): Reference implementation for RL training with vLLM
+- **Dataset Generator** (`MCP_datasets.py`): Synthetic training data creation from MCP server descriptions
+- **Configuration**: Flexible setup for different model sizes and training parameters
+
+**Supported Tool Categories**:
+- **AgentRPC**: Remote procedure calls and agent communication
+- **Git**: Version control operations and code manipulation
+- **AWS Knowledge Base**: Cloud service documentation and configuration
+- **Anki**: Spaced repetition and memory training systems
+- **ArangoDB**: Graph database queries and multi-model operations
+
+**Training Performance**:
+- **Model**: Qwen/Qwen2.5-1.5B-Instruct (configurable)
+- **Batch Size**: 1024 with 32 group size
+- **Training Steps**: 2000 total with evaluation every 20 steps
+- **Context Length**: Up to 16K tokens for complex tool scenarios
+
+**Research Applications**:
+- **Tool Discovery**: Automated identification of relevant tools for tasks
+- **API Integration**: Seamless connection between natural language and structured APIs
+- **Workflow Automation**: Multi-step task execution through tool chaining
+- **Context Understanding**: Improved comprehension of when and how to use tools
+
+**Technical Implementation**:
+- **vLLM Integration**: Efficient inference during data generation
+- **Transformers Training**: Standard training loop with gradient accumulation
+- **WandB Logging**: Comprehensive metrics tracking and visualization
+- **Async Processing**: Non-blocking tool execution and evaluation
+
+**Demo and Results**:
+- **1-Minute Demo**: [Loom demonstration](https://www.loom.com/share/44c793c47e7d45eaaf02bac7c168a10d)
+- **W&B Training**: [Lambda cluster results](https://api.wandb.ai/links/l-a-t-hacken-tu-eindhoven/nqjy1v4b)
+- **Performance Metrics**: Tool calling accuracy and reasoning quality tracking
+
+**Environment Configuration**:
+- **Model Selection**: Configurable base models for training and inference
+- **Server Setup**: Multiple API server configurations for distributed training
+- **Evaluation Settings**: Customizable evaluation frequency and batch sizes
+- **Reward Tuning**: Adjustable scoring weights for different aspects of tool calling
+
+**Future Enhancements**:
+- **Multi-Tool Workflows**: Complex task decomposition across multiple tools
+- **Tool Composition**: Learning to combine tools for novel capabilities
+- **Error Recovery**: Robust handling of tool failures and retries
+- **Real-World Integration**: Connection to actual MCP server implementations
+
+**Requirements**: torch, transformers, vllm, pydantic, numpy, requests, tenacity, wandb, datasets, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
