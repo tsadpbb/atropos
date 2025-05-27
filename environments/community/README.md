@@ -2675,6 +2675,58 @@ python environments/community/starmap_compression/visualize_starmap.py
 
 ---
 
+### 28. Padres Spatial RL Environment (`padres_spatial/`)
+
+**Contributors**: basedlsg
+**PR**: [#75](https://github.com/NousResearch/atropos/pull/75)
+**Integration Status**: ✅ Integrated
+
+**Description**: A 3D spatial reasoning environment that challenges LLMs to understand and manipulate objects in a simulated 3D world using PyBullet physics simulation. The environment tests and improves LLMs' spatial reasoning capabilities through interactive tasks requiring understanding of relative positioning, object manipulation, and spatial relationships.
+
+**Core Features**:
+
+**3D Physics Simulation**:
+- **PyBullet Integration**: Full 3D physics simulation with gravity and collision detection
+- **Object Manipulation**: Support for cubes and spheres with position and orientation control
+- **Real-time Visualization**: Three.js-based web interface for live 3D scene viewing
+- **WebSocket Communication**: Real-time updates between simulation and visualization
+
+**Spatial Reasoning Tasks**:
+- **Conditional Positioning**: Tasks requiring objects to maintain spatial relationships (e.g., opposite sides of planes)
+- **Distance Constraints**: Precise positioning within target distances between objects
+- **Multi-objective Scoring**: Rewards both proximity accuracy and spatial relationship satisfaction
+- **Dynamic Task Generation**: Procedurally generated spatial reasoning challenges
+
+**LLM Integration**:
+- **Anthropic Claude Integration**: Uses Claude-3.5-Sonnet for spatial reasoning
+- **JSON Action Format**: Structured action space for object movement commands
+- **Fallback Mock System**: Graceful degradation when LLM API is unavailable
+- **Prompt Engineering**: Detailed spatial context and constraint descriptions
+
+**Training & Evaluation**:
+- **W&B Integration**: Comprehensive metrics tracking and experiment logging
+- **Trajectory Generation**: Batch processing mode for dataset creation
+- **Interactive Demo Mode**: Real-time visualization with manual task triggering
+- **Reward Function**: Balanced scoring for distance accuracy and constraint satisfaction
+
+**Technical Architecture**:
+- **Modular Design**: Separate physics simulator, environment wrapper, and visualization components
+- **Async Processing**: Non-blocking LLM calls and WebSocket communication
+- **Error Handling**: Robust fallback mechanisms for API failures and malformed responses
+- **Extensible Framework**: Easy addition of new object types and spatial constraints
+
+**Use Cases**:
+- **Spatial Reasoning Research**: Benchmark LLM performance on 3D spatial tasks
+- **Robotics Simulation**: Foundation for more complex manipulation scenarios
+- **Educational Tool**: Interactive demonstration of spatial AI capabilities
+- **RL Training**: Environment for training spatial reasoning policies
+
+**Example Task**: Move a red cube to be approximately 1.0 unit away from a blue sphere while maintaining opposite sides of the YZ plane, testing both distance estimation and spatial relationship understanding.
+
+**Requirements**: pybullet, numpy, websockets, python-dotenv, wandb, anthropic, atroposlib
+
+---
+
 ## Support
 
 For questions or issues with community environments:
