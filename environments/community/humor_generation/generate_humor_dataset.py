@@ -1,11 +1,13 @@
-import os
 import json
+import logging
+import os
+
 from dotenv import load_dotenv
 from openai import OpenAI
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 def main():
     load_dotenv()
@@ -34,7 +36,8 @@ def main():
             for fmt in formats:
                 question = (
                     f"What’s the best local LLM model to generate {fmt} jokes "
-                    f"in the style of {comedian}? Please explain your reasoning step by step, and generate 3 example jokes."
+                    f"in the style of {comedian}? Please explain your reasoning step by step, "
+                    f"and generate 3 example jokes."
                 )
                 response = client.chat.completions.create(
                     model=model_name,
@@ -53,5 +56,7 @@ def main():
     # Verify dataset count
     count = sum(1 for _ in open(output_file, encoding="utf-8"))
     logger.info(f"Dataset {output_file} contains {count} records")
+
+
 if __name__ == "__main__":
     main()

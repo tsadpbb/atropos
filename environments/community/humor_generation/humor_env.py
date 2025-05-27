@@ -1,8 +1,6 @@
 import os
-import asyncio
 from typing import List, Optional, Tuple
 
-import wandb
 from datasets import load_dataset
 
 from atroposlib.envs.base import (
@@ -15,7 +13,7 @@ from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 
 class HumorEnvConfig(BaseEnvConfig):
-    data_path: str = "environments/hack0/humor_dataset.jsonl"
+    data_path: str = "environments/community/humor_generation/humor_dataset.jsonl"
 
 
 class HumorEnv(BaseEnv):
@@ -85,12 +83,12 @@ class HumorEnv(BaseEnv):
             joke = messages[-1]["content"].strip()
             # Build the rubric prompt
             rubric_prompt = (
-                f"1. Relevance to the format ({fmt}): Evaluate the joke \"{joke}\". Score: X (0-2)\n"
-                f"2. Style consistency ({comedian}): Evaluate the joke \"{joke}\". Score: X (0-2)\n"
-                f"3. Creativity: Evaluate the joke \"{joke}\". Score: X (0-3)\n"
-                f"4. Humor effectiveness: Evaluate the joke \"{joke}\". Score: X (0-3)\n"
-                f"5. Virality: Evaluate the joke \"{joke}\". Score: X (0-3)\n"
-                f"6. Cognitive coherence: Evaluate the joke \"{joke}\". Score: X (0-3)\n"
+                f'1. Relevance to the format ({fmt}): Evaluate the joke "{joke}". Score: X (0-2)\n'
+                f'2. Style consistency ({comedian}): Evaluate the joke "{joke}". Score: X (0-2)\n'
+                f'3. Creativity: Evaluate the joke "{joke}". Score: X (0-3)\n'
+                f'4. Humor effectiveness: Evaluate the joke "{joke}". Score: X (0-3)\n'
+                f'5. Virality: Evaluate the joke "{joke}". Score: X (0-3)\n'
+                f'6. Cognitive coherence: Evaluate the joke "{joke}". Score: X (0-3)\n'
                 "Please provide each score on its own line as 'Score: <number>'."
             )
             judge = await self.server.chat_completion(
@@ -122,6 +120,7 @@ class HumorEnv(BaseEnv):
 
 if __name__ == "__main__":
     import sys
+
     # default to 'serve' if no subcommand provided
     if len(sys.argv) == 1:
         sys.argv.append("serve")
