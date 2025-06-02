@@ -60,6 +60,7 @@ class ScoredDataGroup(TypedDict):
     messages: Optional[List[List[Message]]]
     group_overrides: Optional[Dict]
     overrides: Optional[List[Dict]]
+    images: Optional[Any]
 
 
 class ScoredDataItem(TypedDict):
@@ -71,6 +72,7 @@ class ScoredDataItem(TypedDict):
     messages: Optional[List[Message]]
     group_overrides: Optional[Dict]
     overrides: Optional[Dict]
+    images: Optional[Any]
 
 
 class EvalHandlingEnum(Enum):
@@ -282,6 +284,7 @@ class BaseEnv(ABC):
         to_postprocess["messages"] = []
         to_postprocess["group_overrides"] = {}
         to_postprocess["overrides"] = []
+        to_postprocess["images"] = []
         print("Processing results")
         for result in results:
             to_postprocess["tokens"].append(result[0]["tokens"])
@@ -297,6 +300,8 @@ class BaseEnv(ABC):
                 to_postprocess["group_overrides"].update(result[0]["group_overrides"])
             if result[0].get("overrides", None) is not None:
                 to_postprocess["overrides"].append(result[0]["overrides"])
+            if result[0].get("images", None) is not None:
+                to_postprocess["images"].append(result[0]["images"])
             backlog.extend(result[1])
         return to_postprocess, backlog
 
