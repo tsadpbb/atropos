@@ -124,7 +124,7 @@ engine:
   plot: false
 ```
 
-(Note: it might be a good idea to perform a dry run locally before wasting compute ressources)
+(Note: it might be a good idea to perform a dry run locally before wasting compute resources)
 
 ### Example 1: Running a single task
 
