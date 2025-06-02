@@ -93,7 +93,7 @@ class RobotSimEnv(BaseEnv):
         self.local_model_path = "openvla/openvla-7b"
 
         self.robosuite_env = suite.make(
-            "Lift",  # This can be changed to any other envirionment like NutAssemblySquare
+            "Lift",  # This can be changed to any other environment like NutAssemblySquare
             robots="Panda",
             has_renderer=False,
             has_offscreen_renderer=True,
