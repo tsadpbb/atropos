@@ -71,22 +71,6 @@ from atroposlib.envs.base import (
 )
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
-# System prompt for the LLM
-# system_prompt = (
-# "You are an AI assistant that generates JSON objects according to Pydantic schemas.\\n"
-# "You may use extremely long chains of thought to deeply consider the problem and deliberate "
-# "with yourself via systematic reasoning processes to help come to a correct solution prior to answering. "
-# "You should enclose your thoughts and internal monologue inside <think> </think> tags.\\n\\n"
-# "CRITICAL: Your final JSON output MUST be enclosed within <json_output> </json_output> tags.\\n"
-# "The JSON must be valid and complete. Do not include any text after the closing </json_output> tag.\\n"
-# "Example format:\\n"
-# "<think>\\nMy reasoning here...\\n</think>\\n\\n"
-# '<json_output>\\n{"field1": "value1", "field2": "value2"}\\n</json_output>\\n\\n'
-# "Ensure the generated JSON strictly adheres to the Pydantic model schema and any specific field "
-# "requirements provided in the user prompt. Generate all required fields for the model, and "
-# "include optional fields if they make sense in the context or are specified."
-# )
-
 
 class StructuredOutputFormat(Enum):
     JSON = "json"
@@ -96,9 +80,9 @@ class StructuredOutputFormat(Enum):
 
 
 class OutputContainerFormat(Enum):
-    TAGGED = "tagged"  # e.g., <json_output>...</json_output>
-    NONE = "none"  # Raw output
-    MARKDOWN = "markdown"  # e.g., ```json ... ```
+    TAGGED = "tagged"
+    NONE = "none"
+    MARKDOWN = "markdown"
 
 
 class PydanticEnvConfig(BaseEnvConfig):
@@ -167,13 +151,11 @@ class PydanticSchemaFollowingEnv(BaseEnv):
             self.logger = logging.getLogger(f"{self.__class__.__name__}")
             self.logger.addHandler(logging.NullHandler())
 
-        self.percent_correct_buffer = list()  # Tracks 1.0 scores
+        self.percent_correct_buffer = list()
         self.eval_metrics = list()
         self.rollouts_for_wandb = []
         self.dataset_items: List[Dict[str, Any]] = []
-        self.model_cache: Dict[str, Type[BaseModel]] = (
-            {}
-        )  # Cache for dynamically created models
+        self.model_cache: Dict[str, Type[BaseModel]] = {}
 
         # Determine supported formats based on config or defaults
         if (
@@ -734,7 +716,7 @@ class PydanticSchemaFollowingEnv(BaseEnv):
         scores_obj["tokens"] = list()
         scores_obj["masks"] = list()
         scores_obj["scores"] = list()
-        scores_obj["messages"] = list()  # Add messages for data dumping
+        scores_obj["messages"] = list()
 
         if not rollout_group_data:
             if self.debug_logging:
@@ -942,7 +924,7 @@ class PydanticSchemaFollowingEnv(BaseEnv):
                 out_dict = tokenize_for_trainer(
                     self.tokenizer,
                     messages_as_dicts,
-                    include_messages=self.config.include_messages,  # Using config value
+                    include_messages=self.config.include_messages,
                 )
                 tokens = out_dict["tokens"]
                 masks = out_dict["masks"]
@@ -1261,8 +1243,8 @@ class PydanticSchemaFollowingEnv(BaseEnv):
             prompt=prompt,
             n=1,
             max_tokens=self.config.max_token_length,
-            temperature=0.1,  # Lower temperature for eval
-            split="eval",  # Ensure correct server endpoint is used
+            temperature=0.1,
+            split="eval",
         )
 
         model_response_text = completion.choices[0].text
@@ -1456,10 +1438,10 @@ class PydanticSchemaFollowingEnv(BaseEnv):
         problem_id = dataset_item.get("problem_id", "N/A")
         selected_structured_format = dataset_item.get(
             "selected_structured_format", StructuredOutputFormat.JSON
-        )  # Default if not found
+        )
         selected_container_format = dataset_item.get(
             "selected_container_format", OutputContainerFormat.TAGGED
-        )  # Default if not found
+        )
 
         if self.debug_logging:
             self.logger.debug(
@@ -1467,7 +1449,7 @@ class PydanticSchemaFollowingEnv(BaseEnv):
             )
 
         num_keep = self.config.num_rollouts_per_group_for_logging
-        if num_keep == -1:  # Log all from the group
+        if num_keep == -1:
             num_keep = len(scored_data["tokens"])
         else:
             num_keep = min(num_keep, len(scored_data["tokens"]))
@@ -1515,7 +1497,7 @@ class PydanticSchemaFollowingEnv(BaseEnv):
                     )
 
             extracted_output = self._extract_structured_data_response(
-                assistant_response_text,  # Use assistant_response_text (ideally raw, or decoded full convo)
+                assistant_response_text,
                 selected_container_format,
                 selected_structured_format,
             )
@@ -1523,9 +1505,7 @@ class PydanticSchemaFollowingEnv(BaseEnv):
             try:
                 verification_info = dataset_item.get("verification_info", "{}")
                 verification_data = json.loads(verification_info)
-                pydantic_model_name = verification_data.get(
-                    "model_name", "N/A"
-                )  # Renamed to avoid conflict
+                pydantic_model_name = verification_data.get("model_name", "N/A")
                 expected_schema_info = verification_data.get("pydantic_config", "N/A")
             except (json.JSONDecodeError, KeyError):
                 pydantic_model_name = "N/A"
@@ -1557,19 +1537,17 @@ class PydanticSchemaFollowingEnv(BaseEnv):
                         ]
                     )
             else:
-                display_convo_text = (
-                    assistant_response_text  # Fallback to decoded full string
-                )
+                display_convo_text = assistant_response_text
 
             rollout_batch.append(
                 (
-                    display_convo_text,  # Full conversation for display
+                    display_convo_text,
                     scored_data["scores"][i],
-                    pydantic_model_name,  # The Pydantic model name it was validated against
+                    pydantic_model_name,
                     problem_id,
                     dataset_item.get("task_type", "N/A"),
-                    selected_structured_format.value,  # Log selected structured format
-                    selected_container_format.value,  # Log selected container format
+                    selected_structured_format.value,
+                    selected_container_format.value,
                     (
                         extracted_output
                         if extracted_output
@@ -1630,7 +1608,7 @@ class PydanticSchemaFollowingEnv(BaseEnv):
                     f"Created wandb table with {total_entries} total entries"
                 )
 
-        self.rollouts_for_wandb = []  # Clear after logging
+        self.rollouts_for_wandb = []
         return wandb_metrics
 
     async def wandb_log(self, wandb_metrics: Optional[Dict] = None):
