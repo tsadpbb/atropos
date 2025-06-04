@@ -6,8 +6,9 @@ import deepspeed
 import torch
 from lightning import Callback, LightningModule, Trainer
 from lightning_utilities.core.rank_zero import rank_zero_only
-from pytorch_fob.engine.utils import log_debug, log_info, log_warn, seconds_to_str
 from torch.linalg import vector_norm
+
+from pytorch_fob.engine.utils import log_debug, log_info, log_warn, seconds_to_str
 
 
 class RestrictTrainEpochs(Callback):

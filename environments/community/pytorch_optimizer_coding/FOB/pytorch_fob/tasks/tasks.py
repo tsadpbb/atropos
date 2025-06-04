@@ -7,11 +7,12 @@ import torch
 from lightning import LightningDataModule, LightningModule
 from lightning.pytorch.core.optimizer import LightningOptimizer
 from lightning.pytorch.utilities.types import OptimizerLRScheduler
+from torch import nn
+from torch.utils.data import DataLoader
+
 from pytorch_fob.engine.configs import TaskConfig
 from pytorch_fob.engine.parameter_groups import GroupedModel
 from pytorch_fob.optimizers import Optimizer
-from torch import nn
-from torch.utils.data import DataLoader
 
 
 def import_task(name: str):

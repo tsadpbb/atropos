@@ -19,6 +19,7 @@ from lightning.pytorch.callbacks import (
 )
 from lightning.pytorch.loggers import CSVLogger, Logger, TensorBoardLogger
 from lightning.pytorch.utilities.types import _EVALUATE_OUTPUT
+
 from pytorch_fob.engine.callbacks import (
     LogTrainingStats,
     OptimizerTime,

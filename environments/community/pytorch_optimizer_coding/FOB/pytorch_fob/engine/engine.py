@@ -5,6 +5,7 @@ from typing import Any, Callable, Iterable, Iterator, Literal, Optional
 
 from matplotlib.figure import Figure
 from pandas import DataFrame, concat, json_normalize
+
 from pytorch_fob.engine.configs import EvalConfig
 from pytorch_fob.engine.grid_search import grid_search
 from pytorch_fob.engine.parser import YAMLParser
