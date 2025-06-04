@@ -16,7 +16,10 @@ from atroposlib.envs.base import (
 )
 from atroposlib.envs.base import BaseEnv as AtroposBaseEnv
 from atroposlib.envs.base import BaseEnvConfig as AtroposBaseEnvConfig
-from atroposlib.envs.base import EvalHandlingEnum, ScoredDataGroup
+from atroposlib.envs.base import (
+    EvalHandlingEnum,
+    ScoredDataGroup,
+)
 
 # Global variable to hold wandb if imported
 wandb = None
