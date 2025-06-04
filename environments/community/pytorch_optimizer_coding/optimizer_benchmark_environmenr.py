@@ -1,4 +1,5 @@
 from atropos.environments.optimizer.wrapper import score_optimizer
+
 from atroposlib.envs.base import BaseEnv, BaseEnvConfig
 
 

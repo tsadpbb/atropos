@@ -190,7 +190,8 @@ async def notify_visualization_clients(scene_state: List[Dict[str, Any]]):
 
 
 async def visualization_websocket_handler(websocket):
-    global global_physics_simulator_instance, shared_demo_runner_instance  # Make shared_demo_runner_instance accessible
+    # Make shared_demo_runner_instance accessible
+    global global_physics_simulator_instance, shared_demo_runner_instance  # noqa: F824
     connected_visualization_clients.add(websocket)
     print(
         f"Visualization client connected: {websocket.remote_address} (Total: {len(connected_visualization_clients)})"

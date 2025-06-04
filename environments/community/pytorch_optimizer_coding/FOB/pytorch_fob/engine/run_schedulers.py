@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 from typing import Any, Iterable, Optional, Sequence
 
 import yaml
+
 from pytorch_fob.engine.run import Run
 from pytorch_fob.engine.slurm import Slurm
 from pytorch_fob.engine.utils import (

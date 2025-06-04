@@ -1,10 +1,11 @@
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Optional
 
-from pytorch_fob.engine.utils import log_warn, some
 from torch import nn
 from torch.nn import Module
 from torch.nn.parameter import Parameter
+
+from pytorch_fob.engine.utils import log_warn, some
 
 
 @dataclass

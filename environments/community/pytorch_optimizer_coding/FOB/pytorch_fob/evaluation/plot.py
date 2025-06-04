@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from matplotlib.figure import Figure
+
 from pytorch_fob.engine.parser import YAMLParser
 from pytorch_fob.engine.utils import (
     AttributeDict,
