@@ -12,7 +12,6 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
-from typing_extensions import TypedDict
 
 import aiohttp
 import jsonlines
@@ -24,6 +23,7 @@ from pydantic_cli import Cmd, FailedExecutionException, run_and_exit
 from rich import print as rprint
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from transformers import AutoTokenizer
+from typing_extensions import TypedDict
 
 from atroposlib.envs.constants import ENV_NAMESPACE, NAMESPACE_SEP, OPENAI_NAMESPACE
 from atroposlib.envs.server_handling.openai_server import resolve_openai_configs
