@@ -11,7 +11,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+from typing_extensions import TypedDict
 
 import aiohttp
 import jsonlines
