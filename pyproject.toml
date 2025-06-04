@@ -26,7 +26,6 @@ dependencies = [
     "jsonlines",
     "pydantic-cli",
     "hf_transfer",
-    "torch>=2.7.0",
 ]
 
 [project.scripts]
