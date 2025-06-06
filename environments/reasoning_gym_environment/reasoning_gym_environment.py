@@ -50,11 +50,6 @@ system_prompt = (
     "<answer> tags."
 )
 
-# Number of evaluation samples to generate per task for the test set
-NUM_EVAL_SAMPLES_PER_TASK = 5
-# Seed for generating fixed evaluation set
-EVAL_SEED = 123
-
 
 class ReasoningGymEnvConfig(BaseEnvConfig):
     """Extended configuration for ReasoningGymEnv with additional fields."""
@@ -83,6 +78,14 @@ class ReasoningGymEnvConfig(BaseEnvConfig):
         default=0.7,
         description="Minimum score threshold for saving rollouts to data dumps. Only groups with at least one rollout above this threshold will be saved.",  # noqa: E501
     )
+    num_eval_samples_per_task: int = Field(
+        default=5,
+        description="Number of evaluation samples to generate per task for the test set.",
+    )
+    eval_seed: int = Field(
+        default=123,
+        description="Seed for generating fixed evaluation set to ensure reproducibility.",
+    )
 
     def validate_config(self):
         """Validate configuration parameters."""
@@ -93,6 +96,10 @@ class ReasoningGymEnvConfig(BaseEnvConfig):
         if self.rollout_save_score_threshold == 1.0:
             print(
                 f"Warning: rollout_save_score_threshold is {self.rollout_save_score_threshold}, which may be too strict and result in no saved rollouts."  # noqa: E501
+            )
+        if self.num_eval_samples_per_task <= 0:
+            raise ValueError(
+                f"num_eval_samples_per_task must be positive, got {self.num_eval_samples_per_task}"
             )
 
 
@@ -183,6 +190,8 @@ class ReasoningGymEnv(BaseEnv):
             debug_logging=False,
             suppress_base_env_logs=True,
             rollout_save_score_threshold=0.51,
+            num_eval_samples_per_task=5,
+            eval_seed=123,
         )
         server_configs = [
             APIServerConfig(
@@ -489,7 +498,9 @@ class ReasoningGymEnv(BaseEnv):
                 # Each task gets its own dataset instance for evaluation
                 # Using a fixed seed for reproducibility of the test set
                 dataset = reasoning_gym.create_dataset(
-                    task_name, size=NUM_EVAL_SAMPLES_PER_TASK, seed=EVAL_SEED
+                    task_name,
+                    size=self.config.num_eval_samples_per_task,
+                    seed=self.config.eval_seed,
                 )
                 for item in dataset:
                     self.test_items_with_scorers.append((item, dataset))
