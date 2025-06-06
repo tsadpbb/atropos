@@ -168,6 +168,7 @@ class ReasoningGymEnv(BaseEnv):
             use_wandb=True,
             rollout_server_url="http://localhost:8000",
             total_steps=250,
+            seed=1918,
             batch_size=1024,
             steps_per_eval=25,
             max_token_length=1024 * 16,
