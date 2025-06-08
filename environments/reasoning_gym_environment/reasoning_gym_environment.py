@@ -1969,9 +1969,11 @@ class ReasoningGymEnv(BaseEnv):
                 "min_length": int(3 + complexity_level * 12),  # 3-15
                 "max_length": int(3 + complexity_level * 12),
             },
-            # Composite task
+            # Composite task - dynamically includes all available tasks (handled specially in _create_dataset_with_complexity) # noqa: E501
             "composite": {
-                "difficulty": complexity_level,  # 0.0-1.0
+                "use_all_tasks": True,  # Special flag to indicate we want all tasks
+                "exclude_tasks": ["composite"],  # Avoid infinite recursion
+                "default_weight": 1.0,  # Equal weight for all tasks
             },
         }
 
@@ -2128,6 +2130,42 @@ class ReasoningGymEnv(BaseEnv):
             complexity_params = self._get_complexity_params_for_task(
                 task_name, complexity_level
             )
+
+            # Special handling for composite task
+            if task_name == "composite" and complexity_params.get("use_all_tasks"):
+                # Dynamically build datasets from all available tasks
+                from reasoning_gym.composite import DatasetSpec
+
+                datasets_list = []
+
+                exclude_tasks = set(
+                    complexity_params.get("exclude_tasks", ["composite"])
+                )
+                default_weight = complexity_params.get("default_weight", 1.0)
+
+                # Include all tasks we have complexity mappings for
+                for available_task in self.task_names:
+                    if available_task not in exclude_tasks:
+                        # Get the complexity parameters for this task at current complexity level
+                        task_complexity_params = self._get_complexity_params_for_task(
+                            available_task, complexity_level
+                        )
+
+                        datasets_list.append(
+                            DatasetSpec(
+                                name=available_task,
+                                weight=default_weight,
+                                config=task_complexity_params,
+                            )
+                        )
+
+                # Replace the complexity_params with the actual datasets configuration
+                complexity_params = {"datasets": datasets_list}
+
+                if self.config.debug_logging and self.iter % 100 == 0:
+                    self.logger.debug(
+                        f"Composite task using {len(datasets_list)} tasks at complexity {complexity_level:.2f}"
+                    )
 
             # Try to use reasoning-gym's curriculum system if available and mode is curriculum
             if (
