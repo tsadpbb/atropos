@@ -1,17 +1,26 @@
 # Answer Format Environment
 
-A comprehensive training environment for teaching language models to generate responses in specific structured formats. This environment focuses on **format adherence** rather than answer correctness, using randomized format requirements and corresponding parsers to train models on structured response generation.
+A comprehensive environment for teaching language models to generate responses in specific structured formats. This environment focuses on **format adherence** rather than answer correctness, using randomized format requirements and corresponding parsers to evaluate models on structured response generation.
+
+## ⚠️ **Important: Rejection Sampling Focused**
+
+**This environment is primarily designed for rejection sampling, not traditional RL training.** Since we only validate format compliance and do not verify answer correctness, the binary scoring (1.0 for correct format, 0.0 for incorrect) makes it less suitable for gradient-based RL methods. Instead, it excels at:
+
+- **Rejection Sampling**: Filter model outputs based on format compliance
+- **Format Evaluation**: Assess model capabilities across different structured formats
+- **Data Curation**: Generate format-compliant training data
+- **Format Benchmarking**: Compare model performance on format adherence tasks
 
 ## 🎯 Overview
 
-The Answer Format Environment trains models to:
-- Generate responses in 150+ different structured formats
-- Follow strict thinking tag discipline (`<think></think>`)
-- Parse and validate format compliance
-- Handle multiple dataset types with appropriate format selection
-- Maintain equivalent training ratios across formats (optional)
+The Answer Format Environment evaluates models on:
+- Generating responses in 150+ different structured formats
+- Following strict thinking tag discipline (`<think></think>`)
+- Format compliance validation and parsing
+- Handling multiple dataset types with appropriate format selection
+- Maintaining equivalent evaluation ratios across formats (optional)
 
-**Key Philosophy**: This environment scores based on format compliance (1.0 for correct format, 0.0 for incorrect), not answer accuracy. It teaches models to follow formatting instructions precisely.
+**Key Philosophy**: This environment scores based on format compliance (1.0 for correct format, 0.0 for incorrect), not answer accuracy. It teaches models to follow formatting instructions precisely without validating the correctness of the actual answers.
 
 ## ✨ Key Features
 
@@ -35,9 +44,9 @@ The Answer Format Environment trains models to:
 - WandB integration with detailed metrics
 
 ### ⚖️ **Equivalent Ratio Enforcement**
-- Optional system to ensure balanced training across formats
+- Optional system to ensure balanced evaluation across formats
 - Pauses formats after reaching success threshold
-- Prevents format bias in training data
+- Prevents format bias in evaluation data
 - Comprehensive monitoring and status reporting
 
 ### 🔍 **Advanced Monitoring**
@@ -51,7 +60,7 @@ The Answer Format Environment trains models to:
 ### **Basic Structured Data**
 ```json
 {"answer": "content"}                    // JSON
-answer: content                          // YAML  
+answer: content                          // YAML
 answer = "content"                       // TOML
 ```
 
@@ -148,7 +157,7 @@ config = AnswerFormatEnvConfig(
         },
         {
             "name": "gsm8k",
-            "split": "train", 
+            "split": "train",
             "sample_size": 2000,
             "prompt_field": "question",
             "answer_field": "answer",
@@ -274,12 +283,12 @@ Format: natural_language_answer | Group average score: 1.0000 | 16/16 correct (1
 
 ## ⚖️ Equivalent Ratio Enforcement
 
-Optional system to ensure balanced training across all formats:
+Optional system to ensure balanced evaluation across all formats:
 
 ### **How It Works**
 1. Tracks successful groups per format
 2. Pauses formats that reach threshold (default: 50 successful groups)
-3. Continues training other formats until they catch up
+3. Continues evaluating other formats until they catch up
 4. Resumes paused formats when balance is restored
 
 ### **Configuration**
@@ -470,4 +479,4 @@ This environment is part of the Atropos training framework. See the main reposit
 
 ---
 
-**Need Help?** Check the debug logs, enable verbose logging, or review the comprehensive monitoring metrics for troubleshooting guidance. 
+**Need Help?** Check the debug logs, enable verbose logging, or review the comprehensive monitoring metrics for troubleshooting guidance.
