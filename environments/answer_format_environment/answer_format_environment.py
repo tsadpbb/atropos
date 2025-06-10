@@ -206,17 +206,13 @@ class AnswerFormat(Enum):
     COMPLEX_MATH_FORMAT = "complex_math_format"
     COMPLEX_MATH_SIMPLE = "complex_math_simple"
     COMPLEX_GENERAL_FORMAT = "complex_general_format"
-    COMPLEX_GENERAL_SIMPLE = (
-        "complex_general_simple"
-    )
+    COMPLEX_GENERAL_SIMPLE = "complex_general_simple"
     COMPLEX_RESEARCH_FORMAT = "complex_research_format"
 
     # Advanced scratchpad and classification formats
     COMPLEX_SCRATCHPAD_FULL = "complex_scratchpad_full"
     COMPLEX_SCRATCHPAD_SIMPLE = "complex_scratchpad_simple"
-    COMPLEX_CLASSIFICATION_FORMAT = (
-        "complex_classification_format"
-    )
+    COMPLEX_CLASSIFICATION_FORMAT = "complex_classification_format"
     COMPLEX_ANALYSIS_WITH_ANSWER = "complex_analysis_with_answer"
     COMPLEX_EVALUATION_FORMAT = "complex_evaluation_format"
 
@@ -304,7 +300,7 @@ class AnswerFormatEnvConfig(BaseEnvConfig):
                 "dataset_type": "math_only",  # GSM8K is a math dataset
             },
         ],
-        description="List of dataset configurations to load and combine. Each can specify dataset_type: 'generic', 'math_only', or 'code_only'", # noqa: E501
+        description="List of dataset configurations to load and combine. Each can specify dataset_type: 'generic', 'math_only', or 'code_only'",  # noqa: E501
     )
 
     debug_logging: bool = Field(
@@ -347,12 +343,12 @@ class AnswerFormatEnvConfig(BaseEnvConfig):
 
     ensure_equivalent_ratios: bool = Field(
         default=False,
-        description="Ensure equivalent ratios of successful groups across all formats by pausing formats that reach the threshold", # noqa: E501
+        description="Ensure equivalent ratios of successful groups across all formats by pausing formats that reach the threshold",  # noqa: E501
     )
 
     format_group_threshold: int = Field(
         default=50,
-        description="Number of successful groups per format before pausing that format (only used when ensure_equivalent_ratios=True)", # noqa: E501
+        description="Number of successful groups per format before pausing that format (only used when ensure_equivalent_ratios=True)",  # noqa: E501
         ge=1,
         le=1000,
     )
@@ -547,7 +543,7 @@ class AnswerFormatEnv(BaseEnv):
             self.logger.info("Configuration validation passed")
             if config.ensure_equivalent_ratios:
                 self.logger.info(
-                    f"Equivalent ratio enforcement enabled with threshold of {config.format_group_threshold} successful groups per format" # noqa: E501
+                    f"Equivalent ratio enforcement enabled with threshold of {config.format_group_threshold} successful groups per format"  # noqa: E501
                 )
 
     def _should_exclude_format_for_balance(self, answer_format: AnswerFormat) -> bool:
@@ -660,102 +656,102 @@ class AnswerFormatEnv(BaseEnv):
             "problem and deliberate with yourself via systematic reasoning processes "
             "to help come to a correct solution prior to answering. "
             "You should enclose your thoughts and internal monologue inside <think> </think> tags. "
-            "CRITICAL FORMAT REQUIREMENT: After your thinking, you must provide your answer in the EXACT format specified below. " # noqa: E501
-            "Use the specified format EXACTLY ONCE and ONLY ONCE. Do not use the format multiple times or in any other way." # noqa: E501
+            "CRITICAL FORMAT REQUIREMENT: After your thinking, you must provide your answer in the EXACT format specified below. "  # noqa: E501
+            "Use the specified format EXACTLY ONCE and ONLY ONCE. Do not use the format multiple times or in any other way."  # noqa: E501
         )
 
         format_instructions = {
             # Basic structured data formats (answer only)
             AnswerFormat.JSON: (
-                "CRITICAL: After your thinking, provide your answer as a JSON object with an 'answer' field EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer as a JSON object with an 'answer' field EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 'Example: {"answer": "your response here"}'
             ),
             AnswerFormat.JSON_ARRAY: (
-                "CRITICAL: After your thinking, provide your answer as a JSON array with one element EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer as a JSON array with one element EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 'Example: ["your response here"]'
             ),
             AnswerFormat.JSON_SIMPLE: (
-                "CRITICAL: After your thinking, provide your answer as a simple JSON string EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer as a simple JSON string EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 'Example: "your response here"'
             ),
             AnswerFormat.YAML: (
-                "CRITICAL: After your thinking, provide your answer in YAML format with an 'answer' field EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer in YAML format with an 'answer' field EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 "Example:\nanswer: your response here"
             ),
             AnswerFormat.YAML_LIST: (
-                "CRITICAL: After your thinking, provide your answer as a YAML list with one item EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer as a YAML list with one item EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 "Example:\n- your response here"
             ),
             AnswerFormat.TOML: (
-                "CRITICAL: After your thinking, provide your answer in TOML format with an 'answer' field EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer in TOML format with an 'answer' field EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 'Example:\nanswer = "your response here"'
             ),
             AnswerFormat.TOML_SECTION: (
-                "CRITICAL: After your thinking, provide your answer in TOML format with a section EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer in TOML format with a section EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 'Example:\n[response]\nanswer = "your response here"'
             ),
             # Structured data with confidence scores
             AnswerFormat.JSON_CONFIDENCE: (
-                "CRITICAL: After your thinking, provide your answer as JSON with answer and confidence fields EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer as JSON with answer and confidence fields EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 'Example: {"answer": "your response here", "confidence": 0.9}'
             ),
             AnswerFormat.YAML_CONFIDENCE: (
-                "CRITICAL: After your thinking, provide your answer in YAML with answer and confidence fields EXACTLY ONCE. " # noqa: E501
-                "Use this format only once in your entire response. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer in YAML with answer and confidence fields EXACTLY ONCE. "  # noqa: E501
+                "Use this format only once in your entire response. "  # noqa: E501
                 "Example:\nanswer: your response here\nconfidence: 0.9"
             ),
             AnswerFormat.TOML_CONFIDENCE: (
-                "CRITICAL: After your thinking, provide your answer in TOML with answer and confidence fields EXACTLY ONCE. " # noqa: E501
-                "Use this format only once in your entire response. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer in TOML with answer and confidence fields EXACTLY ONCE. "  # noqa: E501
+                "Use this format only once in your entire response. "  # noqa: E501
                 'Example:\nanswer = "your response here"\nconfidence = 0.9'
             ),
             # XML/HTML tag variations (XML now uses answer tags)
             AnswerFormat.XML: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <answer></answer> tags EXACTLY ONCE. " # noqa: E501
-                "Use this format only once in your entire response. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <answer></answer> tags EXACTLY ONCE. "  # noqa: E501
+                "Use this format only once in your entire response. "  # noqa: E501
                 "Example: <answer>your response here</answer>"
             ),
             AnswerFormat.XML_FINAL_ANSWER: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <answer></answer> tags with 'Final Answer:' prefix EXACTLY ONCE. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <answer></answer> tags with 'Final Answer:' prefix EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "
                 "Example: <answer>Final Answer: your response here</answer>"
             ),
             AnswerFormat.OUTPUT_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <output></output> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <output></output> tags. "  # noqa: E501
                 "Example: <output>your response here</output>"
             ),
             AnswerFormat.RESULT_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <result></result> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <result></result> tags. "  # noqa: E501
                 "Example: <result>your response here</result>"
             ),
             AnswerFormat.RESPONSE_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <response></response> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <response></response> tags. "  # noqa: E501
                 "Example: <response>your response here</response>"
             ),
             AnswerFormat.FINAL_ANSWER_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <final_answer></final_answer> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <final_answer></final_answer> tags. "  # noqa: E501
                 "Example: <final_answer>your response here</final_answer>"
             ),
             AnswerFormat.SOLUTION_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <solution></solution> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <solution></solution> tags. "  # noqa: E501
                 "Example: <solution>your response here</solution>"
             ),
             AnswerFormat.CONCLUSION_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <conclusion></conclusion> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <conclusion></conclusion> tags. "  # noqa: E501
                 "Example: <conclusion>your response here</conclusion>"
             ),
             AnswerFormat.REPLY_TAGS: (
-                "CRITICAL: After your thinking, provide your answer enclosed in <reply></reply> tags. " # noqa: E501
+                "CRITICAL: After your thinking, provide your answer enclosed in <reply></reply> tags. "  # noqa: E501
                 "Example: <reply>your response here</reply>"
-            ), # noqa: E501
+            ),  # noqa: E501
             AnswerFormat.NESTED_RESPONSE_ANSWER: (
                 "CRITICAL: After your thinking, provide explanation and answer in nested response tags EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "  # noqa: E501
@@ -1027,7 +1023,7 @@ class AnswerFormatEnv(BaseEnv):
             ),
             # Complex multi-tag formats for specific domains
             AnswerFormat.COMPLEX_CODING_FORMAT: (
-                "CRITICAL: After your thinking, provide your response in the following structured format for coding problems. "   # noqa: E501
+                "CRITICAL: After your thinking, provide your response in the following structured format for coding problems. "  # noqa: E501
                 "Note: The <REASONING> and other sections should summarize your previous thinking, not repeat the detailed thought process. "  # noqa: E501
                 "Format:\n"  # noqa: E501
                 "<RESTATEMENT>Restate the problem clearly</RESTATEMENT>\n"  # noqa: E501
@@ -1116,7 +1112,7 @@ class AnswerFormatEnv(BaseEnv):
                 "<REASONING>\n<THOUGHT_1>First insight</THOUGHT_1>\n<THOUGHT_2>Second insight</THOUGHT_2>\n</REASONING>\n"  # noqa: E501
                 "<PLAN>\n<STEP_1>First step</STEP_1>\n<CRITIQUE_1>Critique of step 1</CRITIQUE_1>\n<STEP_2>Second step</STEP_2>\n<CRITIQUE_2>Critique of step 2</CRITIQUE_2>\n</PLAN>\n"  # noqa: E501
                 "<CITATIONS>\n<CITATION_1>First citation with bibtext in markdown codeblock</CITATION_1>\n</CITATIONS>\n"  # noqa: E501
-                "<PYDANTIC_SCHEMAS>\n<SCHEMA_1>First schema</SCHEMA_1>\n</PYDANTIC_SCHEMAS>\n"  # noqa: E501    
+                "<PYDANTIC_SCHEMAS>\n<SCHEMA_1>First schema</SCHEMA_1>\n</PYDANTIC_SCHEMAS>\n"  # noqa: E501
                 "<DIAGRAM>UML workflow diagram in natural language</DIAGRAM>\n"  # noqa: E501
                 "<REFLECTION>Harsh internal critique of the plan</REFLECTION>\n"  # noqa: E501
                 "<REVISED_PLAN>\n<STEP_1>Revised step 1</STEP_1>\n<STEP_2>Revised step 2</STEP_2>\n</REVISED_PLAN>\n"  # noqa: E501
@@ -1187,7 +1183,7 @@ class AnswerFormatEnv(BaseEnv):
             ),
             # Programming-style formats
             AnswerFormat.FUNCTION_CALL: (
-                "CRITICAL: After your thinking, provide your answer as a function call with quoted string EXACTLY ONCE. "   # noqa: E501
+                "CRITICAL: After your thinking, provide your answer as a function call with quoted string EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "  # noqa: E501
                 'Example: answer("your response here")'  # noqa: E501
             ),
@@ -1301,7 +1297,7 @@ class AnswerFormatEnv(BaseEnv):
                 'Example: print("your answer here")'  # noqa: E501
             ),
             AnswerFormat.JAVASCRIPT_CONSOLE: (
-                "CRITICAL: After your thinking, provide your answer as a JavaScript console.log statement EXACTLY ONCE. "  # noqa: E501 
+                "CRITICAL: After your thinking, provide your answer as a JavaScript console.log statement EXACTLY ONCE. "  # noqa: E501
                 "Use this format only once in your entire response. "  # noqa: E501
                 'Example: console.log("your answer here")'  # noqa: E501
             ),
@@ -1442,18 +1438,22 @@ class AnswerFormatEnv(BaseEnv):
         elif "json" in answer_format.value:
             instruction = self._generate_json_format_instruction(selected_components)
         elif "yaml" in answer_format.value:
-            instruction = self._generate_yaml_format_instruction(selected_components) # noqa
+            instruction = self._generate_yaml_format_instruction(
+                selected_components
+            )  # noqa
         elif "toml" in answer_format.value:
-            instruction = self._generate_toml_format_instruction(selected_components) # noqa
+            instruction = self._generate_toml_format_instruction(
+                selected_components
+            )  # noqa
         else:
-            instruction = f"Please structure your response using the following components: {', '.join(selected_components)}" # noqa
+            instruction = f"Please structure your response using the following components: {', '.join(selected_components)}"  # noqa
 
         # Add component info to instruction for debugging
         component_list = ", ".join(selected_components)
 
         if self.debug_logging:
             self.logger.debug(
-                f"Generated dynamic format {answer_format.value} with components: {component_list}" # noqa
+                f"Generated dynamic format {answer_format.value} with components: {component_list}"  # noqa
             )
 
         return (
@@ -1468,15 +1468,15 @@ class AnswerFormatEnv(BaseEnv):
             tag_name = comp.upper()
             if comp in ["reasoning", "insights"]:
                 component_examples.append(
-                    f"<{tag_name}>\n<POINT_1>First key point</POINT_1>\n<POINT_2>Second key point</POINT_2>\n</{tag_name}>" # noqa
+                    f"<{tag_name}>\n<POINT_1>First key point</POINT_1>\n<POINT_2>Second key point</POINT_2>\n</{tag_name}>"  # noqa
                 )
             elif comp in ["plan", "steps"]:
                 component_examples.append(
-                    f"<{tag_name}>\n<STEP_1>First step</STEP_1>\n<STEP_2>Second step</STEP_2>\n</{tag_name}>" # noqa
+                    f"<{tag_name}>\n<STEP_1>First step</STEP_1>\n<STEP_2>Second step</STEP_2>\n</{tag_name}>"  # noqa
                 )
             elif comp in ["schemas", "models"]:
                 component_examples.append(
-                    f"<{tag_name}>\n<SCHEMA_1>First schema</SCHEMA_1>\n<SCHEMA_2>Second schema</SCHEMA_2>\n</{tag_name}>" # noqa
+                    f"<{tag_name}>\n<SCHEMA_1>First schema</SCHEMA_1>\n<SCHEMA_2>Second schema</SCHEMA_2>\n</{tag_name}>"  # noqa
                 )
             else:
                 component_examples.append(
@@ -1485,8 +1485,8 @@ class AnswerFormatEnv(BaseEnv):
 
         format_example = "\n".join(component_examples)
         return (
-            f"CRITICAL: After your thinking, provide your response using the following XML format with these specific components. " # noqa
-            f"Note: The sections should summarize your previous thinking. " # noqa
+            f"CRITICAL: After your thinking, provide your response using the following XML format with these specific components. "  # noqa
+            f"Note: The sections should summarize your previous thinking. "  # noqa
             f"Format:\n{format_example}"
         )
 
@@ -1496,22 +1496,22 @@ class AnswerFormatEnv(BaseEnv):
         for comp in components:
             if comp in ["reasoning", "insights"]:
                 json_fields.append(
-                    f'"{comp}": {{"point_1": "First key point", "point_2": "Second key point"}}' # noqa
+                    f'"{comp}": {{"point_1": "First key point", "point_2": "Second key point"}}'  # noqa
                 )
             elif comp in ["plan", "steps"]:
                 json_fields.append(
-                    f'"{comp}": {{"step_1": "First step", "step_2": "Second step"}}' # noqa
+                    f'"{comp}": {{"step_1": "First step", "step_2": "Second step"}}'  # noqa
                 )
             elif comp in ["schemas", "models"]:
                 json_fields.append(
-                    f'"{comp}": {{"schema_1": "First schema", "schema_2": "Second schema"}}' # noqa
+                    f'"{comp}": {{"schema_1": "First schema", "schema_2": "Second schema"}}'  # noqa
                 )
             else:
                 json_fields.append(f'"{comp}": "Content for {comp}"')
 
         format_example = "{\n  " + ",\n  ".join(json_fields) + "\n}"
         return (
-            f"CRITICAL: After your thinking, provide your response as a JSON object with these specific fields. " # noqa
+            f"CRITICAL: After your thinking, provide your response as a JSON object with these specific fields. "  # noqa
             f"Note: The sections should summarize your previous thinking. "
             f"Format:\n{format_example}"
         )
@@ -1522,23 +1522,23 @@ class AnswerFormatEnv(BaseEnv):
         for comp in components:
             if comp in ["reasoning", "insights"]:
                 yaml_fields.append(
-                    f"{comp}:\n  point_1: First key point\n  point_2: Second key point" # noqa
+                    f"{comp}:\n  point_1: First key point\n  point_2: Second key point"  # noqa
                 )
             elif comp in ["plan", "steps"]:
                 yaml_fields.append(
-                    f"{comp}:\n  step_1: First step\n  step_2: Second step" # noqa
+                    f"{comp}:\n  step_1: First step\n  step_2: Second step"  # noqa
                 )
             elif comp in ["schemas", "models"]:
                 yaml_fields.append(
-                    f"{comp}:\n  schema_1: First schema\n  schema_2: Second schema" # noqa
+                    f"{comp}:\n  schema_1: First schema\n  schema_2: Second schema"  # noqa
                 )
             else:
                 yaml_fields.append(f"{comp}: Content for {comp}")
 
         format_example = "\n".join(yaml_fields)
         return (
-            f"CRITICAL: After your thinking, provide your response in YAML format with these specific fields. " # noqa
-            f"Note: The sections should summarize your previous thinking. " # noqa
+            f"CRITICAL: After your thinking, provide your response in YAML format with these specific fields. "  # noqa
+            f"Note: The sections should summarize your previous thinking. "  # noqa
             f"Format:\n{format_example}"
         )
 
@@ -1548,23 +1548,23 @@ class AnswerFormatEnv(BaseEnv):
         for comp in components:
             if comp in ["reasoning", "insights"]:
                 toml_fields.append(
-                    f'[{comp}]\npoint_1 = "First key point"\npoint_2 = "Second key point"' # noqa
+                    f'[{comp}]\npoint_1 = "First key point"\npoint_2 = "Second key point"'  # noqa
                 )
             elif comp in ["plan", "steps"]:
                 toml_fields.append(
-                    f'[{comp}]\nstep_1 = "First step"\nstep_2 = "Second step"' # noqa
+                    f'[{comp}]\nstep_1 = "First step"\nstep_2 = "Second step"'  # noqa
                 )
             elif comp in ["schemas", "models"]:
                 toml_fields.append(
-                    f'[{comp}]\nschema_1 = "First schema"\nschema_2 = "Second schema"' # noqa
+                    f'[{comp}]\nschema_1 = "First schema"\nschema_2 = "Second schema"'  # noqa
                 )
             else:
                 toml_fields.append(f'{comp} = "Content for {comp}"')
 
         format_example = "\n\n".join(toml_fields)
         return (
-            f"CRITICAL: After your thinking, provide your response in TOML format with these specific fields. " # noqa
-            f"Note: The sections should summarize your previous thinking. " # noqa
+            f"CRITICAL: After your thinking, provide your response in TOML format with these specific fields. "  # noqa
+            f"Note: The sections should summarize your previous thinking. "  # noqa
             f"Format:\n{format_example}"
         )
 
@@ -1599,7 +1599,7 @@ class AnswerFormatEnv(BaseEnv):
     def _get_dynamic_format_patterns(
         self, answer_format: AnswerFormat, stored_components: List[str]
     ) -> List[str]:
-        """Generate specific validation patterns for dynamic formats based on selected components.""" # noqa
+        """Generate specific validation patterns for dynamic formats based on selected components."""  # noqa
         if not stored_components:
             return []
 
@@ -3145,7 +3145,7 @@ class AnswerFormatEnv(BaseEnv):
         if extracted_content is not None:
             if self.debug_logging:
                 self.logger.debug(
-                    f"Successfully extracted {answer_format.value} content: {extracted_content[:100]}{'...' if len(extracted_content) > 100 else ''}" # noqa
+                    f"Successfully extracted {answer_format.value} content: {extracted_content[:100]}{'...' if len(extracted_content) > 100 else ''}"  # noqa
                 )
             return extracted_content
         else:
@@ -3172,14 +3172,14 @@ class AnswerFormatEnv(BaseEnv):
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
             debug_logging=True,
-            dump_rollouts=True,
-            dump_failed_rollouts=True,
+            dump_rollouts=False,
+            dump_failed_rollouts=False,
             rollout_save_score_threshold=0.0,
             eval_set_percentage=0.1,
             ensure_equivalent_ratios=False,
             format_group_threshold=10,
             suppress_base_env_logs=True,
-            ensure_scores_are_not_same=True,
+            ensure_scores_are_not_same=False,
             dataset_configs=[
                 {
                     "name": "NousResearch/AcademicMCQA",
@@ -3426,7 +3426,7 @@ class AnswerFormatEnv(BaseEnv):
                 )
 
         print(
-            f"AnswerFormatEnv setup complete. {len(self.train_items)} training items, {len(self.test_items)} test items." # noqa
+            f"AnswerFormatEnv setup complete. {len(self.train_items)} training items, {len(self.test_items)} test items."  # noqa
         )
 
         # Print dataset type distribution
@@ -3641,15 +3641,15 @@ class AnswerFormatEnv(BaseEnv):
 
             if correct_count == 0:
                 self.logger.info(
-                    f"Format: {format_name} | Group average score: {average_score:.4f} | {correct_count}/{len(group_scores)} correct ({correct_percentage:.1f}%) (All failures in this group!)" # noqa
+                    f"Format: {format_name} | Group average score: {average_score:.4f} | {correct_count}/{len(group_scores)} correct ({correct_percentage:.1f}%) (All failures in this group!)"  # noqa
                 )
             elif incorrect_count == 0:
                 self.logger.info(
-                    f"Format: {format_name} | Group average score: {average_score:.4f} | {correct_count}/{len(group_scores)} correct ({correct_percentage:.1f}%) (Perfect group!)" # noqa
+                    f"Format: {format_name} | Group average score: {average_score:.4f} | {correct_count}/{len(group_scores)} correct ({correct_percentage:.1f}%) (Perfect group!)"  # noqa
                 )
             else:
                 self.logger.info(
-                    f"Format: {format_name} | Group average score: {average_score:.4f} | {correct_count}/{len(group_scores)} correct ({correct_percentage:.1f}%)" # noqa
+                    f"Format: {format_name} | Group average score: {average_score:.4f} | {correct_count}/{len(group_scores)} correct ({correct_percentage:.1f}%)"  # noqa
                 )
 
         # Handle failed rollouts dumping
@@ -3703,13 +3703,13 @@ class AnswerFormatEnv(BaseEnv):
                     # Always log when a group is added, showing progress toward threshold
                     if remaining_until_threshold > 0:
                         self.logger.info(
-                            f"Format {format_name} successful group #{successful_count} - {remaining_until_threshold} more needed to reach threshold ({self.format_group_threshold})" # noqa
+                            f"Format {format_name} successful group #{successful_count} - {remaining_until_threshold} more needed to reach threshold ({self.format_group_threshold})"  # noqa
                         )
 
                     # Log when a format reaches the threshold
                     if successful_count == self.format_group_threshold:
                         self.logger.info(
-                            f"Format {format_name} reached threshold of {self.format_group_threshold} successful groups - will be excluded from future rounds until others catch up" # noqa
+                            f"Format {format_name} reached threshold of {self.format_group_threshold} successful groups - will be excluded from future rounds until others catch up"  # noqa
                         )
 
         # Apply length penalty if all responses are correct
@@ -3768,7 +3768,7 @@ class AnswerFormatEnv(BaseEnv):
             if any(score > threshold for score in group_scores):
                 if self.debug_logging:
                     self.logger.debug(
-                        f"Saving group with scores: {[f'{s:.3f}' for s in group_scores]} (has high-quality rollout, threshold: {threshold})" # noqa
+                        f"Saving group with scores: {[f'{s:.3f}' for s in group_scores]} (has high-quality rollout, threshold: {threshold})"  # noqa
                     )
                 rollouts_with_scores_to_save = []
 
@@ -3825,7 +3825,7 @@ class AnswerFormatEnv(BaseEnv):
                         if self.debug_logging:
                             self.logger.info(
                                 f"Data dump progress: {current_batch_progress}/100 items buffered "
-                                f"(Total processed: {self.processed_item_count}, Buffer size: {len(self.rollouts_to_save_buffer)})" # noqa
+                                f"(Total processed: {self.processed_item_count}, Buffer size: {len(self.rollouts_to_save_buffer)})"  # noqa
                             )
 
                     # Save batch every 100 processed items
@@ -3837,7 +3837,7 @@ class AnswerFormatEnv(BaseEnv):
                         if self.debug_logging:
                             log_msg = (
                                 f"Reached {self.processed_item_count} processed items. "
-                                f"Triggering save for {len(self.rollouts_to_save_buffer)} rollouts" # noqa
+                                f"Triggering save for {len(self.rollouts_to_save_buffer)} rollouts"  # noqa
                             )
                             self.logger.info(log_msg)
                         await self._save_rollouts_to_jsonl()
@@ -3845,7 +3845,7 @@ class AnswerFormatEnv(BaseEnv):
                 max_score = max(group_scores) if group_scores else 0.0
                 if self.debug_logging:
                     self.logger.debug(
-                        f"Skipping group save - no high-quality rollouts (max score: {max_score:.3f}, threshold: {threshold})" # noqa
+                        f"Skipping group save - no high-quality rollouts (max score: {max_score:.3f}, threshold: {threshold})"  # noqa
                     )
 
         return scored_data, []
