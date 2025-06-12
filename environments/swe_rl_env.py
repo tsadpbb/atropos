@@ -18,11 +18,11 @@ from typing import Dict, List, Optional, Tuple, Union
 # Add imports for specific error handling
 import aiohttp
 import openai
+import wandb
 from datasets import load_dataset  # Ensured import load_dataset is present
 from pydantic import Field
 from tqdm.asyncio import tqdm_asyncio
 
-import wandb
 from atroposlib.envs.base import (
     APIServerConfig,
     BaseEnv,
