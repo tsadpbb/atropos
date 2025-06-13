@@ -71,11 +71,11 @@ import uuid
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
+import wandb
 from datasets import load_dataset
 from pydantic import Field
 from tqdm.asyncio import tqdm_asyncio
 
-import wandb
 from atroposlib.envs.base import (
     APIServerConfig,
     BaseEnv,
