@@ -62,7 +62,7 @@ class LetterCountingConfig(BaseEnvConfig):
 
     # Word dataset configuration
     min_word_length: int = Field(3, description="Minimum word length to include")
-    max_word_length: int = Field(15, description="Maximum word length to include")
+    max_word_length: int = Field(30, description="Maximum word length to include")
     train_test_split: float = Field(0.95, description="Ratio for train/test split")
 
     # Letter selection configuration
@@ -100,21 +100,22 @@ class LetterCountingConfig(BaseEnvConfig):
 
     # Random string generation configuration
     random_string_percentage: float = Field(
-        0.0, description="Percentage of dataset to be random strings (0.0-1.0)"
+        0.03, description="Percentage of dataset to be random strings (0.0-1.0)"
     )
     random_string_min_length: int = Field(
         3, description="Minimum length for random strings"
     )
     random_string_max_length: int = Field(
-        15, description="Maximum length for random strings"
+        25, description="Maximum length for random strings"
     )
 
     # Word capitalization configuration
     uppercase_word_percentage: float = Field(
-        0.0, description="Percentage of real words to make uppercase (0.0-1.0)"
+        0.01, description="Percentage of real words to make uppercase (0.0-1.0)"
     )
     capitalized_word_percentage: float = Field(
-        0.0, description="Percentage of real words to capitalize first letter (0.0-1.0)"
+        0.01,
+        description="Percentage of real words to capitalize first letter (0.0-1.0)",
     )
 
     # Text/passage configuration
@@ -144,7 +145,7 @@ class LetterCountingConfig(BaseEnvConfig):
         description="Maximum number of different letters to count simultaneously (1 for single letter)",
     )
     multi_letter_probability: float = Field(
-        0.0, description="Probability of asking for multiple letters (0.0-1.0)"
+        0.2, description="Probability of asking for multiple letters (0.0-1.0)"
     )
 
     # Difficulty and training thresholds
@@ -155,7 +156,7 @@ class LetterCountingConfig(BaseEnvConfig):
 
     # Logging and data dumping configuration
     debug_logging: bool = Field(
-        False, description="Enable debug-level logging for more verbose output"
+        True, description="Enable debug-level logging for more verbose output"
     )
     suppress_base_env_logs: bool = Field(
         True, description="Suppress verbose base environment logs"
@@ -164,7 +165,7 @@ class LetterCountingConfig(BaseEnvConfig):
         False, description="Whether to dump successful rollouts to JSONL files"
     )
     dump_batch_size: int = Field(
-        10,
+        100,
         description="Number of groups to accumulate before saving to disk (1 = save immediately)",
     )
 
