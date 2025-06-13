@@ -35,7 +35,7 @@ def load_cat_behaviors_for_prompt(filepath: str) -> str:
         return "\n".join(behaviors_description)
     except FileNotFoundError:
         return (
-            "\n\nWarning: Cat behaviors file not found at '{filepath}'. "
+            f"\n\nWarning: Cat behaviors file not found at '{filepath}'. "
             "You'll have to rely on your basic cat instincts (meow, hiss, purr, hairball, silence)."
         )
     except json.JSONDecodeError as e:
