@@ -6,6 +6,97 @@ This directory contains various environments for training and evaluating languag
 
 ---
 
+### Letter Counting Environment (`letter_counting_environment.py`)
+
+A comprehensive environment for training models to count letters in words, sentences, and text passages with configurable difficulty and data modes.
+
+**Input Format:**
+- Single letter counting: "How many 'a's are in the word 'banana'?"
+- Multiple letter counting: "Count the occurrences of the letters 'e', 'o', and 't' in the following text: 'The quick brown fox jumps over the lazy dog'"
+- Each item contains:
+  - `prompt`: The counting question with instructions
+  - `correct_counts`: Dictionary mapping letters to their counts
+  - `text`: The source text (word, sentence, or passage)
+  - `target_letters`: List of letters to count
+
+**System Prompt:**
+```
+You are a deep thinking AI, you may use extremely long chains of thought to deeply consider the problem and deliberate with yourself via systematic reasoning processes to help come to a correct solution prior to answering. You should enclose your thoughts and internal monologue inside <think> </think> tags, and then provide your solution or response to the problem.
+```
+
+**Data Modes:**
+- **Word Mode**: Uses NLTK's words corpus (236k+ English words)
+- **Mixed Mode**: Combines words and text passages from OpenWebText-10k dataset
+- **Text Passage Mode**: Uses OpenWebText-10k dataset with character-based text extraction
+
+**Key Features:**
+- **Multi-letter counting**: Configurable simultaneous counting of multiple letters with JSON responses
+- **Letter selection bias**: Configurable bias toward letters present in the text (reduces zero-count questions)
+- **Random string generation**: Optional random strings (80% alphabetical) mixed with real words
+- **Word capitalization**: Optional uppercase and title case transformations
+- **Punctuation/space handling**: Configurable inclusion in letter counting
+- **Training thresholds**: Skip groups that are too easy based on group average scores
+- **Data dumping**: Save rollouts from groups with appropriate difficulty to JSONL files
+- **Comprehensive metrics**: Letter distribution, text lengths, error rates, group average scores
+
+**Answer Formats:**
+- Single letter: `<answer>3</answer>`
+- Multiple letters: `<answer>{"e": 4, "o": 4, "t": 2}</answer>`
+
+**Reward Function:**
+- Score of 1.0 if the model's answer exactly matches the expected count(s)
+- Score of 0.0 if incorrect, malformed, or missing answer
+- Groups with identical scores (no learning signal) return None
+- Groups with average score > `max_group_average_for_training` are skipped for training for difficulty control/curriculum
+
+**Configuration Options:**
+- `use_text_passages`: Enable mixed mode with text passages (default: False)
+- `text_passage_percentage`: Ratio of passages to words in mixed mode (default: 0.5)
+- `max_letters_to_count`: Maximum simultaneous letters (default: 1)
+- `multi_letter_probability`: Probability of multi-letter questions (default: 0.0)
+- `present_letter_bias`: Bias toward letters present in text (default: 0.5)
+- `include_punctuation_in_count`: Include punctuation in counting (default: True)
+- `include_spaces_in_count`: Include spaces in counting (default: False)
+- `max_group_average_for_training`: Skip easy groups threshold (default: 1.0)
+- `dump_rollouts`: Save rollouts to JSONL files (default: False)
+- `debug_logging`: Enable verbose per-item scoring details (default: False)
+
+**Evaluation Metrics:**
+- `eval/accuracy`: Overall accuracy on test set
+- `eval/letter_distribution_entropy`: Entropy of letter selection distribution
+- `eval/avg_word_length`: Average length of test items
+- `eval/format_error_rate`: Rate of malformed responses
+- `eval/think_tag_usage`: Percentage using think tags
+- `train/group_average_scores`: Distribution of group difficulty scores
+
+**Dependencies:**
+- `nltk` (for words corpus)
+- `datasets` (for OpenWebText-10k when using text passages)
+
+**Usage Example:**
+```bash
+# Word-only mode
+python letter_counting_environment.py serve \
+    --env.use_text_passages=False \
+    --env.max_letters_to_count=1 \
+    --env.max_group-average-for-training=0.75
+
+# Mixed mode with multi-letter counting
+python letter_counting_environment.py serve \
+    --env.use_text_passages=True \
+    --env.text_passage_percentage=0.3 \
+    --env.max_letters_to_count=4 \
+    --env.multi_letter_probability=0.2
+
+# Data dumping mode
+python letter_counting_environment.py serve \
+    --env.dump_rollouts=True \
+    --env.dump_batch_size=100 \
+    --env.max_group_average_for_training=0.75
+```
+
+---
+
 ###  MCQA Thinking Environment (`mcqa_thinking_env.py`)
 
 Multiple Choice Question Answering environment that requires models to think through problems systematically.
