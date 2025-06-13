@@ -268,7 +268,7 @@ def get_num_rows(
 ) -> tuple[int, list[str]]:
     """each matrix has 2 params (on for x and y each), one value, and we aggregate over seeds;
     if there are more than than these 4 parameter with different values,
-    we want to put that in seperate rows instead of aggregating over them.
+    we want to put that in separate rows instead of aggregating over them.
     returning: the number of rows (atleast 1) and the names of the cols"""
     necesarry_rows = 0
 

@@ -45,7 +45,7 @@ This example uses only the final model performance and only creates the plot as 
 
 Helpful settings:
 
-- ```checkpoints: [last]```  # you could use [last, best] to additionaly plot the model with the best validation
+- ```checkpoints: [last]```  # you could use [last, best] to additionally plot the model with the best validation
 - ```output_types: [png]```  # you could use [pdf, png] to also create a pdf
 
 
