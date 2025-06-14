@@ -63,6 +63,10 @@ class IFConfig(BaseEnvConfig):
         default=True,
         description="Suppress verbose base environment logs (like status dict updates).",
     )
+    solve_on_single_correct: bool = Field(
+        default=False,
+        description="Mark item as solved if even one rollout in the group gets it correct (removes from circulation)",
+    )
 
 
 class InstructionFollowingEnv(BaseEnv):
@@ -144,6 +148,7 @@ class InstructionFollowingEnv(BaseEnv):
             dataset_shuffle_seed=42,  # Seed for dataset shuffling
             resume_from_unsolved_dataset=None,  # Path to resume from unsolved items
             suppress_base_env_logs=True,  # Suppress verbose base environment logs
+            solve_on_single_correct=False,  # Mark item as solved if any rollout gets it correct
         )
         # Server configurations can be similar to SingleToolCallingEnv or adjusted
         server_configs = [
@@ -667,7 +672,7 @@ class InstructionFollowingEnv(BaseEnv):
             group_average_score = sum(scored_data["scores"]) / len(
                 scored_data["scores"]
             )
-            self._handle_item_result(item, group_average_score)
+            self._handle_item_result(item, group_average_score, scored_data["scores"])
         elif scored_data is None:
             # If scored_data is None, it might be because the group was skipped for being too easy
             # We need to calculate the scores ourselves to handle the item properly
@@ -686,7 +691,7 @@ class InstructionFollowingEnv(BaseEnv):
 
             if temp_scores:
                 group_average_score = sum(temp_scores) / len(temp_scores)
-                self._handle_item_result(item, group_average_score)
+                self._handle_item_result(item, group_average_score, temp_scores)
 
         to_backlog = []  # Backlog not currently used but part of signature
 
@@ -1193,9 +1198,11 @@ class InstructionFollowingEnv(BaseEnv):
             self.solved_items = []
             self.item_attempt_counts = {}
 
-    def _handle_item_result(self, item: Item, group_average_score: float):
+    def _handle_item_result(
+        self, item: Item, group_average_score: float, group_scores: List[float] = None
+    ):
         """
-        Handle the result of an item based on its group average score.
+        Handle the result of an item based on its group average score and individual scores.
         If solved (high score), remove from circulation.
         If not solved (low score), add back to the end of the queue.
         """
@@ -1207,20 +1214,29 @@ class InstructionFollowingEnv(BaseEnv):
         if not raw_item or not item_id:
             return  # Skip if we don't have the necessary info
 
-        # Define "solved" as either too easy for training OR very high performance
-        is_solved = (
-            group_average_score > self.config.max_group_average_for_training
-            or group_average_score >= 0.9
-        )  # Very high performance threshold
+        # Define "solved" based on configuration options
+        is_solved = False
+        solve_reason = ""
+
+        # Check if solved based on single correct rollout
+        if self.config.solve_on_single_correct and group_scores:
+            if any(score >= 1.0 for score in group_scores):
+                is_solved = True
+                solve_reason = " (single correct)"
+
+        # Check if solved based on group average thresholds (original logic)
+        if not is_solved:
+            if group_average_score > self.config.max_group_average_for_training:
+                is_solved = True
+                solve_reason = " (too easy)"
+            elif group_average_score >= 0.9:  # Very high performance threshold
+                is_solved = True
+                solve_reason = " (mastered)"
 
         if is_solved:
             # Item is solved - move to solved items (remove from circulation)
             self.solved_items.append(raw_item)
-            status = "SOLVED - removed from circulation"
-            if group_average_score > self.config.max_group_average_for_training:
-                status += " (too easy)"
-            else:
-                status += " (mastered)"
+            status = f"SOLVED - removed from circulation{solve_reason}"
         else:
             # Item not solved - add back to the end of the active queue
             self.active_train_queue.append(raw_item)

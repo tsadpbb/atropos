@@ -368,10 +368,13 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
 
 **1. Adaptive Curriculum System:**
 - **Cycling Queue**: Items are managed in an active training queue where solved items are removed from circulation
-- **Difficulty-Based Removal**: Items with group average score > `max_group_average_for_training` (default: 0.75) OR score ≥ 0.9 are marked as "solved"
+- **Flexible Solving Criteria**: Items can be marked as "solved" based on:
+  - Group average score > `max_group_average_for_training` (default: 0.75) - too easy for training
+  - Group average score ≥ 0.9 - mastered through high performance
+  - Single correct rollout when `solve_on_single_correct=True` - immediate removal on any success
 - **Attempt Tracking**: Tracks how many times each item has been attempted
 - **Queue Reset**: When all items are solved, the queue resets with previously solved items for continued training
-- **Comprehensive Logging**: Shows task names, group average scores, and contextual messages (e.g., "All correct in this group!", "All failed - format/constraint violations!")
+- **Comprehensive Logging**: Shows task names, group average scores, solve reasons, and contextual messages
 
 **2. Dataset State Persistence:**
 - **Automatic Dumping**: Saves active queue every 100 iterations to `atropos/environments/datasets/remaining_unsolved.jsonl`
@@ -408,6 +411,7 @@ You are a deep thinking AI, you may use extremely long chains of thought to deep
 - `dataset_shuffle_seed`: Reproducible dataset shuffling (default: 42)
 - `resume_from_unsolved_dataset`: Path to resume file (default: None)
 - `suppress_base_env_logs`: Reduce verbose logging (default: True)
+- `solve_on_single_correct`: Mark item as solved if any rollout gets it correct (default: False)
 
 **Verifier Functions:**
 Comprehensive map of 24 verifier functions (`IF_FUNCTIONS_MAP`) covering diverse constraints:
@@ -438,6 +442,10 @@ python instruction_following_algorithm_environment.py serve \
 # Adjust difficulty threshold
 python instruction_following_algorithm_environment.py serve \
     --env.max_group_average_for_training=0.8
+
+# Enable single-correct solving (remove items immediately when any rollout succeeds)
+python instruction_following_algorithm_environment.py serve \
+    --env.solve_on_single_correct=True
 ```
 
 **Evaluation Metrics:**
