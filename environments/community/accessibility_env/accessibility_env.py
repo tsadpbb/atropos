@@ -275,9 +275,7 @@ class AccessibilityEnv(BaseEnv):
                 else:  # Parseable, but no targeted issues fixed
                     current_item_score = -0.5
             else:  # No issues were targeted for this item (e.g., input was considered good by dataset design)
-                if (
-                    not can_proceed_with_rule_checks
-                ):  # LLM made a good input unparsable
+                if not can_proceed_with_rule_checks:  # LLM made a good input unparsable
                     current_item_score = -1.0
                 else:  # Parseable, and no issues were targeted (good input remained good)
                     current_item_score = 0.0  # Neutral score
