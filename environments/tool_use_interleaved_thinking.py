@@ -18,8 +18,13 @@ from typing import Dict, List, Optional, Tuple
 import os
 import itertools
 
+
 # Set to True to always print debug information.
 DEBUG = True  # or toggle via env var if you prefer: bool(os.getenv("DEBUG_INTERLEAVED", "1"))
+
+# Hard caps for generation length
+MAX_REPLY_TOKENS   = 2048   # truncate any single assistant reply to ≤1024 tokens
+MAX_GEN_PER_TURN   = 1024    # never request more than 512 new tokens from the model
 
 import wandb
 from datasets import load_dataset, Dataset
@@ -43,63 +48,6 @@ system_prompt = (
     "solution prior to answering. You should enclose your thoughts and internal monologue inside <think> "
     "</think> tags, and then provide your solution or response to the problem."
 )
-#TOOL_SYSTEM_PROMPT = """
-#You are a function calling & reasoning AI model. You are provided with function signatures within <tools> </tools> XML tags for user facing tools and <reasoning_tools> </reasoning_tools> XML tags for internal reasoning tools. You may call one or more functions to assist with the user query. If available tools are not relevant in assisting with user query, just respond in natural conversational language. Don't make assumptions about what values to plug into functions. After calling & executing the functions, you will be provided with function results within <tool_response> </tool_response> XML tags. Here are the available tools:
-#
-#<reasoning_tools>
-#[
-#  {
-#    "type": "function",
-#    "function": {
-#      "name": "calculator",
-#      "description": "Evaluate a numeric Python expression and return the result.",
-#      "parameters": {
-#        "type": "object",
-#        "properties": {
-#          "expr": {
-#            "type": "string",
-#            "description": "A pure‑Python arithmetic expression, e.g. '3*(4+5)'"
-#          }
-#        },
-#        "required": ["expr"]
-#      }
-#    }
-#  },
-#  {
-#    "type": "function",
-#    "function": {
-#      "name": "python_interpreter",
-#      "description": "Run a short Python snippet and return stdout plus the last expression.",
-#      "parameters": {
-#        "type": "object",
-#        "properties": {
-#          "code": {
-#            "type": "string",
-#            "description": "Python source code to execute."
-#          }
-#        },
-#        "required": ["code"]
-#      }
-#    }
-#  }
-#]
-#</reasoning_tools>
-#
-#For each function call return a JSON object, with the following pydantic model json schema:\n{'title': 'FunctionCall', 'type': 'object', 'properties': {'arguments': {'title': 'Arguments', 'type': 'object'}, 'name': {'title': 'Name', 'type': 'string'}}, 'required': ['arguments', 'name']}
-#
-#Each function call should be enclosed within <tool_call> </tool_call> XML tags.\n<tool_call>\n{'name': <function-name>, 'arguments': <args-dict>}\n</tool_call>
-#
-#For reasoning tools, return interleaved tool calls within <think> </think> tags.
-#<think>
-#<tool_call>\n{'name': <function-name>, 'arguments': <args-dict>}\n</tool_call>
-#<!-- system pauses runtime for execution -->
-#<tool_response>\n{'result': <result>}\n</tool_response>
-#<!-- assistant resumes within same think -->
-#</think>
-#
-#You must use reasoning tools such as python_interpreter when available for hard problems such as math before providing your final answer.
-#Always wrap your final numeric answer (or final result) in \\boxed{...} so it can be automatically graded.
-#"""
 
 TOOL_SYSTEM_PROMPT = """
 You are a function calling & reasoning AI model. You are provided with function signatures within <reasoning_tools> </reasoning_tools> XML tags for internal reasoning tools. After calling & executing the functions, you will be provided with function results within <tool_response> </tool_response> XML tags. Here are the available tools:
@@ -186,6 +134,9 @@ class InterleavedInlineEnv(BaseEnv):
         self.iter = 0
         import random
         self.rng = random.Random()
+        # Dynamic few‑shot pool: list of (user_msg, assistant_msg) tuples
+        self.dynamic_pool: List[Tuple[Dict, Dict]] = []
+        self.dynamic_pool_max = 4   # keep at most 4 real examples
 
     @classmethod
     def config_init(cls):
@@ -202,6 +153,7 @@ class InterleavedInlineEnv(BaseEnv):
             wandb_name="toolcall_interleaved",
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
+            max_gen_per_turn = MAX_GEN_PER_TURN,
         )
         servers = [
             APIServerConfig(
@@ -216,43 +168,51 @@ class InterleavedInlineEnv(BaseEnv):
 
     async def setup(self):
         """
-        Load only a small streamed subset of NVIDIA/OpenMathReasoning so that
-        startup is fast during local testing.
+        Load a streamed subset of **nvidia/AceReason-Math**.
 
-        • The number of rows is controlled by the env‑var SUBSET_ROWS
-          (default 1000).
-        • We keep rows whose 'expected_answer' is a simple numeric / arithmetic
-          expression that python_interpreter can evaluate safely.
+        We keep only rows whose *answer* looks purely numeric so the
+        calculator / python_interpreter tools can verify them automatically.
+
+        The env‑var SUBSET_ROWS (default 1000) controls how many rows we keep.
         """
-        import itertools
+        import re, os
+        N = int(os.getenv("SUBSET_ROWS", "1000"))
 
-        N = int(os.getenv("SUBSET_ROWS", "1000"))  # how many rows to keep
-
-        # streaming=True => HF downloads shard‑by‑shard and stops after N rows
-        stream_ds = load_dataset(
+        stream_ds = load_dataset(          # ≈50 k rows total → stream
             "NVIDIA/OpenMathReasoning",
             split="cot",
-            streaming=True
+            #"open-r1/OpenR1-Math-220k",
+            #"nvidia/AceReason-Math",
+            #split="train",
+            streaming=True,
         )
 
-        # take first N rows
-        subset = list(itertools.islice(stream_ds, N))
+        _numeric = re.compile(r"^[0-9+\-*/(). %√\\\\sqrt{}]+$").fullmatch
 
-        # keep only numeric‑style answers
-        def _is_numeric(ex):
-            ans = ex["expected_answer"].strip()
-            # Allow digits, spaces and the arithmetic symbols + - * / ( )
-            return re.fullmatch(r"[0-9+\-*/(). ]+", ans) is not None
-
-        subset = [ex for ex in subset if _is_numeric(ex)]
+        subset = []
+        for ex in stream_ds:
+            if len(subset) >= N:
+                break
+            # some datasets use "answer", others "expected_answer"
+            ans_raw = ex.get("answer", ex.get("expected_answer"))
+            if ans_raw is None:
+                continue
+            ans = str(ans_raw).strip()
+            if _numeric(ans):
+                subset.append(
+                    {
+                        "problem": ex["problem"],
+                        "expected_answer": ans,
+                    }
+                )
 
         full = Dataset.from_list(subset)
+        if DEBUG:
+            print(f"[DEBUG setup] kept {len(subset)} rows from Dataset")
 
-        # 2% test split
-        split = full.train_test_split(test_size=0.02, seed=42)
+        split                 = full.train_test_split(test_size=0.02, seed=42)
         self.train, self.test = split["train"], split["test"]
-        # Shuffle training samples so each run starts at a random order
-        self.train = self.train.shuffle(seed=int.from_bytes(os.urandom(2), "big"))
+        self.train            = self.train.shuffle(seed=int.from_bytes(os.urandom(2), "big"))
     # --------------------- helper methods --------------------------------- #
     async def _completion_until(self, prompt: str, max_tokens: int, stop: Optional[str] = None) -> str:
         comp = await self.server.completion(
@@ -275,6 +235,12 @@ class InterleavedInlineEnv(BaseEnv):
             return json.loads(matches[-1])
         except Exception:
             return None
+
+    # ---- helper: canonicalize numeric strings (remove commas & spaces) ----
+    @staticmethod
+    def _canon_num(txt: str) -> str:
+        """Return number string without commas / spaces; keep leading sign."""
+        return txt.strip().replace(",", "").replace(" ", "")
 
     # boxed{answer} pattern for final numeric result
     _re_box = re.compile(r"\\boxed\{([^}]*)\}")
@@ -358,7 +324,7 @@ class InterleavedInlineEnv(BaseEnv):
             # Stop at </tool_call>  OR   </think>
             reply = await self._completion_until(
                 prompt_txt,
-                max_tokens=self.config.max_token_length,
+                max_tokens=MAX_GEN_PER_TURN,
                 stop=["</tool_call>", "</think>"],
             )
             if DEBUG:
@@ -439,13 +405,20 @@ class InterleavedInlineEnv(BaseEnv):
         completions = await self.server.completion(
             prompt=prompt_txt,
             n=self.config.group_size,
-            max_tokens=self.config.max_token_length,
+            max_tokens=MAX_GEN_PER_TURN,
             temperature=0.8,
         )
 
         scored = ScoredDataGroup(tokens=[], masks=[], scores=[])
         for idx, choice in enumerate(completions.choices):
-            assistant_msg = {"role": "assistant", "content": choice.text}
+            raw = choice.text or ""
+            toks = self.tokenizer.encode(raw)
+            if len(toks) > MAX_REPLY_TOKENS:
+                toks = toks[:MAX_REPLY_TOKENS]
+                raw  = self.tokenizer.decode(toks)
+                if DEBUG:
+                    print(f"[DEBUG] truncated reply {idx} to {len(toks)} tokens")
+            assistant_msg = {"role": "assistant", "content": raw}
 
             full_ctx = prompt_msgs + [assistant_msg]
 
@@ -457,15 +430,27 @@ class InterleavedInlineEnv(BaseEnv):
                 and expected["arguments"]["code"].startswith("print(")
                 and expected["arguments"]["code"].endswith(")")
             ) else None
-            boxed = self._boxed_after_think(choice.text)
-            reward = 1.0 if (boxed and boxed == expr) else -1.0
-            if "</think>" not in choice.text:
+            boxed = self._boxed_after_think(raw)
+
+            same = (
+                boxed == expr or
+                (boxed and expr and self._canon_num(boxed) == self._canon_num(expr))
+            )
+            reward = 1.0 if same else -1.0
+            if "</think>" not in raw:
                 reward = -1.0  # invalid – did not close think block
+            else:
+                # NEW RULE: no tool_call tags are allowed *outside* the think block
+                end_pos = raw.lower().find("</think>")
+                if "<tool_call" in raw[end_pos + len("</think>"):].lower():
+                    if DEBUG:
+                        print("[DEBUG] tool_call found outside </think>; setting reward = -1")
+                    reward = -1.0
 
             if DEBUG:
                 print(
                     f"\033[95m--- COMPLETION {idx+1}/{self.config.group_size} ---\033[0m\n"
-                    f"\033[94m{choice.text}\033[0m\nreward={reward}\n{'='*60}"
+                    f"\033[94m{raw}\033[0m\nreward={reward}\n{'='*60}"
                 )
 
             tok = tokenize_for_trainer(self.tokenizer, full_ctx)
@@ -473,6 +458,19 @@ class InterleavedInlineEnv(BaseEnv):
             scored["masks"].append(tok["masks"])
             scored["scores"].append(reward)
             self.percent_correct_buffer.append(max(reward, 0))
+
+        # --- harvest a success for dynamic few‑shots --------------------
+        for idx, sc in enumerate(scored["scores"]):
+            reply_txt = completions.choices[idx].text
+            has_call  = "<tool_call" in reply_txt.lower()  # ensure an interleaved call exists
+            if sc >= 1.0 and has_call:
+                # Build (user, assistant) pair from this successful rollout
+                u = {"role": "user", "content": prompt_msgs[-1]["content"]}
+                a = {"role": "assistant", "content": reply_txt}
+                self.dynamic_pool.append((u, a))
+                if len(self.dynamic_pool) > self.dynamic_pool_max:
+                    self.dynamic_pool.pop(0)   # FIFO
+                break   # only harvest one per group
 
         return scored, []
 
@@ -536,16 +534,18 @@ class InterleavedInlineEnv(BaseEnv):
             "role": "assistant",
             "content": (
                 "<think>\n"
-                "Goal: integrate x² from 0 to 1 with python_interpreter.\n"
+                "Let's be sure of the definite integral ∫₀¹ x² dx.  It's easy by hand "
+                "but I'll run SymPy to avoid mistakes.\n"
                 "<tool_call>{\"name\":\"python_interpreter\", "
-                "\"arguments\":{\"code\":\"import sympy as sp\\n"
-                "x=sp.symbols('x'); print(sp.integrate(x**2,(x,0,1)))\"}}\n"
+                "\"arguments\":{\"code\":"
+                "\"import sympy as sp\\n"
+                "x=sp.symbols('x')\\n"
+                "print(sp.integrate(x**2,(x,0,1)))\"}}\n"
                 "</tool_call>\n"
                 "<tool_response>{\"result\": 1/3}</tool_response>\n"
-                "Observation: result 0.333333.\n"
-                "Reflection: ready.\n"
+                "The interpreter returns 1/3, so the value is 0.333̅.\n"
                 "</think>\n\n"
-                "The integral ≈ 0.333333."
+                "The integral equals \\boxed{\\tfrac{1}{3}} \\approx 0.333."
             )
         }
 
@@ -558,14 +558,14 @@ class InterleavedInlineEnv(BaseEnv):
             "role": "assistant",
             "content": (
                 "<think>\n"
-                "Goal: evaluate (2+3)*4 with the calculator tool.\n"
+                "I need (2+3)*4.  Quick mental math gives 5*4 = 20, "
+                "but I'll confirm with the calculator tool.\n"
                 "<tool_call>{\"name\":\"calculator\", "
                 "\"arguments\":{\"expr\":\"(2+3)*4\"}}</tool_call>\n"
                 "<tool_response>{\"value\": 20}</tool_response>\n"
-                "Observation: result 20.\n"
-                "Reflection: ready.\n"
+                "The tool also says 20, matching my head‑math.\n"
                 "</think>\n\n"
-                "The answer is \\boxed{20}."
+                "Therefore the answer is \\boxed{20}."
             )
         }
 
@@ -578,12 +578,16 @@ class InterleavedInlineEnv(BaseEnv):
             )
         }
 
-        messages = [
-            system_msg,
-            fewshot_user, fewshot_assistant,
-            fewshot_user2, fewshot_assistant2,
-            real_user,
-        ]
+        # Optionally insert one real demo from dynamic_pool
+        dyn = list(self.dynamic_pool[-1]) if self.dynamic_pool else []
+
+        messages = (
+            [system_msg,
+             fewshot_user, fewshot_assistant,
+             fewshot_user2, fewshot_assistant2] +
+            dyn +                      # 0 or 2 msgs
+            [real_user]
+        )
 
         # Freeze for hashing
         frozen = tuple(frozenset(m.items()) for m in messages)
