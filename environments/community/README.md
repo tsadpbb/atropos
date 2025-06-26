@@ -1769,7 +1769,7 @@ python -m atroposlib.envs.dynastai_env serve --slurm False
 Access the game at `http://localhost:3000` when running the server.
 
 **Demo Resources**:
-- **Live Demo Video**: [DynastAI Gameplay & API Overview](https://github.com/Slyracoon23/atropos/pull/81)
+- **Live Demo Video**: [DynastAI Gameplay & API Overview](https://github.com/NousResearch/atropos/pull/81)
 - **Screenshots**: Medieval-themed interface with character portraits and metric displays
 - **API Documentation**: Comprehensive endpoint documentation in README
 
