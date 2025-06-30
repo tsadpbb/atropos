@@ -13,17 +13,16 @@ inherit from SingleToolCallingEnv.  All required boiler‑plate from that
 class is copied here so nothing breaks when you swap env names.
 """
 
-
 from __future__ import annotations
 
-
 import asyncio
-import httpx
 import itertools
 import json
 import os
 import re
 from typing import Dict, List, Optional, Tuple, Union
+
+import httpx
 
 # Set to True to always print debug information.
 DEBUG = True
@@ -39,8 +38,6 @@ MAX_ROLLOUT_TURNS = 5
 
 import wandb
 from datasets import Dataset, load_dataset
-from atroposlib.type_definitions import Message
-
 
 from atroposlib.envs.base import (
     APIServerConfig,
@@ -49,8 +46,8 @@ from atroposlib.envs.base import (
     EvalHandlingEnum,
     ScoredDataGroup,
 )
+from atroposlib.type_definitions import Message
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
-
 
 # -------------------------------------------------------------------------- #
 #  Constants
@@ -125,8 +122,6 @@ For reasoning tools, return interleaved tool calls within <think> </think> tags.
 SYSTEM_PROMPT = system_prompt + TOOL_SYSTEM_PROMPT
 
 
-
-
 # -------------------------------------------------------------------------- #
 #  Environment
 # -------------------------------------------------------------------------- #
@@ -136,10 +131,8 @@ class InterleavedInlineEnv(BaseEnv):
     calls inside a still‑open <think> block.
     """
 
-
     name = "interleaved_inline"
     _re_last_call = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>\s*$", re.S)
-
 
     # --------------------- BaseEnv boiler‑plate --------------------------- #
     def __init__(
@@ -156,12 +149,10 @@ class InterleavedInlineEnv(BaseEnv):
         self.iter = 0
         import random
 
-
         self.rng = random.Random()
         # Dynamic few‑shot pool: list of (user_msg, assistant_msg) tuples
         self.dynamic_pool: List[Tuple[Dict, Dict]] = []
         self.dynamic_pool_max = 4  # keep at most 4 real examples
-
 
     @classmethod
     def config_init(cls):
@@ -191,7 +182,6 @@ class InterleavedInlineEnv(BaseEnv):
         ]
         return cfg, servers
 
-
     async def setup(self):
         """
         Load a streamed subset of **nvidia/AceReason-Math**.
@@ -206,9 +196,7 @@ class InterleavedInlineEnv(BaseEnv):
         import os
         import re
 
-
         N = int(os.getenv("SUBSET_ROWS", "1000"))
-
 
         stream_ds = load_dataset(  # ≈50 k rows total → stream
             "NVIDIA/OpenMathReasoning",
@@ -219,9 +207,7 @@ class InterleavedInlineEnv(BaseEnv):
             streaming=True,
         )
 
-
         _numeric = re.compile(r"^[0-9+\-*/(). %√\\\\sqrt{}]+$").fullmatch
-
 
         subset = []
         for ex in stream_ds:
@@ -239,7 +225,6 @@ class InterleavedInlineEnv(BaseEnv):
                         "expected_answer": ans,
                     }
                 )
-
 
         full = Dataset.from_list(subset)
         if DEBUG:
@@ -261,7 +246,6 @@ class InterleavedInlineEnv(BaseEnv):
             temperature=0.8,
         )
         return comp.choices[0].text
-
 
     def _extract_last_call(self, chunk: str):
         """
@@ -289,9 +273,9 @@ class InterleavedInlineEnv(BaseEnv):
                 brace_count = 0
                 json_end = 0
                 for i, char in enumerate(json_text):
-                    if char == '{':
+                    if char == "{":
                         brace_count += 1
-                    elif char == '}':
+                    elif char == "}":
                         brace_count -= 1
                         if brace_count == 0:
                             json_end = i + 1
@@ -313,16 +297,13 @@ class InterleavedInlineEnv(BaseEnv):
             return False
         return "</tool_response>" not in raw[pos:]
 
-
     @staticmethod
     def _canon_num(txt: str) -> str:
         """Return number string without commas / spaces; keep leading sign."""
         return txt.strip().replace(",", "").replace(" ", "")
 
-
     # boxed{answer} pattern for final numeric result
     _re_box = re.compile(r"\\boxed\{([^}]*)\}")
-
 
     def _boxed_after_think(self, text: str) -> Optional[str]:
         """
@@ -334,7 +315,6 @@ class InterleavedInlineEnv(BaseEnv):
             return None
         m = self._re_box.search(text, pos=think_pos)
         return m.group(1).strip() if m else None
-
 
     async def _exec_tool(self, call_json: Dict):
         """
@@ -352,12 +332,18 @@ class InterleavedInlineEnv(BaseEnv):
             try:
                 async with httpx.AsyncClient(timeout=10.0) as client:
                     payload = {"code": args["code"], "input": ""}
-                    resp = await client.post("http://localhost:5002/execute", json=payload)
+                    resp = await client.post(
+                        "http://localhost:5002/execute", json=payload
+                    )
                     data = resp.json()
             except httpx.ConnectError:
-                print("❌ [CRITICAL] Python interpreter server not available at localhost:5002")
+                print(
+                    "❌ [CRITICAL] Python interpreter server not available at localhost:5002"
+                )
                 print("Please ensure the code_exec_server Docker container is running")
-                raise RuntimeError("Python interpreter server not available - cannot continue without verification")
+                raise RuntimeError(
+                    "Python interpreter server not available - cannot continue without verification"
+                )
             if DEBUG:
                 print(f"[DEBUG _exec_tool] {name} result → {data}")
             return {
@@ -367,7 +353,6 @@ class InterleavedInlineEnv(BaseEnv):
         elif name == "calculator":
             import math
 
-
             expr = args["expr"]
             val = eval(expr, {"__builtins__": {}}, {"math": math})
             if DEBUG:
@@ -376,18 +361,16 @@ class InterleavedInlineEnv(BaseEnv):
         else:
             raise ValueError(f"Unknown tool name {name}")
 
-
     async def _execute_turn_inference(
         self,
         turn_idx: int,
         prompts: List[str],
         ridx_map: List[int],
-        expected_calls_by_turn: List[List[str]]
+        expected_calls_by_turn: List[List[str]],
     ) -> List[str]:
         """Execute inference for a turn using optimal batching strategy."""
         print(f"\n\033[95m=== Expected Tool Calls for Turn {turn_idx+1} ===\033[0m")
         print(f"\033[95m{expected_calls_by_turn[turn_idx]}\033[0m\n")
-
 
         # Always use batched identical prompts for turn 0, heterogeneous for others
         if turn_idx == 0:
@@ -397,16 +380,15 @@ class InterleavedInlineEnv(BaseEnv):
         else:
             choices = await self._batch_heterogeneous_prompts(prompts, turn_idx)
 
-
         return choices
-
 
     async def _batch_identical_prompts(
         self, prompt: str, count: int, turn_idx: int
     ) -> List[str]:
         """Handle identical prompts efficiently using n parameter."""
-        print(f"    \033[93m→ TURN {turn_idx+1} prompt full:\033[0m \033[92m{prompt}\033[0m")
-
+        print(
+            f"    \033[93m→ TURN {turn_idx+1} prompt full:\033[0m \033[92m{prompt}\033[0m"
+        )
 
         # Use the constant instead of config attribute
         resp = await self.server.completion(
@@ -418,7 +400,6 @@ class InterleavedInlineEnv(BaseEnv):
         )
         choices = [c.text for c in resp.choices]
 
-
         # Debug: print each rollout
         for i, raw in enumerate(choices):
             print(
@@ -428,9 +409,7 @@ class InterleavedInlineEnv(BaseEnv):
                 print(f"      → (empty or error string returned for rollout {i})")
         print("    → All turn 1 rollouts printed; moving on.\n" + "-" * 48)
 
-
         return choices
-
 
     async def _batch_heterogeneous_prompts(
         self, prompts: List[str], turn_idx: int
@@ -440,13 +419,11 @@ class InterleavedInlineEnv(BaseEnv):
             print("=== DEBUG: Now parallelizing Turn 2 prompts ===")
         print(f"    → Parallelizing {len(prompts)} prompts at turn {turn_idx+1}")
 
-
         # Print each prompt
         for idx_p, p_str in enumerate(prompts):
             print(
                 f"    \033[93m→ TURN-{turn_idx+1} prompt[{idx_p}] full:\033[0m \033[92m{p_str}\033[0m"
             )
-
 
         async def _call_single(prompt_str: str) -> str:
             try:
@@ -463,10 +440,8 @@ class InterleavedInlineEnv(BaseEnv):
                 print(f"    → Turn {turn_idx+1} _call_single exception: {e}")
                 return ""
 
-
         tasks = [_call_single(p) for p in prompts]
         results = await asyncio.gather(*tasks)
-
 
         # Debug: print results for all turns
         choices = []
@@ -480,9 +455,7 @@ class InterleavedInlineEnv(BaseEnv):
                 print(f"    → Rollout {i} returned empty or error string")
             choices.append(raw)
 
-
         return choices
-
 
     def _json_objects_match(self, j1, j2):
         try:
@@ -498,7 +471,6 @@ class InterleavedInlineEnv(BaseEnv):
         except Exception:
             return False
 
-
     async def collect_trajectories(self, item) -> Tuple[ScoredDataGroup, List]:
         """
         One prompt → `n = group_size` sampled assistant completions in
@@ -510,20 +482,21 @@ class InterleavedInlineEnv(BaseEnv):
             json.loads(expected_raw) if isinstance(expected_raw, str) else expected_raw
         )
 
-
         # Re‑inflate frozensets to normal dicts
         prompt_msgs = [dict(r) for r in messages_tuple]
 
-
         if EXECUTION_FEEDBACK:
             # MODE: Real interleaved tool execution
-            return await self._collect_trajectories_with_execution(prompt_msgs, expected)
+            return await self._collect_trajectories_with_execution(
+                prompt_msgs, expected
+            )
         else:
             # MODE: Static generation for data collection (current behavior)
             return await self._collect_trajectories_static(prompt_msgs, expected)
 
-
-    async def _collect_trajectories_static(self, prompt_msgs: List[Dict], expected) -> Tuple[ScoredDataGroup, List]:
+    async def _collect_trajectories_static(
+        self, prompt_msgs: List[Dict], expected
+    ) -> Tuple[ScoredDataGroup, List]:
         """
         Original static generation mode - no tool execution, just data collection.
         """
@@ -532,14 +505,12 @@ class InterleavedInlineEnv(BaseEnv):
             prompt_msgs, add_generation_prompt=True, tokenize=False
         )
 
-
         if DEBUG:
             clean_prompt = prompt_txt.replace("<|eot_id|>", "")
             print(
                 f"\n\033[93m▶ BATCH PROMPT (tokens {len(prompt_txt)}):\033[0m "
                 f"\033[92m{clean_prompt}\033[0m\n{'-'*60}"
             )
-
 
         # One API call → many completions
         completions = await self.server.completion(
@@ -548,7 +519,6 @@ class InterleavedInlineEnv(BaseEnv):
             max_tokens=MAX_GEN_PER_TURN,
             temperature=0.8,
         )
-
 
         scored: ScoredDataGroup = {
             "tokens": [],
@@ -573,10 +543,8 @@ class InterleavedInlineEnv(BaseEnv):
                     print(f"[DEBUG] truncated reply {idx} to {len(toks)} tokens")
             assistant_msg = {"role": "assistant", "content": raw}
 
-
             # Create the full context for tokenization - cast to Message type
             full_ctx: List[Message] = prompt_msgs + [assistant_msg]
-
 
             # Outcome‑based reward: compare boxed answer to expected expr
             expr = (
@@ -622,13 +590,11 @@ class InterleavedInlineEnv(BaseEnv):
                         )
                     reward = -1.0
 
-
             if DEBUG:
                 print(
                     f"\033[95m--- COMPLETION {idx+1}/{self.config.group_size} ---\033[0m\n"
                     f"\033[94m{raw}\033[0m\nreward={reward}\n{'='*60}"
                 )
-
 
             tok = tokenize_for_trainer(self.tokenizer, full_ctx)
             scored["tokens"].append(tok["tokens"])
@@ -636,13 +602,10 @@ class InterleavedInlineEnv(BaseEnv):
             scored["scores"].append(reward)
             self.percent_correct_buffer.append(max(reward, 0))
 
-
         # --- harvest a success for dynamic few‑shots --------------------
         for idx, sc in enumerate(scored["scores"]):
             reply_txt = completions.choices[idx].text
-            has_call = (
-                "<tool_call" in reply_txt.lower()
-            )
+            has_call = "<tool_call" in reply_txt.lower()
             if sc >= 1.0 and has_call:
                 # Build (user, assistant) pair from this successful rollout
                 u = {"role": "user", "content": prompt_msgs[-1]["content"]}
@@ -652,16 +615,18 @@ class InterleavedInlineEnv(BaseEnv):
                     self.dynamic_pool.pop(0)
                 break
 
-
         return scored, []
 
-
-    async def _collect_trajectories_with_execution(self, prompt_msgs: List[Dict], expected) -> Tuple[ScoredDataGroup, List]:
+    async def _collect_trajectories_with_execution(
+        self, prompt_msgs: List[Dict], expected
+    ) -> Tuple[ScoredDataGroup, List]:
         """
         Real interleaved tool execution mode - stops at tool calls, executes them, and continues.
         Uses turn-based parallel execution for maximum efficiency.
         """
-        print(f"\n🚀 [EXECUTION MODE] Running {self.config.group_size} rollouts with parallel turn-based execution")
+        print(
+            f"\n🚀 [EXECUTION MODE] Running {self.config.group_size} rollouts with parallel turn-based execution"
+        )
 
         scored: ScoredDataGroup = {
             "tokens": [],
@@ -678,7 +643,9 @@ class InterleavedInlineEnv(BaseEnv):
         # Initialize per-rollout state
         num_rollouts = self.config.group_size
         rollout_ctxs = [prompt_msgs.copy() for _ in range(num_rollouts)]
-        assistant_msgs = [{"role": "assistant", "content": ""} for _ in range(num_rollouts)]
+        assistant_msgs = [
+            {"role": "assistant", "content": ""} for _ in range(num_rollouts)
+        ]
         done = [False] * num_rollouts
         final_results = [None] * num_rollouts
         executed_tools = [[] for _ in range(num_rollouts)]
@@ -690,7 +657,9 @@ class InterleavedInlineEnv(BaseEnv):
         max_turns = MAX_ROLLOUT_TURNS
 
         while not all(done) and turn_idx < max_turns:
-            print(f"\n[TURN {turn_idx + 1}] Processing {sum(1 for d in done if not d)} active rollouts")
+            print(
+                f"\n[TURN {turn_idx + 1}] Processing {sum(1 for d in done if not d)} active rollouts"
+            )
 
             # Build prompts for active rollouts only
             active_prompts = []
@@ -713,12 +682,20 @@ class InterleavedInlineEnv(BaseEnv):
             # Execute inference for this turn
             if turn_idx == 0:
                 # First turn: all prompts are identical, use batched inference
-                print(f"[TURN {turn_idx + 1}] Batching {len(active_prompts)} identical prompts")
-                replies = await self._batch_identical_prompts(active_prompts[0], len(active_prompts), turn_idx)
+                print(
+                    f"[TURN {turn_idx + 1}] Batching {len(active_prompts)} identical prompts"
+                )
+                replies = await self._batch_identical_prompts(
+                    active_prompts[0], len(active_prompts), turn_idx
+                )
             else:
                 # Subsequent turns: prompts may be heterogeneous, use parallel inference
-                print(f"⚡ [TURN {turn_idx + 1}] Parallelizing {len(active_prompts)} heterogeneous prompts")
-                replies = await self._batch_heterogeneous_prompts(active_prompts, turn_idx)
+                print(
+                    f"⚡ [TURN {turn_idx + 1}] Parallelizing {len(active_prompts)} heterogeneous prompts"
+                )
+                replies = await self._batch_heterogeneous_prompts(
+                    active_prompts, turn_idx
+                )
 
             # Process each active rollout's reply
             for prompt_idx, rollout_idx in enumerate(active_indices):
@@ -730,23 +707,25 @@ class InterleavedInlineEnv(BaseEnv):
                 last_turns[rollout_idx] = reply
                 assistant_msgs[rollout_idx]["content"] += reply
 
-
                 raw = assistant_msgs[rollout_idx]["content"]
-
 
                 if "</think>" in raw:
                     # Think block closed
                     boxed = self._boxed_after_think(raw)
                     if boxed:
                         # Boxed answer found after </think>
-                        print(f"🎯 [ROLLOUT {rollout_idx}] Found boxed answer after </think> - marking complete")
+                        print(
+                            f"🎯 [ROLLOUT {rollout_idx}] Found boxed answer after </think> - marking complete"
+                        )
                         done[rollout_idx] = True
                         rollout_ctxs[rollout_idx].append(assistant_msgs[rollout_idx])
                         final_results[rollout_idx] = raw
                         continue
                     else:
                         # Think block closed but no boxed answer
-                        print(f"❌ [ROLLOUT {rollout_idx}] </think> closed but no boxed answer - marking failed")
+                        print(
+                            f"❌ [ROLLOUT {rollout_idx}] </think> closed but no boxed answer - marking failed"
+                        )
                         done[rollout_idx] = True
                         final_results[rollout_idx] = raw
                         continue
@@ -754,15 +733,21 @@ class InterleavedInlineEnv(BaseEnv):
                     # Think block not closed
                     if self._is_new_tool_call(raw):
                         # Tool call present, continue to next turn after executing tool
-                        print(f"🔧 [ROLLOUT {rollout_idx}] Tool call detected - extracting and executing")
+                        print(
+                            f"🔧 [ROLLOUT {rollout_idx}] Tool call detected - extracting and executing"
+                        )
                         call_json = self._extract_last_call(raw)
                         if call_json is None:
-                            print(f"❌ [ROLLOUT {rollout_idx}] Failed to parse tool call JSON - marking inactive")
+                            print(
+                                f"❌ [ROLLOUT {rollout_idx}] Failed to parse tool call JSON - marking inactive"
+                            )
                             done[rollout_idx] = True
                             final_results[rollout_idx] = raw
                             continue
 
-                        print(f"🔧 [ROLLOUT {rollout_idx}] Executing {call_json['name']} with args: {call_json['arguments']}")
+                        print(
+                            f"🔧 [ROLLOUT {rollout_idx}] Executing {call_json['name']} with args: {call_json['arguments']}"
+                        )
                         try:
                             result = await self._exec_tool(call_json)
                             executed_tools[rollout_idx].append(call_json)
@@ -770,25 +755,39 @@ class InterleavedInlineEnv(BaseEnv):
                             print(f"✅ [ROLLOUT {rollout_idx}] Tool result: {result}")
                             # Clean up any malformed/partial closing tags before appending
                             content = assistant_msgs[rollout_idx]["content"]
-                            content = re.sub(r'</tool_call.*?$', '', content, flags=re.MULTILINE)
+                            content = re.sub(
+                                r"</tool_call.*?$", "", content, flags=re.MULTILINE
+                            )
                             assistant_msgs[rollout_idx]["content"] = content
                             # Append proper closing tag and response
                             assistant_msgs[rollout_idx]["content"] += "</tool_call>\n"
-                            assistant_msgs[rollout_idx]["content"] += f"<tool_response>{json.dumps(result)}</tool_response>\n"
-                            print(f"📝 [ROLLOUT {rollout_idx}] Added tool response to context")
+                            assistant_msgs[rollout_idx][
+                                "content"
+                            ] += (
+                                f"<tool_response>{json.dumps(result)}</tool_response>\n"
+                            )
+                            print(
+                                f"📝 [ROLLOUT {rollout_idx}] Added tool response to context"
+                            )
                             continue
                         except Exception as e:
-                            print(f"❌ [ROLLOUT {rollout_idx}] Tool execution failed: {e}")
+                            print(
+                                f"❌ [ROLLOUT {rollout_idx}] Tool execution failed: {e}"
+                            )
                             done[rollout_idx] = True
                             final_results[rollout_idx] = raw
                             continue
                     else:
                         # No new tool call or boxed answer yet
                         if turn_idx + 1 < max_turns:
-                            print(f"🔄 [ROLLOUT {rollout_idx}] Still thinking—continuing to next turn")
+                            print(
+                                f"🔄 [ROLLOUT {rollout_idx}] Still thinking—continuing to next turn"
+                            )
                             continue
                         # max turns reached, fail
-                        print(f"⚠️ [ROLLOUT {rollout_idx}] Max turns reached without completion—marking failed")
+                        print(
+                            f"⚠️ [ROLLOUT {rollout_idx}] Max turns reached without completion—marking failed"
+                        )
                         done[rollout_idx] = True
                         final_results[rollout_idx] = raw
                         continue
@@ -800,7 +799,11 @@ class InterleavedInlineEnv(BaseEnv):
 
         # -- Summary of all rollouts before scoring --
         expr = None
-        if isinstance(expected, dict) and "arguments" in expected and "code" in expected["arguments"]:
+        if (
+            isinstance(expected, dict)
+            and "arguments" in expected
+            and "code" in expected["arguments"]
+        ):
             code_str = expected["arguments"]["code"]
             if code_str.startswith("print(") and code_str.endswith(")"):
                 expr = code_str[6:-1]
@@ -809,12 +812,18 @@ class InterleavedInlineEnv(BaseEnv):
         any_success = False
         for i in range(num_rollouts):
             # Get full text and boxed value
-            raw_full = final_results[i] if final_results[i] is not None else assistant_msgs[i]["content"]
+            raw_full = (
+                final_results[i]
+                if final_results[i] is not None
+                else assistant_msgs[i]["content"]
+            )
             boxed_val = self._boxed_after_think(raw_full)
             # Determine correctness against expected
             is_correct = False
             if expr is not None and boxed_val is not None:
-                is_correct = (boxed_val == expr or self._canon_num(boxed_val) == self._canon_num(expr))
+                is_correct = boxed_val == expr or self._canon_num(
+                    boxed_val
+                ) == self._canon_num(expr)
             # Choose color and label
             if is_correct:
                 label = "CORRECT"
@@ -839,13 +848,19 @@ class InterleavedInlineEnv(BaseEnv):
             print(f"Expected answer: {expr!r}")
 
         if not any_success:
-            print(f"⚠️ All {num_rollouts} rollouts failed to produce a boxed answer. Invalidating group.")
+            print(
+                f"⚠️ All {num_rollouts} rollouts failed to produce a boxed answer. Invalidating group."
+            )
             return None, []
         # -- End summary --
 
         for rollout_idx in range(num_rollouts):
             try:
-                raw = final_results[rollout_idx] if final_results[rollout_idx] is not None else assistant_msgs[rollout_idx]["content"]
+                raw = (
+                    final_results[rollout_idx]
+                    if final_results[rollout_idx] is not None
+                    else assistant_msgs[rollout_idx]["content"]
+                )
 
                 toks = self.tokenizer.encode(raw)
                 if len(toks) > MAX_REPLY_TOKENS:
@@ -878,11 +893,16 @@ class InterleavedInlineEnv(BaseEnv):
                 else:
                     end_pos = raw.lower().find("</think>")
                     # Check for tool calls or responses after </think>
-                    if "<tool_call" in raw[end_pos + len("</think>"):].lower() or "<tool_response" in raw[end_pos + len("</think>"):].lower():
+                    if (
+                        "<tool_call" in raw[end_pos + len("</think>") :].lower()
+                        or "<tool_response" in raw[end_pos + len("</think>") :].lower()
+                    ):
                         reward = -1.0
                     # Add bonus for tool usage if the completion was successful
                     elif reward > 0 and len(executed_tools[rollout_idx]) > 0:
-                        print(f"🌟 [ROLLOUT {rollout_idx}] Adding tool usage bonus (+{TOOL_USAGE_BONUS})")
+                        print(
+                            f"🌟 [ROLLOUT {rollout_idx}] Adding tool usage bonus (+{TOOL_USAGE_BONUS})"
+                        )
                         reward += TOOL_USAGE_BONUS
 
                 tok = tokenize_for_trainer(self.tokenizer, full_ctx)
@@ -892,7 +912,9 @@ class InterleavedInlineEnv(BaseEnv):
                 self.percent_correct_buffer.append(max(reward, 0))
 
                 # Add successful completions to dynamic pool regardless of number of turns
-                if reward >= 1.0:  # This will now include both 1.0 and 1.0 + TOOL_USAGE_BONUS
+                if (
+                    reward >= 1.0
+                ):  # This will now include both 1.0 and 1.0 + TOOL_USAGE_BONUS
                     u = {"role": "user", "content": prompt_msgs[-1]["content"]}
                     a = {"role": "assistant", "content": raw}
                     self.dynamic_pool.append((u, a))
@@ -905,7 +927,9 @@ class InterleavedInlineEnv(BaseEnv):
                 scored["scores"].append(-1.0)
                 self.percent_correct_buffer.append(0.0)
 
-        print(f"\n🏁 [EXECUTION MODE] Completed all rollouts. Average reward: {sum(scored['scores'])/len(scored['scores']):.3f}")
+        print(
+            f"\n🏁 [EXECUTION MODE] Completed all rollouts. Average reward: {sum(scored['scores'])/len(scored['scores']):.3f}"
+        )
 
         # -- Per-rollout score summary --
         print("\n\033[96m📊 Rollout score summary:\033[0m")
@@ -915,15 +939,17 @@ class InterleavedInlineEnv(BaseEnv):
             print(f"  \033[93m[ROLLOUT {i}]\033[0m Score: {color}{score}{reset}")
 
         # Add warning if all rollouts failed
-        if all(score < 0 for score in scored['scores']):
-            print(f"⚠️ [WARNING] All {len(scored['scores'])} rollouts failed with negative rewards!")
-            print(f"   This may indicate a problem with the model, prompt, or token budget.")
+        if all(score < 0 for score in scored["scores"]):
+            print(
+                f"⚠️ [WARNING] All {len(scored['scores'])} rollouts failed with negative rewards!"
+            )
+            print(
+                f"   This may indicate a problem with the model, prompt, or token budget."
+            )
             # Signal failure to the outer loop
             return None, []
 
-
         return scored, []
-
 
     # --------------------- evaluation loop -------------------------------- #
     async def evaluate(self, *_, **__):
@@ -934,7 +960,6 @@ class InterleavedInlineEnv(BaseEnv):
         if not hasattr(self, "test"):
             return
 
-
         total, correct = 0, 0
         for sample in self.test:
             # Build prompt exactly like get_next_item but without mutating self.iter
@@ -944,7 +969,6 @@ class InterleavedInlineEnv(BaseEnv):
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": prompt_text},
             ]
-
 
             prompt = self.tokenizer.apply_chat_template(
                 messages, add_generation_prompt=True, tokenize=False
@@ -962,16 +986,13 @@ class InterleavedInlineEnv(BaseEnv):
                 correct += 1
             total += 1
 
-
         accuracy = correct / max(total, 1)
         self.eval_metrics.append(("eval/percent_correct", accuracy))
-
 
     # --------------------- dataset iterator ------------------------------- #
     async def get_next_item(self):
         idx = self.rng.randint(0, len(self.train) - 1)
         sample = self.train[idx]
-
 
         prompt_text = sample["problem"]
         expr = sample["expected_answer"].strip()
@@ -979,7 +1000,6 @@ class InterleavedInlineEnv(BaseEnv):
             "name": "python_interpreter",
             "arguments": {"code": f"print({expr})"},
         }
-
 
         # ---------------- few‑shot demonstration ---------------- #
         fewshot_user = {
@@ -1012,7 +1032,6 @@ class InterleavedInlineEnv(BaseEnv):
             ),
         }
 
-
         # --- second tiny example: simple arithmetic with calculator ---- #
         fewshot_user2 = {"role": "user", "content": "What is (2 + 3) * 4 ?"}
         fewshot_assistant2 = {
@@ -1033,25 +1052,21 @@ class InterleavedInlineEnv(BaseEnv):
             ),
         }
 
-
         # --------------- build final prompt messages ------------ #
         system_msg = {"role": "system", "content": SYSTEM_PROMPT}
         real_user = {
             "role": "user",
             "content": (
                 f"{prompt_text} \nThis is a math problem, you must use the python_interpreter or calculator tool call to solve it."
-                #"Before you call the tools, try to solve it step-by-step and then use the tool to verify"
+                # "Before you call the tools, try to solve it step-by-step and then use the tool to verify"
             ),
         }
 
-
         # Optionally insert one real demo from dynamic_pool
         dyn = list(self.dynamic_pool[-1]) if self.dynamic_pool else []
 
-
         # Optionally insert one real demo from dynamic_pool
         dyn = list(self.dynamic_pool[-1]) if self.dynamic_pool else []
-
 
         messages = (
             [
@@ -1065,13 +1080,10 @@ class InterleavedInlineEnv(BaseEnv):
             + [real_user]
         )
 
-
         # Freeze for hashing
         frozen = tuple(frozenset(m.items()) for m in messages)
 
-
         return (frozen, answer_call)
-
 
     # --------------------- wandb logging ---------------------------------- #
     async def create_rollout_table(self, metrics):
@@ -1084,7 +1096,6 @@ class InterleavedInlineEnv(BaseEnv):
         self.rollouts_for_wandb = []
         return metrics
 
-
     async def wandb_log(self, metrics: Dict = None):
         metrics = metrics or {}
         if self.percent_correct_buffer:
@@ -1096,8 +1107,6 @@ class InterleavedInlineEnv(BaseEnv):
             metrics[k] = v
         self.eval_metrics = []
         await super().wandb_log(metrics)
-
-
 
 
 # -------------------------------------------------------------------------- #
