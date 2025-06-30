@@ -25,7 +25,6 @@ import os
 import re
 from typing import Dict, List, Optional, Tuple, Union
 
-
 # Set to True to always print debug information.
 DEBUG = True
 EXECUTION_FEEDBACK = True
@@ -180,6 +179,7 @@ class InterleavedInlineEnv(BaseEnv):
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
             max_gen_per_turn=MAX_GEN_PER_TURN,
+            max_gen_per_turn=MAX_GEN_PER_TURN,
         )
         servers = [
             APIServerConfig(
@@ -214,9 +214,9 @@ class InterleavedInlineEnv(BaseEnv):
         stream_ds = load_dataset(  # ≈50 k rows total → stream
             "NVIDIA/OpenMathReasoning",
             split="cot",
-            #"open-r1/OpenR1-Math-220k",
-            #"nvidia/AceReason-Math",
-            #split="train",
+            # "open-r1/OpenR1-Math-220k",
+            # "nvidia/AceReason-Math",
+            # split="train",
             streaming=True,
         )
 
@@ -246,6 +246,7 @@ class InterleavedInlineEnv(BaseEnv):
         if DEBUG:
             print(f"[DEBUG setup] kept {len(subset)} rows from Dataset")
 
+        split = full.train_test_split(test_size=0.02, seed=42)
 
         split = full.train_test_split(test_size=0.02, seed=42)
         self.train, self.test = split["train"], split["test"]
@@ -568,6 +569,7 @@ class InterleavedInlineEnv(BaseEnv):
             if len(toks) > MAX_REPLY_TOKENS:
                 toks = toks[:MAX_REPLY_TOKENS]
                 raw = self.tokenizer.decode(toks)
+                raw = self.tokenizer.decode(toks)
                 if DEBUG:
                     print(f"[DEBUG] truncated reply {idx} to {len(toks)} tokens")
             assistant_msg = {"role": "assistant", "content": raw}
@@ -589,8 +591,21 @@ class InterleavedInlineEnv(BaseEnv):
                 )
                 else None
             )
+            expr = (
+                expected["arguments"]["code"][6:-1]
+                if (
+                    isinstance(expected, dict)
+                    and "arguments" in expected
+                    and "code" in expected["arguments"]
+                    and expected["arguments"]["code"].startswith("print(")
+                    and expected["arguments"]["code"].endswith(")")
+                )
+                else None
+            )
             boxed = self._boxed_after_think(raw)
 
+            same = boxed == expr or (
+                boxed and expr and self._canon_num(boxed) == self._canon_num(expr)
 
             same = boxed == expr or (
                 boxed and expr and self._canon_num(boxed) == self._canon_num(expr)
@@ -602,7 +617,11 @@ class InterleavedInlineEnv(BaseEnv):
                 # no tool_call tags are allowed *outside* the think block
                 end_pos = raw.lower().find("</think>")
                 if "<tool_call" in raw[end_pos + len("</think>") :].lower():
+                if "<tool_call" in raw[end_pos + len("</think>") :].lower():
                     if DEBUG:
+                        print(
+                            "[DEBUG] tool_call found outside </think>; setting reward = -1"
+                        )
                         print(
                             "[DEBUG] tool_call found outside </think>; setting reward = -1"
                         )
@@ -988,11 +1007,14 @@ class InterleavedInlineEnv(BaseEnv):
                 '"import sympy as sp\\n'
                 "x=sp.symbols('x')\\n"
                 'print(sp.integrate(x**2,(x,0,1)))"}}\n'
+                'print(sp.integrate(x**2,(x,0,1)))"}}\n'
                 "</tool_call>\n"
+                '<tool_response>{"result": 1/3}</tool_response>\n'
                 '<tool_response>{"result": 1/3}</tool_response>\n'
                 "The interpreter returns 1/3, so the value is 0.333̅.\n"
                 "</think>\n\n"
                 "The integral equals \\boxed{\\tfrac{1}{3}} \\approx 0.333."
+            ),
             ),
         }
 
@@ -1008,9 +1030,13 @@ class InterleavedInlineEnv(BaseEnv):
                 '<tool_call>{"name":"calculator", '
                 '"arguments":{"expr":"(2+3)*4"}}</tool_call>\n'
                 '<tool_response>{"value": 20}</tool_response>\n'
+                '<tool_call>{"name":"calculator", '
+                '"arguments":{"expr":"(2+3)*4"}}</tool_call>\n'
+                '<tool_response>{"value": 20}</tool_response>\n'
                 "The tool also says 20, matching my head‑math.\n"
                 "</think>\n\n"
                 "Therefore the answer is \\boxed{20}."
+            ),
             ),
         }
 
