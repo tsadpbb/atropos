@@ -561,7 +561,7 @@ class InterleavedInlineEnv(BaseEnv):
             "overrides": None,
             "images": None,
         }
-        
+
         for idx, choice in enumerate(completions.choices):
             raw = choice.text or ""
             toks = self.tokenizer.encode(raw)
@@ -662,7 +662,7 @@ class InterleavedInlineEnv(BaseEnv):
         Uses turn-based parallel execution for maximum efficiency.
         """
         print(f"\n🚀 [EXECUTION MODE] Running {self.config.group_size} rollouts with parallel turn-based execution")
-        
+
         scored: ScoredDataGroup = {
             "tokens": [],
             "masks": [],
@@ -674,7 +674,7 @@ class InterleavedInlineEnv(BaseEnv):
             "overrides": None,
             "images": None,
         }
-        
+
         # Initialize per-rollout state
         num_rollouts = self.config.group_size
         rollout_ctxs = [prompt_msgs.copy() for _ in range(num_rollouts)]
@@ -685,17 +685,17 @@ class InterleavedInlineEnv(BaseEnv):
 
         # Track the most recent generation chunk for each rollout
         last_turns: List[str] = [""] * num_rollouts
-        
+
         turn_idx = 0
         max_turns = MAX_ROLLOUT_TURNS
-        
+
         while not all(done) and turn_idx < max_turns:
             print(f"\n[TURN {turn_idx + 1}] Processing {sum(1 for d in done if not d)} active rollouts")
-            
+
             # Build prompts for active rollouts only
             active_prompts = []
             active_indices = []
-            
+
             for i in range(num_rollouts):
                 if not done[i]:
                     prompt_txt = self.tokenizer.apply_chat_template(
@@ -706,10 +706,10 @@ class InterleavedInlineEnv(BaseEnv):
                     prompt_txt += assistant_msgs[i]["content"]
                     active_prompts.append(prompt_txt)
                     active_indices.append(i)
-            
+
             if not active_prompts:
                 break
-                
+
             # Execute inference for this turn
             if turn_idx == 0:
                 # First turn: all prompts are identical, use batched inference
@@ -719,12 +719,12 @@ class InterleavedInlineEnv(BaseEnv):
                 # Subsequent turns: prompts may be heterogeneous, use parallel inference
                 print(f"⚡ [TURN {turn_idx + 1}] Parallelizing {len(active_prompts)} heterogeneous prompts")
                 replies = await self._batch_heterogeneous_prompts(active_prompts, turn_idx)
-            
+
             # Process each active rollout's reply
             for prompt_idx, rollout_idx in enumerate(active_indices):
                 if done[rollout_idx]:
                     continue
-                    
+
                 reply = replies[prompt_idx]
                 # Save this turn's delta for summary
                 last_turns[rollout_idx] = reply
@@ -792,9 +792,9 @@ class InterleavedInlineEnv(BaseEnv):
                         done[rollout_idx] = True
                         final_results[rollout_idx] = raw
                         continue
-            
+
             turn_idx += 1
-        
+
         # Process final results and score
         print(f"\n🏁 [EXECUTION COMPLETE] Processed {turn_idx} turns")
 
@@ -913,7 +913,7 @@ class InterleavedInlineEnv(BaseEnv):
         for i, score in enumerate(scored["scores"]):
             color = "\033[92m" if score > 0 else "\033[91m"
             print(f"  \033[93m[ROLLOUT {i}]\033[0m Score: {color}{score}{reset}")
-        
+
         # Add warning if all rollouts failed
         if all(score < 0 for score in scored['scores']):
             print(f"⚠️ [WARNING] All {len(scored['scores'])} rollouts failed with negative rewards!")
