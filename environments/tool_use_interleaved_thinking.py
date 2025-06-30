@@ -179,7 +179,6 @@ class InterleavedInlineEnv(BaseEnv):
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
             max_gen_per_turn=MAX_GEN_PER_TURN,
-            max_gen_per_turn=MAX_GEN_PER_TURN,
         )
         servers = [
             APIServerConfig(
@@ -606,9 +605,6 @@ class InterleavedInlineEnv(BaseEnv):
 
             same = boxed == expr or (
                 boxed and expr and self._canon_num(boxed) == self._canon_num(expr)
-
-            same = boxed == expr or (
-                boxed and expr and self._canon_num(boxed) == self._canon_num(expr)
             )
             reward = 1.0 if same else -1.0
             if "</think>" not in raw:
@@ -616,7 +612,6 @@ class InterleavedInlineEnv(BaseEnv):
             else:
                 # no tool_call tags are allowed *outside* the think block
                 end_pos = raw.lower().find("</think>")
-                if "<tool_call" in raw[end_pos + len("</think>") :].lower():
                 if "<tool_call" in raw[end_pos + len("</think>") :].lower():
                     if DEBUG:
                         print(
@@ -1015,7 +1010,6 @@ class InterleavedInlineEnv(BaseEnv):
                 "</think>\n\n"
                 "The integral equals \\boxed{\\tfrac{1}{3}} \\approx 0.333."
             ),
-            ),
         }
 
 
@@ -1036,7 +1030,6 @@ class InterleavedInlineEnv(BaseEnv):
                 "The tool also says 20, matching my head‑math.\n"
                 "</think>\n\n"
                 "Therefore the answer is \\boxed{20}."
-            ),
             ),
         }
 
