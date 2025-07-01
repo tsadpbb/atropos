@@ -675,7 +675,12 @@ class BaseEnv(ABC):
             for mask in group["masks"]:
                 self.completion_lengths.append(len(mask))
 
-            if abort_on_any_max_length_exceeded and any(
+            if self.max_token_len <= 0:
+                warnings.warn(
+                    f"Trainer requested to ignore max length by setting max_token_len to {self.max_token_len}, "
+                    "ensure your trainer handles this appropriately."
+                )
+            elif abort_on_any_max_length_exceeded and any(
                 [len(x) >= self.max_token_len for x in group["tokens"]]
             ):
                 logger.warning("Token length is too long in a group, skipping...")
