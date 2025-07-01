@@ -18,6 +18,7 @@ from __future__ import annotations
 
 
 import asyncio
+from atroposlib.utils.io import parse_http_response
 import httpx
 import itertools
 import json
@@ -25,16 +26,21 @@ import os
 import re
 from typing import Dict, List, Optional, Tuple, Union
 
+import logging
+import aiohttp
+
+logger = logging.getLogger(__name__)
+
 # Set to True to always print debug information.
 DEBUG = True
 EXECUTION_FEEDBACK = True
 TOOL_USAGE_BONUS = 0.2
 
 # Hard caps for generation length
-MAX_REPLY_TOKENS = 1024  # truncate any single assistant reply to ≤1024 tokens
+MAX_REPLY_TOKENS = 2048  # truncate any single assistant reply to ≤1024 tokens
 MAX_GEN_PER_TURN = 512  # never request more than 512 new tokens from the model
 # Maximum number of thinking/tool-use turns per rollout
-MAX_ROLLOUT_TURNS = 5
+MAX_ROLLOUT_TURNS = 3
 
 
 import wandb
@@ -51,10 +57,6 @@ from atroposlib.envs.base import (
 )
 from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
-
-# -------------------------------------------------------------------------- #
-#  Constants
-# -------------------------------------------------------------------------- #
 system_prompt = (
     "You are a deep thinking AI, you may use extremely long chains of thought to deeply consider the "
     "problem and deliberate with yourself via systematic reasoning processes to help come to a correct "
@@ -125,11 +127,6 @@ For reasoning tools, return interleaved tool calls within <think> </think> tags.
 SYSTEM_PROMPT = system_prompt + TOOL_SYSTEM_PROMPT
 
 
-
-
-# -------------------------------------------------------------------------- #
-#  Environment
-# -------------------------------------------------------------------------- #
 class InterleavedInlineEnv(BaseEnv):
     """
     One episode = user prompt → single assistant message with inline tool
@@ -141,7 +138,6 @@ class InterleavedInlineEnv(BaseEnv):
     _re_last_call = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>\s*$", re.S)
 
 
-    # --------------------- BaseEnv boiler‑plate --------------------------- #
     def __init__(
         self,
         config: BaseEnvConfig,
@@ -160,7 +156,26 @@ class InterleavedInlineEnv(BaseEnv):
         self.rng = random.Random()
         # Dynamic few‑shot pool: list of (user_msg, assistant_msg) tuples
         self.dynamic_pool: List[Tuple[Dict, Dict]] = []
-        self.dynamic_pool_max = 4  # keep at most 4 real examples
+        self.dynamic_pool_max = 0  # keep at most 4 real examples
+        self.max_token_len = 8192
+
+    async def get_server_info(self):
+        """Override to prevent server from overwriting our max_token_len"""
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.config.rollout_server_url}/info") as resp:
+                data = await parse_http_response(resp, logger)
+                if data["batch_size"] != -1:
+                    self.config.batch_size = data["batch_size"]
+                # Log what the server tried to set max_token_len to
+                if data["max_token_len"] != -1:
+                    logger.info(f"Server tried to set max_token_len to {data['max_token_len']}, keeping our value of {self.max_token_len}")
+        if self.config.batch_size == -1:
+            logging.warning("Batch size not set by config or server!")
+        if self.config.group_size > self.config.batch_size:
+            raise ValueError(
+                f"group_size ({self.config.group_size}) "
+                f"must be less than batch_size ({self.config.batch_size})"
+            )
 
 
     @classmethod
@@ -173,7 +188,7 @@ class InterleavedInlineEnv(BaseEnv):
             total_steps=2000,
             batch_size=1024,
             steps_per_eval=20,
-            max_token_length=16 * 1024,
+            max_token_length=16 * 8192,
             inference_weight=1.0,
             wandb_name="toolcall_interleaved",
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
@@ -199,23 +214,20 @@ class InterleavedInlineEnv(BaseEnv):
 
         We keep only rows whose *answer* looks purely numeric so the
         calculator / python_interpreter tools can verify them automatically.
-
+ 
 
         The env‑var SUBSET_ROWS (default 1000) controls how many rows we keep.
         """
-        import os
-        import re
-
 
         N = int(os.getenv("SUBSET_ROWS", "1000"))
 
 
         stream_ds = load_dataset(  # ≈50 k rows total → stream
-            "NVIDIA/OpenMathReasoning",
-            split="cot",
+            #"NVIDIA/OpenMathReasoning",
+            #split="cot",
             # "open-r1/OpenR1-Math-220k",
-            # "nvidia/AceReason-Math",
-            # split="train",
+            "nvidia/AceReason-Math",
+            split="train",
             streaming=True,
         )
 
@@ -996,15 +1008,13 @@ class InterleavedInlineEnv(BaseEnv):
                 "So for x²:\n"
                 "= [x³ / 3] from 0 to 1\n"
                 "= (1³ / 3) - (0³ / 3) = 1/3 - 0 = 1/3\n"
-                "That checks out, but let's confirm with SymPy just to be sure."
+                "That checks out, but let's confirm with SymPy just to be sure.\n"
                 '<tool_call>{"name":"python_interpreter", '
                 '"arguments":{"code":'
                 '"import sympy as sp\\n'
                 "x=sp.symbols('x')\\n"
                 'print(sp.integrate(x**2,(x,0,1)))"}}\n'
-                'print(sp.integrate(x**2,(x,0,1)))"}}\n'
                 "</tool_call>\n"
-                '<tool_response>{"result": 1/3}</tool_response>\n'
                 '<tool_response>{"result": 1/3}</tool_response>\n'
                 "The interpreter returns 1/3, so the value is 0.333̅.\n"
                 "</think>\n\n"
@@ -1024,9 +1034,6 @@ class InterleavedInlineEnv(BaseEnv):
                 '<tool_call>{"name":"calculator", '
                 '"arguments":{"expr":"(2+3)*4"}}</tool_call>\n'
                 '<tool_response>{"value": 20}</tool_response>\n'
-                '<tool_call>{"name":"calculator", '
-                '"arguments":{"expr":"(2+3)*4"}}</tool_call>\n'
-                '<tool_response>{"value": 20}</tool_response>\n'
                 "The tool also says 20, matching my head‑math.\n"
                 "</think>\n\n"
                 "Therefore the answer is \\boxed{20}."
@@ -1043,11 +1050,6 @@ class InterleavedInlineEnv(BaseEnv):
                 #"Before you call the tools, try to solve it step-by-step and then use the tool to verify"
             ),
         }
-
-
-        # Optionally insert one real demo from dynamic_pool
-        dyn = list(self.dynamic_pool[-1]) if self.dynamic_pool else []
-
 
         # Optionally insert one real demo from dynamic_pool
         dyn = list(self.dynamic_pool[-1]) if self.dynamic_pool else []
@@ -1098,8 +1100,5 @@ class InterleavedInlineEnv(BaseEnv):
         await super().wandb_log(metrics)
 
 
-
-
-# -------------------------------------------------------------------------- #
 if __name__ == "__main__":
     InterleavedInlineEnv.cli()
