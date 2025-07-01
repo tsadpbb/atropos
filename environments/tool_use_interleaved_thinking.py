@@ -16,16 +16,17 @@ class is copied here so nothing breaks when you swap env names.
 from __future__ import annotations
 
 import asyncio
-from atroposlib.utils.io import parse_http_response
-import httpx
 import itertools
 import json
+import logging
 import os
 import re
 from typing import Dict, List, Optional, Tuple, Union
 
-import logging
 import aiohttp
+import httpx
+
+from atroposlib.utils.io import parse_http_response
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +134,6 @@ class InterleavedInlineEnv(BaseEnv):
     name = "interleaved_inline"
     _re_last_call = re.compile(r"<tool_call>\s*(.*?)\s*</tool_call>\s*$", re.S)
 
-
     def __init__(
         self,
         config: BaseEnvConfig,
@@ -163,7 +163,9 @@ class InterleavedInlineEnv(BaseEnv):
                     self.config.batch_size = data["batch_size"]
                 # Log what the server tried to set max_token_len to
                 if data["max_token_len"] != -1:
-                    logger.info(f"Server tried to set max_token_len to {data['max_token_len']}, keeping our value of {self.max_token_len}")
+                    logger.info(
+                        f"Server tried to set max_token_len to {data['max_token_len']}, keeping our value of {self.max_token_len}"
+                    )
         if self.config.batch_size == -1:
             logging.warning("Batch size not set by config or server!")
         if self.config.group_size > self.config.batch_size:
@@ -171,7 +173,6 @@ class InterleavedInlineEnv(BaseEnv):
                 f"group_size ({self.config.group_size}) "
                 f"must be less than batch_size ({self.config.batch_size})"
             )
-
 
     @classmethod
     def config_init(cls):
@@ -208,7 +209,7 @@ class InterleavedInlineEnv(BaseEnv):
 
         We keep only rows whose *answer* looks purely numeric so the
         calculator / python_interpreter tools can verify them automatically.
- 
+
 
         The env‑var SUBSET_ROWS (default 1000) controls how many rows we keep.
         """
@@ -216,8 +217,8 @@ class InterleavedInlineEnv(BaseEnv):
         N = int(os.getenv("SUBSET_ROWS", "1000"))
 
         stream_ds = load_dataset(  # ≈50 k rows total → stream
-            #"NVIDIA/OpenMathReasoning",
-            #split="cot",
+            # "NVIDIA/OpenMathReasoning",
+            # split="cot",
             # "open-r1/OpenR1-Math-220k",
             "nvidia/AceReason-Math",
             split="train",
