@@ -133,7 +133,7 @@ class MathCurriculum:
             66,  # Geometric Progression
             67,  # Geometric Mean of N Numbers
             68,  # Harmonic Mean of N Numbers
-            69,  # Euclidian norm or L2 norm of a vector
+            69,  # Euclidean norm or L2 norm of a vector
             74,  # Inverse of a Matrix
             85,  # Converts decimal to Roman Numerals
             92,  # Complex To Polar Form
