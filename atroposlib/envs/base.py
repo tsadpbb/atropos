@@ -394,7 +394,9 @@ class BaseEnv(ABC):
             # Setup wandb getting the group and project via the server
             while self.wandb_project is None:
                 async with aiohttp.ClientSession() as session:
-                    async with session.get(f"{self.config.rollout_server_url}/wandb_info") as resp:
+                    async with session.get(
+                        f"{self.config.rollout_server_url}/wandb_info"
+                    ) as resp:
                         data = await parse_http_response(resp, logger)
                         self.wandb_group = data["group"]
                         self.wandb_project = data["project"]
@@ -407,7 +409,9 @@ class BaseEnv(ABC):
                 if self.config.wandb_name:
                     random_id = "".join(random.choices(string.ascii_lowercase, k=6))
                     current_date = datetime.now().strftime("%Y-%m-%d")
-                    wandb_run_name = f"{self.config.wandb_name}-{current_date}-{random_id}"
+                    wandb_run_name = (
+                        f"{self.config.wandb_name}-{current_date}-{random_id}"
+                    )
 
                 wandb.init(
                     name=wandb_run_name,
