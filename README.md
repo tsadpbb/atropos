@@ -299,7 +299,7 @@ python environments/your_environment_script.py process --help
 
 ### Environment Evaluation with `evaluate`
 
-For running evaluation on environments, Atropos provides an `evaluate` subcommand that calls the environment's evaluation method:
+For running evaluation on environments, Atropos provides an `evaluate` subcommand that calls the environment's `evaluate` method:
 
 ```sh
 python gsm8k_server.py evaluate \
