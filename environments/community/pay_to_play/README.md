@@ -144,15 +144,15 @@ env = PayToPlayEnv(config, server_configs, testing=True)
 ```python
 async def training_loop():
     await env.setup()
-    
+
     for step in range(config.total_steps):
         # Get next question
         question = await env.get_next_item()
-        
+
         # Agent selects agent cards and makes payments
         # Evaluates response and gets training signal
         scored_data, _ = await env.collect_trajectories(question)
-        
+
         # Log metrics
         await env.wandb_log()
 ```
@@ -162,7 +162,7 @@ async def training_loop():
 ### Pricing Strategy
 
 - **Technical Expert ($0.03)**: Premium pricing reflects high accuracy and specialized knowledge
-- **Communication Specialist ($0.02)**: Mid-tier pricing for clarity and accessibility focus  
+- **Communication Specialist ($0.02)**: Mid-tier pricing for clarity and accessibility focus
 - **Creative Thinker ($0.01)**: Budget option encouraging creativity and innovation
 
 ### Budget Scenarios
@@ -190,7 +190,7 @@ async def _agent_select_judges(self, question: str) -> JudgeSelection:
     # 1. Agent analyzes question directly (no pre-categorization)
     # 2. Get agent card performance stats
     judge_stats = self._get_judge_performance_stats()
-    
+
     # 3. AI agent makes strategic decision with full context
     selection_response = await self.server.chat_completion(
         messages=[
@@ -198,7 +198,7 @@ async def _agent_select_judges(self, question: str) -> JudgeSelection:
             {"role": "user", "content": selection_prompt}
         ]
     )
-    
+
     # 4. Validate and execute selection
     return validated_selection
 ```
@@ -285,19 +285,19 @@ Set `testing_mode=False` for real USDC payments on Base blockchain:
 
 ## 🎖️ Key Features
 
-✅ **Multiple Specialized Agent Cards**: Different expertise areas and pricing tiers  
-✅ **Intelligent Agent Selection**: AI-driven agent card selection with dynamic question analysis  
-✅ **Budget Awareness**: Real economic constraints drive efficient learning  
-✅ **Performance Tracking**: Historical data informs future decisions  
-✅ **Blockchain Integration**: Real USDC payments on Base network  
-✅ **Comprehensive Monitoring**: Detailed metrics and decision analysis  
-✅ **Fallback Mechanisms**: Robust handling of budget constraints  
-✅ **Testing Framework**: Simulation mode for development and testing  
+✅ **Multiple Specialized Agent Cards**: Different expertise areas and pricing tiers
+✅ **Intelligent Agent Selection**: AI-driven agent card selection with dynamic question analysis
+✅ **Budget Awareness**: Real economic constraints drive efficient learning
+✅ **Performance Tracking**: Historical data informs future decisions
+✅ **Blockchain Integration**: Real USDC payments on Base network
+✅ **Comprehensive Monitoring**: Detailed metrics and decision analysis
+✅ **Fallback Mechanisms**: Robust handling of budget constraints
+✅ **Testing Framework**: Simulation mode for development and testing
 
 ## 🚧 Future Enhancements
 
 - **Dynamic Pricing**: Agent card prices adjust based on demand and performance
-- **Agent Card Reputation System**: Community-driven agent card quality ratings  
+- **Agent Card Reputation System**: Community-driven agent card quality ratings
 - **Multi-Round Evaluation**: Iterative feedback and improvement cycles
 - **Agent Card Specialization**: More granular specialty categories
 - **Economic Incentives**: Reward mechanisms for high-performing agent cards
@@ -327,4 +327,3 @@ This environment builds upon recent advances in reinforcement learning from AI f
 - **RLAIF vs. RLHF**: Lee, H., et al. (2023). "RLAIF vs. RLHF: Scaling Reinforcement Learning from Human Feedback with AI Feedback." *arXiv preprint arXiv:2309.00267*. [https://arxiv.org/abs/2309.00267](https://arxiv.org/abs/2309.00267)
 
 - **Mixture of Judges**: Xu, T., et al. (2024). "The Perfect Blend: Redefining RLHF with Mixture of Judges." *arXiv preprint arXiv:2409.20370*. [https://arxiv.org/abs/2409.20370](https://arxiv.org/abs/2409.20370)
-
