@@ -116,7 +116,7 @@ class MathCurriculum:
             56,  # Fibonacci Series
             59,  # Mean,Standard Deviation,Variance
             62,  # nth Fibonacci number
-            64,  # Binary to Hexidecimal
+            64,  # Binary to Hexadecimal
             73,  # Binary 2's Complement
             79,  # Decimal to Hexadecimal
             84,  # Converts decimal to octal
