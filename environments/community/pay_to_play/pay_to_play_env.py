@@ -14,7 +14,6 @@ License: MIT
 
 import json
 import logging
-import random
 import time
 from dataclasses import dataclass
 from decimal import Decimal
@@ -446,7 +445,8 @@ class PayToPlayEnv(BaseEnv):
                 if balance < payment_amount_usdc:
                     balance_usd = balance / (10**USDC_DECIMALS)
                     logging.error(
-                        f"❌ Insufficient USDC balance for {agent_card_name}: ${balance_usd:.6f} < ${agent_card.price_usd}"
+                        "❌ Insufficient USDC balance for "
+                        f"{agent_card_name}: ${balance_usd:.6f} < ${agent_card.price_usd}"
                     )
                     tx_hashes[agent_card_name] = None
                     continue
@@ -476,7 +476,7 @@ class PayToPlayEnv(BaseEnv):
                 )
                 tx_hash = self.w3.eth.send_raw_transaction(signed_txn.raw_transaction)
 
-                logging.info(f"📡 Transaction sent, waiting for confirmation...")
+                logging.info("📡 Transaction sent, waiting for confirmation...")
 
                 # Wait for confirmation
                 receipt = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
@@ -512,7 +512,8 @@ class PayToPlayEnv(BaseEnv):
                 f"💳 Agent USDC balance after payments: ${agent_balance_usd_after:.6f}"
             )
             logging.info(
-                f"💰 Total paid: ${total_paid} | Balance change: ${agent_balance_usd_before - agent_balance_usd_after:.6f}"
+                f"💰 Total paid: ${total_paid} | "
+                f"Balance change: ${agent_balance_usd_before - agent_balance_usd_after:.6f}"
             )
         except Exception as e:
             logging.warning(f"Could not check agent balance after payment: {e}")
@@ -541,7 +542,8 @@ class PayToPlayEnv(BaseEnv):
         # Check budget
         if not self.budget_tracker.can_afford(selection.expected_cost):
             logging.error(
-                f"⏭️ Skipping episode: Insufficient budget for evaluation. Need ${selection.expected_cost}, have ${self.budget_tracker.current_balance}"
+                f"⏭️ Skipping episode: Insufficient budget for evaluation. Need ${selection.expected_cost}, "
+                f"have ${self.budget_tracker.current_balance}"
             )
             return None, []
 
@@ -563,7 +565,8 @@ class PayToPlayEnv(BaseEnv):
 
         # Generate responses
         logging.info(
-            f"🤖 Generating {self.config.group_size} responses for question: {question[:100]}{'...' if len(question) > 100 else ''}"
+            f"🤖 Generating {self.config.group_size} responses for question: "
+            f"{question[:100]}{'...' if len(question) > 100 else ''}"
         )
 
         async def generate_responses():
@@ -664,7 +667,7 @@ Response to evaluate: {response_data['response']}
 Please evaluate the quality, accuracy, and helpfulness of this response based on your expertise in {', '.join([s.value for s in agent_card.specialties])}.
 Provide a score between 0.0 and 1.0, where 1.0 is excellent and 0.0 is poor.
 End your evaluation with \\boxed{{score}} where score is your numerical rating.
-"""
+"""  # noqa: E501
 
                 # Get agent card evaluation
                 async def get_agent_card_evaluation():
@@ -699,7 +702,8 @@ End your evaluation with \\boxed{{score}} where score is your numerical rating.
                 # Log detailed agent card feedback
                 logging.info(f"  📝 Response {i+1} Score: {score:.3f}")
                 logging.info(
-                    f"  💬 Agent card Feedback: {agent_card_response[:300]}{'...' if len(agent_card_response) > 300 else ''}"
+                    "  💬 Agent card Feedback: "
+                    f"{agent_card_response[:300]}{'...' if len(agent_card_response) > 300 else ''}"
                 )
 
                 # Update agent card statistics
@@ -710,7 +714,8 @@ End your evaluation with \\boxed{{score}} where score is your numerical rating.
                 ) / agent_card.total_evaluations
 
             logging.info(
-                f"🧑‍⚖️ Agent card {agent_card_name} completed evaluation - Average score: {sum(agent_card_scores)/len(agent_card_scores):.3f}"
+                f"🧑‍⚖️ Agent card {agent_card_name} completed evaluation - "
+                f"Average score: {sum(agent_card_scores)/len(agent_card_scores):.3f}"
             )
 
             all_scores.append(agent_card_scores)
@@ -736,7 +741,8 @@ End your evaluation with \\boxed{{score}} where score is your numerical rating.
             )
 
         logging.info(
-            f"🎯 Evaluation Summary: Scores range {min(aggregated_scores):.3f} - {max(aggregated_scores):.3f}, Average: {sum(aggregated_scores)/len(aggregated_scores):.3f}"
+            f"🎯 Evaluation Summary: Scores range {min(aggregated_scores):.3f} - {max(aggregated_scores):.3f}, "
+            f"Average: {sum(aggregated_scores)/len(aggregated_scores):.3f}"
         )
 
         # Create scored data
@@ -831,7 +837,10 @@ End your evaluation with \\boxed{{score}} where score is your numerical rating.
             # Evaluate with each agent card (no payment required for eval)
             question_scores = []
             for agent_card_name, agent_card in self.agent_cards.items():
-                eval_prompt = f"Question: {question}\n\nResponse: {response}\n\nEvaluate this response based on your expertise:"
+                eval_prompt = (
+                    f"Question: {question}\n\nResponse: {response}\n\n"
+                    "Evaluate this response based on your expertise:"
+                )
 
                 agent_card_completion = await self.server.chat_completion(
                     messages=[
@@ -1071,7 +1080,7 @@ End your evaluation with \\boxed{{score}} where score is your numerical rating.
     async def _agent_select_agent_cards(self, question: str) -> AgentCardSelection:
         """Agent makes strategic decision about which agent cards to hire."""
         # Get agent card performance history
-        agent_card_stats = self._get_agent_card_performance_stats()
+        agent_card_stats = self._get_agent_card_performance_stats()  # noqa: F841
 
         # Analyze the question to understand its requirements
         question_analysis = self._analyze_question_requirements(question)
@@ -1100,7 +1109,8 @@ Select 1-2 agent cards by ID. Respond with JSON:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a strategic AI agent. Select agent cards for evaluation. Respond only with valid JSON.",
+                        "content": "You are a strategic AI agent. Select agent cards for evaluation. "
+                        "Respond only with valid JSON.",
                     },
                     {"role": "user", "content": selection_prompt},
                 ],
