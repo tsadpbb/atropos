@@ -155,6 +155,10 @@ class BaseEnvConfig(BaseModel):
         default=None,
         description="Path to save the groups, if set, will write groups to this jsonl",
     )
+    data_dir_to_save_evals: Optional[str] = Field(
+        default=None,
+        description="Directory to save evaluation results",
+    )
     min_items_sent_before_logging: int = Field(
         default=2,
         description="Minimum number of items sent before logging, if 0 or less, logs every time",
