@@ -712,7 +712,7 @@ class BaseEnv(ABC):
         if verbose:
             from atroposlib.utils.display import display_metrics_table
 
-            display_metrics_table(metrics, task_name, end_time - start_time)
+            display_metrics_table(task_name, metrics, start_time, end_time)
 
         # Build evaluation result structure - skeleton of lighteval's
         task_key = f"atropos|{task_name}|0"

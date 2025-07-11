@@ -3,7 +3,7 @@
 from typing import Dict
 
 
-def format_evaluation_table(
+def display_metrics_table(
     task_name: str, metrics: Dict, start_time: float, end_time: float
 ) -> None:
     """
