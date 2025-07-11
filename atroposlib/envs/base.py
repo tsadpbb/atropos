@@ -714,7 +714,7 @@ class BaseEnv(ABC):
 
             display_metrics_table(metrics, task_name, end_time - start_time)
 
-        # Build the simplified evaluation result structure (only fields used by upload script)
+        # Build evaluation result structure - skeleton of lighteval's
         task_key = f"atropos|{task_name}|0"
 
         eval_result = {
