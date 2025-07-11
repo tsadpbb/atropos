@@ -170,16 +170,16 @@ class GSM8kEnv(BaseEnv):
             temperature=0.0,
             split="eval",
         )
-        
+
         response_content = completion.choices[0].message.content
-        
+
         # Parse gold answer
         gold_parsed = parse(
             "\\boxed{" + answer + "}",
             extraction_mode="first_match",
             extraction_config=[LatexExtractionConfig()],
         )
-        
+
         # Parse model answer
         answer_parsed = parse(
             response_content.split("</think>")[-1],
@@ -199,16 +199,16 @@ class GSM8kEnv(BaseEnv):
             ],
             extraction_mode="first_match",
         )
-        
+
         # Calculate score
         score = 1 if verify(answer_parsed, gold_parsed) else 0
-        
+
         # Build detailed sample (convert parsed results to JSON-serializable format)
         sample = {
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question},
-                {"role": "assistant", "content": response_content}
+                {"role": "assistant", "content": response_content},
             ],
             "question": question,
             "gold_answer": answer,
@@ -217,40 +217,47 @@ class GSM8kEnv(BaseEnv):
             "score": int(score),
             "correct": bool(score),
             "finish_reason": completion.choices[0].finish_reason,
-            "response_after_think": response_content.split("</think>")[-1] if "</think>" in response_content else response_content,
+            "response_after_think": (
+                response_content.split("</think>")[-1]
+                if "</think>" in response_content
+                else response_content
+            ),
         }
-        
+
         return {"score": score, "sample": sample}
 
     async def evaluate(self, *args, **kwargs):
         import time
+
         start_time = time.time()
-        
+
         eval_tasks = []
         for item in self.test:
             eval_tasks.append(
-                self.rollout_and_score_eval_detailed(item["question"], item["gold_answer"])
+                self.rollout_and_score_eval_detailed(
+                    item["question"], item["gold_answer"]
+                )
             )
         results = await tqdm_asyncio.gather(*eval_tasks)
-        
+
         # Extract scores and samples
         scores = [result["score"] for result in results]
         samples = [result["sample"] for result in results]
-        
+
         percent_correct = sum(scores) / len(scores)
-        
+
         end_time = time.time()
-        
+
         # Add to existing metrics for wandb
         self.eval_metrics.append(("eval/percent_correct", percent_correct))
-        
+
         # Log evaluation results
         eval_metrics = {
             "eval/percent_correct": percent_correct,
             "eval/total_samples": len(scores),
             "eval/correct_samples": sum(scores),
         }
-        
+
         await self.evaluate_log(
             metrics=eval_metrics,
             samples=samples,
@@ -259,8 +266,8 @@ class GSM8kEnv(BaseEnv):
             generation_parameters={
                 "temperature": 0.0,
                 "max_tokens": self.config.max_token_length,
-                "split": "eval"
-            }
+                "split": "eval",
+            },
         )
 
     async def collect_trajectories(
