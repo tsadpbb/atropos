@@ -670,12 +670,6 @@ class BaseEnv(ABC):
                 "data_dir_to_save_evals is not set, skipping evaluation logging"
             )
             return
-
-        import json
-        import os
-
-        import jsonlines
-
         # Create directory if it doesn't exist
         os.makedirs(self.config.data_dir_to_save_evals, exist_ok=True)
 
@@ -868,9 +862,9 @@ class BaseEnv(ABC):
             samples_filepath = os.path.join(
                 self.config.data_dir_to_save_evals, "samples.jsonl"
             )
-            with jsonlines.open(samples_filepath, "w") as writer:
+            with open(samples_filepath, "w") as f:
                 for sample in samples:
-                    writer.write(sample)
+                    f.write(json.dumps(sample) + "\n")
             print(f"Evaluation samples saved to {samples_filepath}")
 
     @retry(
