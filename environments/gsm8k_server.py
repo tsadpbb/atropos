@@ -1,4 +1,5 @@
 import random
+import time
 from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 from datasets import load_dataset
@@ -189,8 +190,6 @@ class GSM8kEnv(BaseEnv):
         return {"score": score, "sample": sample}
 
     async def evaluate(self, *args, **kwargs):
-        import time
-
         start_time = time.time()
 
         eval_tasks = []
