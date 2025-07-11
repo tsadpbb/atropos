@@ -155,6 +155,10 @@ class BaseEnvConfig(BaseModel):
         default=None,
         description="Path to save the groups, if set, will write groups to this jsonl",
     )
+    data_dir_to_save_evals: Optional[str] = Field(
+        default=None,
+        description="Directory to save evaluation results",
+    )
     min_items_sent_before_logging: int = Field(
         default=2,
         description="Minimum number of items sent before logging, if 0 or less, logs every time",
@@ -636,6 +640,110 @@ class BaseEnv(ABC):
             # add server metrics to wandb without prepend to collate them all
             wandb_metrics.update(server_wandb_metrics)
             wandb.log(wandb_metrics, step=self.curr_step)
+
+    async def evaluate_log(
+        self,
+        metrics: Dict,
+        task_name: Optional[str] = None,
+        model_name: Optional[str] = None,
+        start_time: Optional[float] = None,
+        end_time: Optional[float] = None,
+        generation_parameters: Optional[Dict] = None,
+        samples: Optional[List[Dict]] = None,
+        verbose: bool = True,
+    ):
+        """
+        Log evaluation results to a JSON file in the format expected by nous-evals.
+
+        Args:
+            metrics: Dictionary of metrics to log (same format as wandb_log)
+            task_name: Name of the evaluation task (defaults to env name)
+            model_name: Name of the model being evaluated
+            start_time: Start time of evaluation (unix timestamp)
+            end_time: End time of evaluation (unix timestamp)
+            generation_parameters: Dictionary of generation parameters used
+            samples: List of sample dictionaries to save to samples.jsonl
+            verbose: If True, print a markdown table of the metrics
+        """
+        if self.config.data_dir_to_save_evals is None:
+            logger.warning(
+                "data_dir_to_save_evals is not set, skipping evaluation logging"
+            )
+            return
+        # Create directory if it doesn't exist
+        os.makedirs(self.config.data_dir_to_save_evals, exist_ok=True)
+
+        # Generate filename
+        filename = "metrics.json"
+        filepath = os.path.join(self.config.data_dir_to_save_evals, filename)
+
+        # Default values
+        if task_name is None:
+            if self.name:
+                task_name = f"{self.name}_eval"
+            else:
+                task_name = f"{self.__class__.__name__}_eval"
+        if model_name is None:
+            # Try to get model name from config first, then from server configs
+            model_name = getattr(self.config, "model_name", None)
+            if model_name is None and hasattr(self, "server") and self.server.servers:
+                # Get model name from first server config
+                first_server = self.server.servers[0]
+                if hasattr(first_server, "config") and hasattr(
+                    first_server.config, "model_name"
+                ):
+                    model_name = first_server.config.model_name
+        if start_time is None:
+            start_time = time.time()
+        if end_time is None:
+            end_time = time.time()
+        if generation_parameters is None:
+            generation_parameters = {}
+
+        # Try to get generation parameters from config if not provided
+        config_gen_params = {}
+        if hasattr(self.config, "max_token_length"):
+            config_gen_params["max_new_tokens"] = self.config.max_token_length
+
+        # Merge config params with passed params (passed params take precedence)
+        merged_gen_params = {**config_gen_params, **generation_parameters}
+
+        # Print metrics table if verbose
+        if verbose:
+            from atroposlib.utils.display import display_metrics_table
+
+            display_metrics_table(task_name, metrics, start_time, end_time)
+
+        # Build evaluation result structure - skeleton of lighteval's
+        task_key = f"atropos|{task_name}|0"
+
+        eval_result = {
+            "config_general": {
+                "model_name": model_name,
+                "total_evaluation_time_secondes": str(end_time - start_time),
+                "generation_parameters": merged_gen_params,
+            },
+            "results": {
+                task_key: metrics,
+                "all": metrics,
+            },
+        }
+
+        # Write main results to JSON file
+        with open(filepath, "w") as f:
+            json.dump(eval_result, f, indent=2)
+
+        print(f"Evaluation results saved to {filepath}")
+
+        # Write samples to JSONL file if provided
+        if samples:
+            samples_filepath = os.path.join(
+                self.config.data_dir_to_save_evals, "samples.jsonl"
+            )
+            with jsonlines.open(samples_filepath, "w") as writer:
+                for sample in samples:
+                    writer.write(sample)
+            print(f"Evaluation samples saved to {samples_filepath}")
 
     @retry(
         stop=stop_after_attempt(3),
