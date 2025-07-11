@@ -710,33 +710,9 @@ class BaseEnv(ABC):
 
         # Print metrics table if verbose
         if verbose:
-            print("\n" + "=" * 60)
-            print(f"Evaluation Results: {task_name}")
-            print("=" * 60)
-            header = (
-                f"|{'Groups':<20}|{'Version':<7}|{'Filter':<6}|{'n-shot':<6}|"
-                f"{'Metric':<10}|{'   ':<3}|{'Value':<10}|{'   ':<3}|{'Stderr':<10}|"
-            )
-            print(header)
-            print(
-                f"|{'-'*20}|{'-'*7}:{'-'*6}|{'-'*6}|{'-'*10}|{'-'*3}|{'-'*10}:{'-'*3}|{'-'*10}:|"
-            )
+            from atroposlib.utils.display import display_metrics_table
 
-            # Main task row
-            for metric_name, metric_value in metrics.items():
-                clean_metric_name = metric_name.replace("eval/", "").replace("_", " ")
-                direction = (
-                    "↑" if "correct" in metric_name or "acc" in metric_name else " "
-                )
-                row = (
-                    f"|{task_name:<20}|{1:<7}|{'none':<6}|{'':<6}|{clean_metric_name:<10}|"
-                    f"{direction:<3}|{metric_value:<10.4f}|{'±':<3}|{'0.0000':<10}|"
-                )
-                print(row)
-
-            print("=" * 60)
-            print(f"Evaluation completed in {end_time - start_time:.2f} seconds")
-            print("=" * 60 + "\n")
+            display_metrics_table(metrics, task_name, end_time - start_time)
 
         # Build the simplified evaluation result structure (only fields used by upload script)
         task_key = f"atropos|{task_name}|0"
