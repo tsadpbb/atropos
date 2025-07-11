@@ -710,22 +710,144 @@ class BaseEnv(ABC):
 
         # Print metrics table if verbose
         if verbose:
-            from atroposlib.utils.display import format_evaluation_table
+            print("\n" + "=" * 60)
+            print(f"Evaluation Results: {task_name}")
+            print("=" * 60)
+            header = (
+                f"|{'Groups':<20}|{'Version':<7}|{'Filter':<6}|{'n-shot':<6}|"
+                f"{'Metric':<10}|{'   ':<3}|{'Value':<10}|{'   ':<3}|{'Stderr':<10}|"
+            )
+            print(header)
+            print(
+                f"|{'-'*20}|{'-'*7}:{'-'*6}|{'-'*6}|{'-'*10}|{'-'*3}|{'-'*10}:{'-'*3}|{'-'*10}:|"
+            )
 
-            format_evaluation_table(task_name, metrics, start_time, end_time)
+            # Main task row
+            for metric_name, metric_value in metrics.items():
+                clean_metric_name = metric_name.replace("eval/", "").replace("_", " ")
+                direction = (
+                    "↑" if "correct" in metric_name or "acc" in metric_name else " "
+                )
+                row = (
+                    f"|{task_name:<20}|{1:<7}|{'none':<6}|{'':<6}|{clean_metric_name:<10}|"
+                    f"{direction:<3}|{metric_value:<10.4f}|{'±':<3}|{'0.0000':<10}|"
+                )
+                print(row)
+
+            print("=" * 60)
+            print(f"Evaluation completed in {end_time - start_time:.2f} seconds")
+            print("=" * 60 + "\n")
 
         # Build the evaluation result structure
         task_key = f"atropos|{task_name}|0"
 
         eval_result = {
             "config_general": {
+                "lighteval_sha": "atropos_framework",
+                "num_fewshot_seeds": 1,
+                "max_samples": None,
+                "job_id": "0",
+                "start_time": start_time,
+                "end_time": end_time,
                 "total_evaluation_time_secondes": str(end_time - start_time),
                 "model_name": model_name,
-                "generation_parameters": merged_gen_params,
+                "model_sha": "",
+                "model_dtype": None,
+                "model_size": -1,
+                "generation_parameters": {
+                    "early_stopping": None,
+                    "repetition_penalty": None,
+                    "frequency_penalty": None,
+                    "length_penalty": None,
+                    "presence_penalty": None,
+                    "max_new_tokens": merged_gen_params.get("max_new_tokens", None),
+                    "min_new_tokens": merged_gen_params.get("min_new_tokens", None),
+                    "seed": merged_gen_params.get("seed", None),
+                    "stop_tokens": merged_gen_params.get("stop_tokens", None),
+                    "temperature": merged_gen_params.get("temperature", None),
+                    "top_k": merged_gen_params.get("top_k", None),
+                    "min_p": merged_gen_params.get("min_p", None),
+                    "top_p": merged_gen_params.get("top_p", None),
+                    "truncate_prompt": None,
+                    "request_timeout": None,
+                    "response_format": None,
+                    **{
+                        k: v
+                        for k, v in merged_gen_params.items()
+                        if k
+                        not in [
+                            "max_new_tokens",
+                            "min_new_tokens",
+                            "seed",
+                            "stop_tokens",
+                            "temperature",
+                            "top_k",
+                            "min_p",
+                            "top_p",
+                        ]
+                    },  # Include any other custom parameters
+                },
             },
             "results": {
                 task_key: metrics,
                 "all": metrics,  # For single task, "all" is the same as task-specific
+            },
+            "versions": {},
+            "config_tasks": {
+                task_key: {
+                    "name": task_name,
+                    "prompt_function": task_name,
+                    "hf_repo": None,
+                    "hf_subset": None,
+                    "metrics": [],  # Could be populated with metric definitions
+                    "hf_revision": None,
+                    "hf_filter": None,
+                    "hf_avail_splits": [],
+                    "trust_dataset": False,
+                    "evaluation_splits": ["test"],
+                    "few_shots_split": None,
+                    "few_shots_select": None,
+                    "generation_size": self.config.max_token_length,
+                    "generation_grammar": None,
+                    "stop_sequence": [],
+                    "num_samples": None,
+                    "suite": ["atropos"],
+                    "original_num_docs": -1,
+                    "effective_num_docs": -1,
+                    "must_remove_duplicate_docs": False,
+                    "num_fewshots": 0,
+                    "truncate_fewshots": False,
+                    "version": 1,
+                }
+            },
+            "summary_tasks": {
+                task_key: {
+                    "hashes": {
+                        "hash_examples": "unknown",
+                        "hash_full_prompts": "unknown",
+                        "hash_input_tokens": "unknown",
+                        "hash_cont_tokens": "unknown",
+                    },
+                    "truncated": 0,
+                    "non_truncated": 0,
+                    "padded": 0,
+                    "non_padded": 0,
+                    "effective_few_shots": 0,
+                    "num_truncated_few_shots": 0,
+                }
+            },
+            "summary_general": {
+                "hashes": {
+                    "hash_examples": "unknown",
+                    "hash_full_prompts": "unknown",
+                    "hash_input_tokens": "unknown",
+                    "hash_cont_tokens": "unknown",
+                },
+                "truncated": 0,
+                "non_truncated": 0,
+                "padded": 0,
+                "non_padded": 0,
+                "num_truncated_few_shots": 0,
             },
         }
 
@@ -740,9 +862,9 @@ class BaseEnv(ABC):
             samples_filepath = os.path.join(
                 self.config.data_dir_to_save_evals, "samples.jsonl"
             )
-            with open(samples_filepath, "w") as f:
+            with jsonlines.open(samples_filepath, "w") as writer:
                 for sample in samples:
-                    f.write(json.dumps(sample) + "\n")
+                    writer.write(sample)
             print(f"Evaluation samples saved to {samples_filepath}")
 
     @retry(
