@@ -738,116 +738,18 @@ class BaseEnv(ABC):
             print(f"Evaluation completed in {end_time - start_time:.2f} seconds")
             print("=" * 60 + "\n")
 
-        # Build the evaluation result structure
+        # Build the simplified evaluation result structure (only fields used by upload script)
         task_key = f"atropos|{task_name}|0"
 
         eval_result = {
             "config_general": {
-                "lighteval_sha": "atropos_framework",
-                "num_fewshot_seeds": 1,
-                "max_samples": None,
-                "job_id": "0",
-                "start_time": start_time,
-                "end_time": end_time,
-                "total_evaluation_time_secondes": str(end_time - start_time),
                 "model_name": model_name,
-                "model_sha": "",
-                "model_dtype": None,
-                "model_size": -1,
-                "generation_parameters": {
-                    "early_stopping": None,
-                    "repetition_penalty": None,
-                    "frequency_penalty": None,
-                    "length_penalty": None,
-                    "presence_penalty": None,
-                    "max_new_tokens": merged_gen_params.get("max_new_tokens", None),
-                    "min_new_tokens": merged_gen_params.get("min_new_tokens", None),
-                    "seed": merged_gen_params.get("seed", None),
-                    "stop_tokens": merged_gen_params.get("stop_tokens", None),
-                    "temperature": merged_gen_params.get("temperature", None),
-                    "top_k": merged_gen_params.get("top_k", None),
-                    "min_p": merged_gen_params.get("min_p", None),
-                    "top_p": merged_gen_params.get("top_p", None),
-                    "truncate_prompt": None,
-                    "request_timeout": None,
-                    "response_format": None,
-                    **{
-                        k: v
-                        for k, v in merged_gen_params.items()
-                        if k
-                        not in [
-                            "max_new_tokens",
-                            "min_new_tokens",
-                            "seed",
-                            "stop_tokens",
-                            "temperature",
-                            "top_k",
-                            "min_p",
-                            "top_p",
-                        ]
-                    },  # Include any other custom parameters
-                },
+                "total_evaluation_time_secondes": str(end_time - start_time),
+                "generation_parameters": merged_gen_params,
             },
             "results": {
                 task_key: metrics,
-                "all": metrics,  # For single task, "all" is the same as task-specific
-            },
-            "versions": {},
-            "config_tasks": {
-                task_key: {
-                    "name": task_name,
-                    "prompt_function": task_name,
-                    "hf_repo": None,
-                    "hf_subset": None,
-                    "metrics": [],  # Could be populated with metric definitions
-                    "hf_revision": None,
-                    "hf_filter": None,
-                    "hf_avail_splits": [],
-                    "trust_dataset": False,
-                    "evaluation_splits": ["test"],
-                    "few_shots_split": None,
-                    "few_shots_select": None,
-                    "generation_size": self.config.max_token_length,
-                    "generation_grammar": None,
-                    "stop_sequence": [],
-                    "num_samples": None,
-                    "suite": ["atropos"],
-                    "original_num_docs": -1,
-                    "effective_num_docs": -1,
-                    "must_remove_duplicate_docs": False,
-                    "num_fewshots": 0,
-                    "truncate_fewshots": False,
-                    "version": 1,
-                }
-            },
-            "summary_tasks": {
-                task_key: {
-                    "hashes": {
-                        "hash_examples": "unknown",
-                        "hash_full_prompts": "unknown",
-                        "hash_input_tokens": "unknown",
-                        "hash_cont_tokens": "unknown",
-                    },
-                    "truncated": 0,
-                    "non_truncated": 0,
-                    "padded": 0,
-                    "non_padded": 0,
-                    "effective_few_shots": 0,
-                    "num_truncated_few_shots": 0,
-                }
-            },
-            "summary_general": {
-                "hashes": {
-                    "hash_examples": "unknown",
-                    "hash_full_prompts": "unknown",
-                    "hash_input_tokens": "unknown",
-                    "hash_cont_tokens": "unknown",
-                },
-                "truncated": 0,
-                "non_truncated": 0,
-                "padded": 0,
-                "non_padded": 0,
-                "num_truncated_few_shots": 0,
+                "all": metrics,
             },
         }
 
