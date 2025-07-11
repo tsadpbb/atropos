@@ -163,10 +163,8 @@ class GSM8kEnv(BaseEnv):
             extraction_mode="first_match",
         )
 
-        # Calculate score
         score = 1 if verify(answer_parsed, gold_parsed) else 0
 
-        # Build detailed sample (convert parsed results to JSON-serializable format)
         sample = {
             "messages": [
                 {"role": "system", "content": system_prompt},
