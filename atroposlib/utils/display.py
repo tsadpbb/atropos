@@ -15,9 +15,7 @@ def display_metrics_table(
         start_time: Start time of evaluation (unix timestamp)
         end_time: End time of evaluation (unix timestamp)
     """
-    print("\n" + "=" * 84)
-    print(f"Evaluation Results: {task_name}")
-    print("=" * 84)
+    print(f"\nEvaluation Results: {task_name}")
 
     # Column widths
     col_groups = 20
@@ -49,6 +47,4 @@ def display_metrics_table(
             f"|{task_name:<{col_groups}}|{1:<{col_version}}|{'none':<{col_filter}}|{'':<{col_nshot}}|{clean_metric_name:<{col_metric}}|{direction:<{col_dir}}|{metric_value:>{col_value}.4f}|{'±':<{col_pm}}|{'0.0000':>{col_stderr}}|"  # noqa: E501
         )
 
-    print("=" * 84)
-    print(f"Evaluation completed in {end_time - start_time:.2f} seconds")
-    print("=" * 84 + "\n")
+    print(f"Evaluation completed in {end_time - start_time:.2f} seconds\n")

@@ -211,8 +211,6 @@ class GSM8kEnv(BaseEnv):
         # Log evaluation results
         eval_metrics = {
             "eval/percent_correct": percent_correct,
-            "eval/total_samples": len(scores),
-            "eval/correct_samples": sum(scores),
         }
 
         await self.evaluate_log(
@@ -223,7 +221,6 @@ class GSM8kEnv(BaseEnv):
             generation_parameters={
                 "temperature": 0.0,
                 "max_tokens": self.config.max_token_length,
-                "split": "eval",
             },
         )
 
