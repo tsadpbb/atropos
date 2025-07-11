@@ -213,7 +213,6 @@ class GSM8kEnv(BaseEnv):
             "question": question,
             "gold_answer": answer,
             "gold_parsed": str(gold_parsed) if gold_parsed else None,
-            "model_answer": response_content,
             "model_parsed": str(answer_parsed) if answer_parsed else None,
             "score": int(score),
             "correct": bool(score),

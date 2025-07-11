@@ -688,7 +688,13 @@ class BaseEnv(ABC):
             else:
                 task_name = f"{self.__class__.__name__}_eval"
         if model_name is None:
+            # Try to get model name from config first, then from server configs
             model_name = getattr(self.config, 'model_name', None)
+            if model_name is None and hasattr(self, 'server') and self.server.servers:
+                # Get model name from first server config
+                first_server = self.server.servers[0]
+                if hasattr(first_server, 'config') and hasattr(first_server.config, 'model_name'):
+                    model_name = first_server.config.model_name
         if start_time is None:
             start_time = time.time()
         if end_time is None:
