@@ -18,9 +18,12 @@ def display_metrics_table(
     print(f"\nEvaluation Results: {task_name}")
 
     # Prepare data for column width calculation
-    clean_metric_names = [metric_name.replace("eval/", "").replace("_", " ") for metric_name in metrics.keys()]
+    clean_metric_names = [
+        metric_name.replace("eval/", "").replace("_", " ")
+        for metric_name in metrics.keys()
+    ]
     formatted_values = [f"{value:.4f}" for value in metrics.values()]
-    
+
     # Calculate dynamic column widths
     col_groups = max(len(task_name), len("Groups"))
     col_version = max(len("1"), len("Version"))
@@ -34,12 +37,12 @@ def display_metrics_table(
 
     # Header
     print(
-        f"|{'Groups':<{col_groups}}|{'Version':<{col_version}}|{'Filter':<{col_filter}}|{'n-shot':<{col_nshot}}|{'Metric':<{col_metric}}|{'':^{col_dir}}|{'Value':>{col_value}}|{'':^{col_pm}}|{'Stderr':>{col_stderr}}|"
+        f"|{'Groups':<{col_groups}}|{'Version':<{col_version}}|{'Filter':<{col_filter}}|{'n-shot':<{col_nshot}}|{'Metric':<{col_metric}}|{'':^{col_dir}}|{'Value':>{col_value}}|{'':^{col_pm}}|{'Stderr':>{col_stderr}}|"  # noqa: E501
     )
 
     # Separator
     print(
-        f"|{'-' * col_groups}|{'-' * col_version}|{'-' * col_filter}|{'-' * col_nshot}|{'-' * col_metric}|{'-' * col_dir}|{'-' * (col_value-1)}:|{'-' * col_pm}|{'-' * (col_stderr-1)}:|"
+        f"|{'-' * col_groups}|{'-' * col_version}|{'-' * col_filter}|{'-' * col_nshot}|{'-' * col_metric}|{'-' * col_dir}|{'-' * (col_value-1)}:|{'-' * col_pm}|{'-' * (col_stderr-1)}:|"  # noqa: E501
     )
 
     # Data rows
@@ -48,7 +51,7 @@ def display_metrics_table(
         direction = "↑" if "correct" in metric_name or "acc" in metric_name else ""
 
         print(
-            f"|{task_name:<{col_groups}}|{1:<{col_version}}|{'none':<{col_filter}}|{'':<{col_nshot}}|{clean_metric_name:<{col_metric}}|{direction:^{col_dir}}|{metric_value:>{col_value}.4f}|{'±':^{col_pm}}|{'0.0000':>{col_stderr}}|"
+            f"|{task_name:<{col_groups}}|{1:<{col_version}}|{'none':<{col_filter}}|{'':<{col_nshot}}|{clean_metric_name:<{col_metric}}|{direction:^{col_dir}}|{metric_value:>{col_value}.4f}|{'±':^{col_pm}}|{'0.0000':>{col_stderr}}|"  # noqa: E501
         )
 
     print(f"Evaluation completed in {end_time - start_time:.2f} seconds")
