@@ -18,9 +18,12 @@ def display_metrics_table(
     print(f"\nEvaluation Results: {task_name}")
 
     # Prepare data for column width calculation
-    clean_metric_names = [metric_name.replace("eval/", "").replace("_", " ") for metric_name in metrics.keys()]
+    clean_metric_names = [
+        metric_name.replace("eval/", "").replace("_", " ")
+        for metric_name in metrics.keys()
+    ]
     formatted_values = [f"{value:.4f}" for value in metrics.values()]
-    
+
     # Calculate dynamic column widths
     col_groups = max(len(task_name), len("Groups"))
     col_version = max(len("1"), len("Version"))
