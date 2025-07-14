@@ -70,7 +70,7 @@ class PairwiseJudgementConfig(BaseEnvConfig):
 class PairwiseJudgementEnv(BaseEnv):
     name = "pairwise_judgement"
     env_config_cls = PairwiseJudgementConfig
-
+    
     def __init__(
         self,
         config: PairwiseJudgementConfig,
@@ -230,7 +230,7 @@ class PairwiseJudgementEnv(BaseEnv):
         # Load evaluation dataset - reward-bench-2 (MUST WORK OR CRASH)
         self.test = load_dataset("allenai/reward-bench-2", split="test", trust_remote_code=True)
         print(f"Loaded reward-bench-2 eval dataset with {len(self.test)} examples")
-
+        
         # Debug: Show sample evaluation item structure
         if len(self.test) > 0:
             try:
@@ -318,17 +318,17 @@ class PairwiseJudgementEnv(BaseEnv):
             raise ValueError(f"Need exactly {self.config.num_choices} answers for judgment, got {len(answers)}")
         
         prompt = f"[User Question]\n{question}\n\n"
-
+        
         for i, answer in enumerate(answers):
             letter = self.choice_letters[i]
             prompt += f"[The Start of Assistant {letter}'s Answer]\n{answer}\n[The End of Assistant {letter}'s Answer]\n\n"
-
+        
         return prompt.strip()
 
     async def get_next_item(self) -> Item:
         """Generate next training item with synthetic data."""
         self.iter += 1
-
+        
         # Create system message
         system_content = self._create_system_content()
         
@@ -371,7 +371,7 @@ class PairwiseJudgementEnv(BaseEnv):
                 ]
             }
         ]
-
+        
         # Select random example
         example = random.choice(examples)
         
@@ -384,26 +384,24 @@ class PairwiseJudgementEnv(BaseEnv):
             all_answers.append("I don't have enough information to answer this question.")
         
         random.shuffle(all_answers)
-
+        
         # Find where correct answer ended up
         correct_index = all_answers.index(example["correct"])
         correct_answer = self.choice_letters[correct_index]
         
         user_content = self.create_judgment_prompt(example["question"], all_answers)
-
-        prompt = tuple(
-            [
-                frozenset({"role": "system", "content": system_content}.items()),
-                frozenset({"role": "user", "content": user_content}.items()),
-            ]
-        )
-
+        
+        prompt = tuple([
+            frozenset({"role": "system", "content": system_content}.items()),
+            frozenset({"role": "user", "content": user_content}.items())
+        ])
+        
         return (prompt, correct_answer)
 
     def prepare_eval_item(self, item: dict) -> Tuple[Optional[Tuple], Optional[str]]:
         """
         Prepare an evaluation item from the reward-bench-2 dataset.
-
+        
         Dataset structure:
         - chosen: list with 1 element (the best response)
         - rejected: list with 3+ elements (worse responses) 
@@ -471,13 +469,13 @@ class PairwiseJudgementEnv(BaseEnv):
                 {"role": "assistant", "content": completion_choice.text}
             ]
             to_score.append((tuple(trajectory_messages), item[1]))
-
+        
         scored_data = await self.score(to_score)
-
+        
         # Add rollouts for wandb visualization
         if scored_data is not None:
             await self.add_rollouts_for_wandb(scored_data, item)
-
+        
         return scored_data, []
 
     async def score(self, rollout_group_data: List[Tuple]) -> Optional[ScoredDataGroup]:
@@ -788,7 +786,7 @@ class PairwiseJudgementEnv(BaseEnv):
         """Add rollouts to wandb for visualization."""
         if item is None or scored_data is None or not scored_data.get("tokens"):
             return
-
+        
         # Extract ground truth and question info
         ground_truth = item[1]
         
@@ -813,9 +811,9 @@ class PairwiseJudgementEnv(BaseEnv):
         num_keep = self.config.num_rollouts_per_group_for_logging
         if num_keep == -1:
             num_keep = self.config.group_size
-
+        
         num_keep = min(num_keep, len(scored_data["tokens"]))
-
+        
         current_rollouts = []
         mode = "thinking" if self.config.thinking_mode else "direct"
         
@@ -825,7 +823,7 @@ class PairwiseJudgementEnv(BaseEnv):
                 scored_data["tokens"][i], skip_special_tokens=True
             )
             score_val = scored_data["scores"][i]
-
+            
             # Extract the model's judgment
             predicted_judgment = "unknown"
             try:
@@ -851,7 +849,7 @@ class PairwiseJudgementEnv(BaseEnv):
             ))
         
         self.rollouts_for_wandb.append(current_rollouts)
-
+        
         # Keep only recent rollouts
         if len(self.rollouts_for_wandb) > self.config.num_rollouts_to_keep:
             self.rollouts_for_wandb.pop(0)
@@ -885,7 +883,7 @@ class PairwiseJudgementEnv(BaseEnv):
         """Log metrics to wandb."""
         if wandb_metrics is None:
             wandb_metrics = {}
-
+        
         # Basic accuracy metrics
         if self.percent_correct_buffer:
             wandb_metrics["train/percent_correct"] = sum(self.percent_correct_buffer) / len(self.percent_correct_buffer)
@@ -932,10 +930,10 @@ class PairwiseJudgementEnv(BaseEnv):
         for metric_name, metric_value in self.eval_metrics:
             wandb_metrics[metric_name] = metric_value
         self.eval_metrics = []
-
+        
         # Add rollout table
         wandb_metrics = await self.create_rollout_table(wandb_metrics)
-
+        
         await super().wandb_log(wandb_metrics)
 
 
