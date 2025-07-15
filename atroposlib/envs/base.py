@@ -284,9 +284,7 @@ class BaseEnv(ABC):
             "Handle env single method must be implemented in subclass "
         )
 
-    async def collect_trajectories(
-        self, item: Item
-    ) -> Tuple[
+    async def collect_trajectories(self, item: Item) -> Tuple[
         Union[
             Optional[ScoredDataGroup], List[Optional[ScoredDataGroup]], List[Any | None]
         ],
@@ -1550,9 +1548,9 @@ class BaseEnv(ABC):
                 env_config_dict_base["ensure_scores_are_not_same"] = False
                 env_config_dict_base["include_messages"] = True
                 if env_config_dict_base.get("data_path_to_save_groups") is None:
-                    env_config_dict_base[
-                        "data_path_to_save_groups"
-                    ] = f"data/{cls.name or 'groups'}.jsonl"
+                    env_config_dict_base["data_path_to_save_groups"] = (
+                        f"data/{cls.name or 'groups'}.jsonl"
+                    )
                 env_config_dict_base["use_wandb"] = True
 
                 env_config_dict = merge_dicts(
