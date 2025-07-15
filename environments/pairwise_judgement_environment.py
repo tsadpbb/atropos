@@ -216,13 +216,10 @@ class PairwiseJudgementEnv(BaseEnv):
             return f"{self.thinking_system_prompt}\n\n{self.judgment_system_prompt}"
         return self.judgment_system_prompt
 
-    def _prepare_completion_input(self, prompt_tuple: Tuple) -> Tuple[List[Dict], str]:
-        """Convert prompt tuple to messages and formatted prompt text."""
+    def _prepare_completion_input(self, prompt_tuple: Tuple) -> List[Dict]:
+        """Convert prompt tuple to messages format."""
         messages = self._convert_messages_to_list(prompt_tuple)
-        prompt_text = self.tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, tokenize=False
-        )
-        return messages, prompt_text
+        return messages
 
     def _get_train_completion_params(self) -> Dict:
         """Get completion parameters for training rollouts."""
@@ -244,7 +241,7 @@ class PairwiseJudgementEnv(BaseEnv):
     @classmethod
     def config_init(cls) -> Tuple[PairwiseJudgementConfig, List[APIServerConfig]]:
         env_config = PairwiseJudgementConfig(
-            tokenizer_name="NousResearch/Hermes-4-Qwen3-14B-1-e3",
+            tokenizer_name="NousResearch/DeepHermes-3-Llama-3-8B-Preview",
             group_size=16,
             use_wandb=True,
             max_num_workers_per_node=16,
@@ -570,11 +567,11 @@ class PairwiseJudgementEnv(BaseEnv):
 
     async def collect_trajectories(self, item: Item) -> Tuple[ScoredDataGroup, List]:
         """Collect and score model trajectories."""
-        messages, prompt_text = self._prepare_completion_input(item[0])
+        messages = self._prepare_completion_input(item[0])
         completion_params = self._get_train_completion_params()
 
-        completions = await self.server.completion(
-            prompt=prompt_text, **completion_params
+        completions = await self.server.chat_completion(
+            messages=messages, **completion_params
         )
 
         # Build trajectories without duplicating message construction
@@ -582,7 +579,7 @@ class PairwiseJudgementEnv(BaseEnv):
         for completion_choice in completions.choices:
             # Add assistant response to existing messages
             trajectory_messages = messages + [
-                {"role": "assistant", "content": completion_choice.text}
+                {"role": "assistant", "content": completion_choice.message.content}
             ]
             to_score.append((tuple(trajectory_messages), item[1]))
 
@@ -678,17 +675,17 @@ class PairwiseJudgementEnv(BaseEnv):
             if prompt is None:
                 return {"score": 0.0, "sample": None}
 
-            messages, prompt_text = self._prepare_completion_input(prompt)
+            messages = self._prepare_completion_input(prompt)
             completion_params = self._get_eval_completion_params()
 
-            completion = await self.server.completion(
-                prompt=prompt_text, **completion_params
+            completion = await self.server.chat_completion(
+                messages=messages, **completion_params
             )
 
             if not completion.choices:
                 return {"score": 0.0, "sample": None}
 
-            model_response = completion.choices[0].text
+            model_response = completion.choices[0].message.content
             predicted_answer = self.process_judgement(
                 model_response, track_metrics=False
             )
@@ -768,15 +765,15 @@ class PairwiseJudgementEnv(BaseEnv):
             response_data = []
             
             for prompt, response_text, is_correct in prompts_and_responses:
-                messages, prompt_text = self._prepare_completion_input(prompt)
+                messages = self._prepare_completion_input(prompt)
                 completion_params = self._get_eval_completion_params()
                 
-                completion = await self.server.completion(
-                    prompt=prompt_text, **completion_params
+                completion = await self.server.chat_completion(
+                    messages=messages, **completion_params
                 )
                 
                 if completion.choices:
-                    model_response = completion.choices[0].text
+                    model_response = completion.choices[0].message.content
                     rating = self._process_rating_judgment(model_response)
                     ratings.append(rating)
                     response_data.append({
