@@ -24,6 +24,7 @@ from atroposlib.utils.tokenize_for_trainer import tokenize_for_trainer
 
 class RewardBenchCategory(str, Enum):
     """Enumeration of RewardBench-2 dataset categories."""
+
     FACTUALITY = "Factuality"
     FOCUS = "Focus"
     MATH = "Math"
@@ -138,7 +139,7 @@ class PairwiseJudgementEnv(BaseEnv):
         }
 
         # Pre-compile rating pattern for ties evaluation
-        self._rating_pattern = re.compile(r'\b([1-9]|10)\b\s*$')
+        self._rating_pattern = re.compile(r"\b([1-9]|10)\b\s*$")
 
         # System prompts (use custom ones if provided, otherwise defaults)
         self.thinking_system_prompt = self._get_thinking_prompt()
@@ -186,13 +187,13 @@ class PairwiseJudgementEnv(BaseEnv):
         """Check if this item's category should be evaluated based on config."""
         if self.config.eval_categories is None:
             return True  # Evaluate all categories if none specified
-        
+
         item_category = item.get("subset", "")
         # Try to match against enum values
         for category in self.config.eval_categories:
             if category.value == item_category:
                 return True
-        
+
         return False
 
     def _reset_metrics(self) -> None:
@@ -294,30 +295,38 @@ class PairwiseJudgementEnv(BaseEnv):
             "allenai/reward-bench-2", split="test", trust_remote_code=True
         )
         print(f"Loaded reward-bench-2 eval dataset with {len(self.test)} examples")
-        
+
         # Analyze dataset composition
         category_counts = {}
         for item in self.test:
             category = item.get("subset", "Unknown")
             category_counts[category] = category_counts.get(category, 0) + 1
-        
+
         print(f"Dataset categories found:")
         for category, count in sorted(category_counts.items()):
             print(f"  - {category}: {count} samples")
-        
+
         # Count ties vs choice samples
         ties_samples = sum(1 for item in self.test if self._is_ties_sample(item))
         choice_samples = len(self.test) - ties_samples
-        print(f"\nEvaluation modes: {choice_samples} choice samples, {ties_samples} ties samples")
-        
+        print(
+            f"\nEvaluation modes: {choice_samples} choice samples, {ties_samples} ties samples"
+        )
+
         # Show category filtering info
         if self.config.eval_categories is not None:
             selected_categories = [cat.value for cat in self.config.eval_categories]
-            print(f"\nCategory filtering enabled. Selected categories: {selected_categories}")
-            filtered_count = sum(1 for item in self.test if self._should_evaluate_category(item))
+            print(
+                f"\nCategory filtering enabled. Selected categories: {selected_categories}"
+            )
+            filtered_count = sum(
+                1 for item in self.test if self._should_evaluate_category(item)
+            )
             print(f"Will evaluate {filtered_count} out of {len(self.test)} samples")
         else:
-            print(f"\nNo category filtering. Will evaluate all {len(self.test)} samples")
+            print(
+                f"\nNo category filtering. Will evaluate all {len(self.test)} samples"
+            )
 
         # Debug: Show sample evaluation item structure
         if len(self.test) > 0:
@@ -763,7 +772,7 @@ class PairwiseJudgementEnv(BaseEnv):
             # Rate each response individually
             ratings = []
             response_data = []
-            
+
             for prompt, response_text, is_correct in prompts_and_responses:
                 messages = self._prepare_completion_input(prompt)
                 completion_params = self._get_eval_completion_params()
@@ -771,27 +780,31 @@ class PairwiseJudgementEnv(BaseEnv):
                 completion = await self.server.chat_completion(
                     messages=messages, **completion_params
                 )
-                
+
                 if completion.choices:
                     model_response = completion.choices[0].message.content
                     rating = self._process_rating_judgment(model_response)
                     ratings.append(rating)
-                    response_data.append({
-                        "response": response_text,
-                        "is_correct": is_correct,
-                        "rating": rating,
-                        "model_judgment": model_response,
-                        "finish_reason": completion.choices[0].finish_reason
-                    })
+                    response_data.append(
+                        {
+                            "response": response_text,
+                            "is_correct": is_correct,
+                            "rating": rating,
+                            "model_judgment": model_response,
+                            "finish_reason": completion.choices[0].finish_reason,
+                        }
+                    )
                 else:
                     ratings.append(-1)  # Error rating
-                    response_data.append({
-                        "response": response_text,
-                        "is_correct": is_correct,
-                        "rating": -1,
-                        "model_judgment": "API_ERROR",
-                        "finish_reason": "error"
-                    })
+                    response_data.append(
+                        {
+                            "response": response_text,
+                            "is_correct": is_correct,
+                            "rating": -1,
+                            "model_judgment": "API_ERROR",
+                            "finish_reason": "error",
+                        }
+                    )
 
             # Calculate success score
             score = self._calculate_ties_score(ratings, test_item, response_data)
@@ -829,26 +842,29 @@ class PairwiseJudgementEnv(BaseEnv):
             question = item.get("prompt", "")
             chosen_responses = item.get("chosen", [])
             rejected_responses = item.get("rejected", [])
-            
+
             if not question or not chosen_responses:
                 return []
-            
+
             # Create rating prompts for each response
             prompts_and_responses = []
-            
+
             # Add chosen responses (correct)
             for response in chosen_responses:
                 rating_prompt = self._create_rating_prompt(question, response)
                 prompts_and_responses.append((rating_prompt, response, True))
-            
+
             # Add rejected responses (incorrect) - limit to control API costs
-            max_rejected = min(len(rejected_responses), self.config.max_ties_responses - len(chosen_responses))
+            max_rejected = min(
+                len(rejected_responses),
+                self.config.max_ties_responses - len(chosen_responses),
+            )
             for response in rejected_responses[:max_rejected]:
                 rating_prompt = self._create_rating_prompt(question, response)
                 prompts_and_responses.append((rating_prompt, response, False))
-            
+
             return prompts_and_responses
-            
+
         except Exception as e:
             print(f"Error preparing ties eval item: {e}")
             return []
@@ -872,24 +888,28 @@ Notes:
 {response}
 
 [Your judgement]"""
-        
+
         # Fill in the question and response
-        user_content = rating_prompt_template.format(question=question, response=response)
-        
+        user_content = rating_prompt_template.format(
+            question=question, response=response
+        )
+
         if self.config.thinking_mode:
             system_content = self.thinking_system_prompt
         else:
             system_content = ""
-        
-        return tuple([
-            frozenset({"role": "system", "content": system_content}.items()),
-            frozenset({"role": "user", "content": user_content}.items())
-        ])
+
+        return tuple(
+            [
+                frozenset({"role": "system", "content": system_content}.items()),
+                frozenset({"role": "user", "content": user_content}.items()),
+            ]
+        )
 
     def _process_rating_judgment(self, judgment: str) -> int:
         """
         Extract 1-10 rating from model response.
-        
+
         Looks for a number 1-10 at the END of the response.
         Examples that work:
         - "This is good. I rate it 8"
@@ -904,34 +924,36 @@ Notes:
                 judgment = match.group(1)
             else:
                 return -1
-        
+
         # Look for trailing number 1-10 using regex: \b([1-9]|10)\b\s*$
         match = self._rating_pattern.search(judgment.strip())
         if match:
             rating = int(match.group(1))
             if 1 <= rating <= 10:
                 return rating
-        
+
         return -1  # Error/invalid rating
 
-    def _calculate_ties_score(self, ratings: List[int], test_item: dict, response_data: List[dict]) -> float:
+    def _calculate_ties_score(
+        self, ratings: List[int], test_item: dict, response_data: List[dict]
+    ) -> float:
         """Calculate success score for ties evaluation using RewardBench's exact approach."""
         # Get all valid ratings (not -1)
         valid_ratings = [r for r in ratings if r != -1]
         if not valid_ratings:
             return 0.0
-        
+
         # Find the maximum rating among all valid ratings
         max_rating = max(valid_ratings)
-        
+
         # Find all response indices that achieved this maximum rating
         winner_indices = [i for i, r in enumerate(ratings) if r == max_rating]
-        
+
         # Check if any of the winners are correct responses
         for idx in winner_indices:
             if idx < len(response_data) and response_data[idx]["is_correct"]:
                 return 1.0
-        
+
         return 0.0
 
     def _calculate_response_metrics(
@@ -942,7 +964,7 @@ Notes:
         thinking_utilization = 0
         judgment_counts = {letter: 0 for letter in self.choice_letters}
         judgment_counts["format_error"] = 0
-        
+
         # Ties-specific metrics
         ties_rating_counts = {i: 0 for i in range(1, 11)}  # Ratings 1-10
         ties_rating_counts["error"] = 0
@@ -952,7 +974,7 @@ Notes:
                 continue
 
             evaluation_mode = sample.get("evaluation_mode", "choice")
-            
+
             if evaluation_mode == "choice":
                 # Track response length for choice mode
                 messages = sample.get("messages", [])
@@ -964,7 +986,7 @@ Notes:
                 predicted_judgment = sample.get("predicted_judgment", "format_error")
                 if predicted_judgment in judgment_counts:
                     judgment_counts[predicted_judgment] += 1
-                    
+
             elif evaluation_mode == "ties":
                 # Track ratings for ties mode
                 ratings = sample.get("ratings", [])
@@ -980,7 +1002,12 @@ Notes:
                 if thinking_content:
                     thinking_utilization += 1
 
-        return response_lengths, thinking_utilization, judgment_counts, ties_rating_counts
+        return (
+            response_lengths,
+            thinking_utilization,
+            judgment_counts,
+            ties_rating_counts,
+        )
 
     async def evaluate(self, *args, **kwargs) -> None:
         """Evaluate the model on the test dataset."""
@@ -990,19 +1017,23 @@ Notes:
             # Filter test items based on selected categories
             if self.config.eval_categories is not None:
                 filtered_test_items = [
-                    test_item for test_item in self.test 
+                    test_item
+                    for test_item in self.test
                     if self._should_evaluate_category(test_item)
                 ]
-                print(f"Filtered to {len(filtered_test_items)} samples from {len(self.test)} total")
+                print(
+                    f"Filtered to {len(filtered_test_items)} samples from {len(self.test)} total"
+                )
             else:
                 filtered_test_items = self.test
-            
+
             if not filtered_test_items:
                 print("Warning: No samples match the selected categories")
                 return
-                
+
             eval_tasks = [
-                self.rollout_and_score_eval(test_item) for test_item in filtered_test_items
+                self.rollout_and_score_eval(test_item)
+                for test_item in filtered_test_items
             ]
             results = await tqdm_asyncio.gather(*eval_tasks)
 
@@ -1039,21 +1070,23 @@ Notes:
         subset_scores = {}
         choice_count = 0
         ties_count = 0
-        
+
         for i, sample in enumerate(samples):
             if sample and i < len(scores):
                 subset = sample.get("dataset_subset", "unknown")
                 if subset not in subset_scores:
                     subset_scores[subset] = []
                 subset_scores[subset].append(scores[i])
-                
+
                 # Count evaluation modes
                 if sample.get("evaluation_mode") == "choice":
                     choice_count += 1
                 elif sample.get("evaluation_mode") == "ties":
                     ties_count += 1
-        
-        print(f"Evaluation completed: {choice_count} choice samples, {ties_count} ties samples")
+
+        print(
+            f"Evaluation completed: {choice_count} choice samples, {ties_count} ties samples"
+        )
 
         # Log subset-specific metrics
         for subset, subset_score_list in subset_scores.items():
@@ -1069,32 +1102,41 @@ Notes:
         format_compliant = sum(
             1 for sample in samples if sample.get("format_compliant", False)
         )
-        
+
         # Separate compliance by evaluation mode
         choice_format_compliant = sum(
-            1 for sample in samples 
-            if sample.get("evaluation_mode") == "choice" and sample.get("format_compliant", False)
+            1
+            for sample in samples
+            if sample.get("evaluation_mode") == "choice"
+            and sample.get("format_compliant", False)
         )
         ties_format_compliant = sum(
-            1 for sample in samples 
-            if sample.get("evaluation_mode") == "ties" and sample.get("format_compliant", False)
+            1
+            for sample in samples
+            if sample.get("evaluation_mode") == "ties"
+            and sample.get("format_compliant", False)
         )
-        
+
         # Track "A" bias in wrong answers (choice mode only)
         # This detects if the model defaults to choosing "A" when uncertain
         # Expected: ~25% for 4 choices if no bias, higher indicates A bias
         wrong_choice_samples = [
-            sample for sample in samples 
-            if sample.get("evaluation_mode") == "choice" and not sample.get("correct", False)
+            sample
+            for sample in samples
+            if sample.get("evaluation_mode") == "choice"
+            and not sample.get("correct", False)
         ]
         wrong_a_choices = sum(
-            1 for sample in wrong_choice_samples 
+            1
+            for sample in wrong_choice_samples
             if sample.get("predicted_judgment") == "A"
         )
-        
+
         # Calculate A bias rate for wrong answers
-        a_bias_rate = wrong_a_choices / len(wrong_choice_samples) if wrong_choice_samples else 0.0
-        
+        a_bias_rate = (
+            wrong_a_choices / len(wrong_choice_samples) if wrong_choice_samples else 0.0
+        )
+
         thinking_mode_used = self.config.thinking_mode
 
         # Get response metrics
@@ -1145,18 +1187,28 @@ Notes:
         total_ties_ratings = sum(ties_rating_counts.values())
         if total_ties_ratings > 0:
             # Average rating for ties mode
-            total_rating_sum = sum(rating * count for rating, count in ties_rating_counts.items() if isinstance(rating, int))
-            valid_ratings_count = sum(count for rating, count in ties_rating_counts.items() if isinstance(rating, int))
-            
+            total_rating_sum = sum(
+                rating * count
+                for rating, count in ties_rating_counts.items()
+                if isinstance(rating, int)
+            )
+            valid_ratings_count = sum(
+                count
+                for rating, count in ties_rating_counts.items()
+                if isinstance(rating, int)
+            )
+
             if valid_ratings_count > 0:
                 avg_ties_rating = total_rating_sum / valid_ratings_count
                 self.eval_metrics.append(("eval/avg_ties_rating", avg_ties_rating))
-            
+
             # Ties rating distribution
             for rating in range(1, 11):
                 rating_freq = ties_rating_counts[rating] / total_ties_ratings
-                self.eval_metrics.append((f"eval/ties_rating_freq_{rating}", rating_freq))
-            
+                self.eval_metrics.append(
+                    (f"eval/ties_rating_freq_{rating}", rating_freq)
+                )
+
             # Ties error rate (proportion of rating attempts that failed to parse)
             # This is different from percent correct:
             # - Error rate: How often we couldn't extract a 1-10 rating from responses
@@ -1165,7 +1217,7 @@ Notes:
             self.eval_metrics.append(("eval/ties_error_rate", ties_error_rate))
 
         # Add overall dataset statistics
-        total_dataset_items = len(self.test) if hasattr(self, 'test') else 0
+        total_dataset_items = len(self.test) if hasattr(self, "test") else 0
         evaluated_items = len(samples)
         self.eval_metrics.append(("eval/total_dataset_items", total_dataset_items))
         self.eval_metrics.append(("eval/evaluated_items", evaluated_items))
@@ -1177,16 +1229,25 @@ Notes:
                 format_compliant / len(samples) if samples else 0.0,
             )
         )
-        
+
         # Add mode-specific compliance rates
         if choice_count > 0:
-            self.eval_metrics.append(("eval/choice_format_compliance_rate", choice_format_compliant / choice_count))
+            self.eval_metrics.append(
+                (
+                    "eval/choice_format_compliance_rate",
+                    choice_format_compliant / choice_count,
+                )
+            )
         if ties_count > 0:
-            self.eval_metrics.append(("eval/ties_format_compliance_rate", ties_format_compliant / ties_count))
-        
+            self.eval_metrics.append(
+                ("eval/ties_format_compliance_rate", ties_format_compliant / ties_count)
+            )
+
         # Add A bias metric for wrong answers
         self.eval_metrics.append(("eval/wrong_answer_a_bias_rate", a_bias_rate))
-        self.eval_metrics.append(("eval/wrong_answer_total_count", len(wrong_choice_samples)))
+        self.eval_metrics.append(
+            ("eval/wrong_answer_total_count", len(wrong_choice_samples))
+        )
         self.eval_metrics.append(("eval/wrong_answer_a_count", wrong_a_choices))
 
         end_time = time.time()
@@ -1230,17 +1291,25 @@ Notes:
                 eval_metrics[f"eval/percent_correct_{subset}"] = avg_score
 
         # Add evaluation mode counts and compliance rates
-        choice_samples = sum(1 for sample in samples if sample.get("evaluation_mode") == "choice")
-        ties_samples = sum(1 for sample in samples if sample.get("evaluation_mode") == "ties")
+        choice_samples = sum(
+            1 for sample in samples if sample.get("evaluation_mode") == "choice"
+        )
+        ties_samples = sum(
+            1 for sample in samples if sample.get("evaluation_mode") == "ties"
+        )
         eval_metrics["eval/choice_samples"] = choice_samples
         eval_metrics["eval/ties_samples"] = ties_samples
-        
+
         # Add mode-specific compliance rates
         if choice_samples > 0:
-            eval_metrics["eval/choice_format_compliance_rate"] = choice_format_compliant / choice_samples
+            eval_metrics["eval/choice_format_compliance_rate"] = (
+                choice_format_compliant / choice_samples
+            )
         if ties_samples > 0:
-            eval_metrics["eval/ties_format_compliance_rate"] = ties_format_compliant / ties_samples
-            
+            eval_metrics["eval/ties_format_compliance_rate"] = (
+                ties_format_compliant / ties_samples
+            )
+
         # Add A bias metrics for wrong answers
         eval_metrics["eval/wrong_answer_a_bias_rate"] = a_bias_rate
         eval_metrics["eval/wrong_answer_total_count"] = len(wrong_choice_samples)
