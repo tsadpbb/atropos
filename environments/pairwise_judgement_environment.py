@@ -776,7 +776,7 @@ class PairwiseJudgementEnv(BaseEnv):
             for prompt, response_text, is_correct in prompts_and_responses:
                 messages = self._prepare_completion_input(prompt)
                 completion_params = self._get_eval_completion_params()
-                
+
                 completion = await self.server.chat_completion(
                     messages=messages, **completion_params
                 )
