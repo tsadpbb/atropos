@@ -16,7 +16,7 @@ A comprehensive benchmark environment based on the official RewardBench-2 datase
 
 **Benchmark Categories:**
 - **Factuality**: Factual accuracy and correctness
-- **Focus**: Staying on topic and following instructions  
+- **Focus**: Staying on topic and following instructions
 - **Math**: Mathematical reasoning and problem-solving
 - **Precise IF**: Precise instruction following
 - **Safety**: Harmful content detection and safety
@@ -110,13 +110,13 @@ python pairwise_judgement_environment.py serve \
 **Citation:**
 ```bibtex
 @misc{lambert2024rewardbenchevaluatingrewardmodels,
-      title={RewardBench: Evaluating Reward Models for Language Modeling}, 
+      title={RewardBench: Evaluating Reward Models for Language Modeling},
       author={Nathan Lambert and Valentina Pyatkin and Jacob Morrison and LJ Miranda and Bill Yuchen Lin and Khyathi Chandu and Nouha Dziri and Sachin Kumar and Tom Zick and Yejin Choi and Noah A. Smith and Hannaneh Hajishirzi},
       year={2024},
       eprint={2403.13787},
       archivePrefix={arXiv},
       primaryClass={cs.LG},
-      url={https://arxiv.org/abs/2403.13787}, 
+      url={https://arxiv.org/abs/2403.13787},
 }
 ```
 
