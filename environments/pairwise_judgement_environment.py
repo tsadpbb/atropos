@@ -86,7 +86,7 @@ class PairwiseJudgementConfig(BaseEnvConfig):
     # Category filtering configuration
     eval_categories: Optional[List[RewardBenchCategory]] = Field(
         default=None,
-        description="List of categories to evaluate. If None, evaluates all categories. Categories not in this list will be skipped.", # noqa
+        description="List of categories to evaluate. If None, evaluates all categories. Categories not in this list will be skipped.",  # noqa
     )
 
 
@@ -131,7 +131,7 @@ class PairwiseJudgementEnv(BaseEnv):
         }
         self._answer_choice_patterns = {
             letter: re.compile(
-                rf"\[The Start of Assistant {letter}\'s Answer\]\s*(.*?)\s*\[The End of Assistant {letter}\'s Answer\]", # noqa
+                rf"\[The Start of Assistant {letter}\'s Answer\]\s*(.*?)\s*\[The End of Assistant {letter}\'s Answer\]",  # noqa
                 re.DOTALL,
             )
             for letter in self.choice_letters
@@ -168,13 +168,13 @@ class PairwiseJudgementEnv(BaseEnv):
         )
 
         return (
-            f"Please act as an impartial judge and evaluate the quality of the responses provided by {self.config.num_choices} AI assistants to the user question displayed below. " # noqa
-            f"You should choose the assistant that follows the user's instructions and answers the user's question best. " # noqa
-            f"Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. " # noqa
-            f"Begin your evaluation by comparing the {self.config.num_choices} responses and provide a short explanation. " # noqa
-            f"Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. " # noqa
-            f"Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. " # noqa
-            f"Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: " # noqa
+            f"Please act as an impartial judge and evaluate the quality of the responses provided by {self.config.num_choices} AI assistants to the user question displayed below. "  # noqa
+            f"You should choose the assistant that follows the user's instructions and answers the user's question best. "  # noqa
+            f"Your evaluation should consider factors such as the helpfulness, relevance, accuracy, depth, creativity, and level of detail of their responses. "  # noqa
+            f"Begin your evaluation by comparing the {self.config.num_choices} responses and provide a short explanation. "  # noqa
+            f"Avoid any position biases and ensure that the order in which the responses were presented does not influence your decision. "  # noqa
+            f"Do not allow the length of the responses to influence your evaluation. Do not favor certain names of the assistants. "  # noqa
+            f"Be as objective as possible. After providing your explanation, output your final verdict by strictly following this format: "  # noqa
             f"{choice_format_examples}."
         )
 
@@ -427,7 +427,7 @@ class PairwiseJudgementEnv(BaseEnv):
 
         for i, answer in enumerate(answers):
             letter = self.choice_letters[i]
-            prompt += f"[The Start of Assistant {letter}'s Answer]\n{answer}\n[The End of Assistant {letter}'s Answer]\n\n" # noqa
+            prompt += f"[The Start of Assistant {letter}'s Answer]\n{answer}\n[The End of Assistant {letter}'s Answer]\n\n"  # noqa
 
         return prompt.strip()
 
@@ -442,7 +442,7 @@ class PairwiseJudgementEnv(BaseEnv):
         examples = [
             {
                 "question": "What is the capital of France?",
-                "correct": "The capital of France is Paris, which has been the capital since 987 AD and serves as the political, economic, and cultural center of the country.", # noqa
+                "correct": "The capital of France is Paris, which has been the capital since 987 AD and serves as the political, economic, and cultural center of the country.",  # noqa
                 "incorrect": [
                     "The capital of France is London.",
                     "France's capital is Berlin, located in central Europe.",
@@ -454,7 +454,7 @@ class PairwiseJudgementEnv(BaseEnv):
             },
             {
                 "question": "How do you fix a memory leak in Python?",
-                "correct": "To fix memory leaks in Python: 1) Use memory profilers like tracemalloc or memory_profiler to identify leaks, 2) Ensure proper cleanup of resources with context managers, 3) Break circular references, 4) Close files and database connections explicitly, and 5) Use weak references when appropriate.", # noqa
+                "correct": "To fix memory leaks in Python: 1) Use memory profilers like tracemalloc or memory_profiler to identify leaks, 2) Ensure proper cleanup of resources with context managers, 3) Break circular references, 4) Close files and database connections explicitly, and 5) Use weak references when appropriate.",  # noqa
                 "incorrect": [
                     "Just restart your computer and the memory leak will be fixed.",
                     "Python automatically handles all memory management, so memory leaks are impossible.",
@@ -466,7 +466,7 @@ class PairwiseJudgementEnv(BaseEnv):
             },
             {
                 "question": "Explain the difference between machine learning and artificial intelligence.",
-                "correct": "Artificial Intelligence (AI) is the broader field focused on creating systems that can perform tasks typically requiring human intelligence. Machine Learning (ML) is a subset of AI that uses algorithms to learn patterns from data without being explicitly programmed for each task. So ML is one approach to achieving AI.", # noqa 
+                "correct": "Artificial Intelligence (AI) is the broader field focused on creating systems that can perform tasks typically requiring human intelligence. Machine Learning (ML) is a subset of AI that uses algorithms to learn patterns from data without being explicitly programmed for each task. So ML is one approach to achieving AI.",  # noqa
                 "incorrect": [
                     "Machine learning and artificial intelligence are exactly the same thing with different names.",
                     "Machine learning is much broader than AI and includes all computer science.",
@@ -886,7 +886,7 @@ Notes:
 [Response]
 {response}
 
-[Your judgement]""" # noqa
+[Your judgement]"""  # noqa
 
         # Fill in the question and response
         user_content = rating_prompt_template.format(
