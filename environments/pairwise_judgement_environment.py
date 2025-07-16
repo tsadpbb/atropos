@@ -767,13 +767,13 @@ class PairwiseJudgementEnv(BaseEnv):
                 ):  # If less than half are valid
                     if attempt < max_retries - 1:
                         print(
-                            f"DEBUG: Only {len(valid_completions)}/{len(completions.choices)} valid completions (attempt {attempt + 1}/{max_retries})" # noqa
+                            f"DEBUG: Only {len(valid_completions)}/{len(completions.choices)} valid completions (attempt {attempt + 1}/{max_retries})"  # noqa
                         )
                         await asyncio.sleep(retry_delay)
                         continue
                     else:
                         print(
-                            f"DEBUG: Only {len(valid_completions)}/{len(completions.choices)} valid completions after {max_retries} attempts" # noqa
+                            f"DEBUG: Only {len(valid_completions)}/{len(completions.choices)} valid completions after {max_retries} attempts"  # noqa
                         )
                         # Continue with what we have
 
@@ -976,7 +976,7 @@ class PairwiseJudgementEnv(BaseEnv):
                     if not isinstance(model_response, str):
                         if attempt < max_retries - 1:
                             print(
-                                f"DEBUG: model_response is not a string. Type: {type(model_response)}, Value: {model_response} (attempt {attempt + 1}/{max_retries})" # noqa
+                                f"DEBUG: model_response is not a string. Type: {type(model_response)}, Value: {model_response} (attempt {attempt + 1}/{max_retries})"  # noqa
                             )
                             await asyncio.sleep(retry_delay)
                             continue
@@ -990,10 +990,10 @@ class PairwiseJudgementEnv(BaseEnv):
                     if len(model_response.strip()) < self.config.min_response_length:
                         if attempt < max_retries - 1:
                             print(
-                                f"DEBUG: Very short response (likely EOS token only): '{model_response}' (attempt {attempt + 1}/{max_retries})" # noqa
+                                f"DEBUG: Very short response (likely EOS token only): '{model_response}' (attempt {attempt + 1}/{max_retries})"  # noqa
                             )
                             print(
-                                f"DEBUG: Completion tokens: {completion.usage.completion_tokens if hasattr(completion, 'usage') else 'unknown'}" # noqa
+                                f"DEBUG: Completion tokens: {completion.usage.completion_tokens if hasattr(completion, 'usage') else 'unknown'}"  # noqa
                             )
                             await asyncio.sleep(retry_delay)
                             continue
@@ -1118,10 +1118,10 @@ class PairwiseJudgementEnv(BaseEnv):
                         )
                         if hasattr(completion.choices[0], "message"):
                             print(
-                                f"DEBUG: completion.choices[0].message.content type: {type(completion.choices[0].message.content)}" # noqa
+                                f"DEBUG: completion.choices[0].message.content type: {type(completion.choices[0].message.content)}"  # noqa
                             )
                             print(
-                                f"DEBUG: completion.choices[0].message.content value: {completion.choices[0].message.content}" # noqa
+                                f"DEBUG: completion.choices[0].message.content value: {completion.choices[0].message.content}"  # noqa
                             )
             except Exception as debug_e:
                 print(f"DEBUG: Error in debug info: {debug_e}")
@@ -1198,7 +1198,7 @@ class PairwiseJudgementEnv(BaseEnv):
                         if not isinstance(model_response, str):
                             if attempt < max_retries - 1:
                                 print(
-                                    f"DEBUG: ties model_response is not a string. Type: {type(model_response)} (attempt {attempt + 1}/{max_retries})" # noqa
+                                    f"DEBUG: ties model_response is not a string. Type: {type(model_response)} (attempt {attempt + 1}/{max_retries})"  # noqa
                                 )
                                 await asyncio.sleep(retry_delay)
                                 continue
@@ -1206,7 +1206,7 @@ class PairwiseJudgementEnv(BaseEnv):
                                 break  # Failed after all retries
 
                         # For ties evaluation, don't check response format
-                        # - invalid ratings are part of normal evaluation 
+                        # - invalid ratings are part of normal evaluation
                         # Only retry for technical failures (None content, API errors, etc.)
 
                         # Success - process the rating
@@ -1377,7 +1377,7 @@ Notes:
             return -1
         elif not isinstance(judgment, str):
             print(
-                f"DEBUG: judgment is not a string in _process_rating_judgment. Type: {type(judgment)}, Value: {judgment}" # noqa
+                f"DEBUG: judgment is not a string in _process_rating_judgment. Type: {type(judgment)}, Value: {judgment}"  # noqa
             )
             return -1
 
