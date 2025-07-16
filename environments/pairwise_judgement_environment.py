@@ -255,7 +255,7 @@ class PairwiseJudgementEnv(BaseEnv):
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
             eval_limit_ratio=0.1,
             min_batch_allocation=0.1,
-            thinking_mode=True,
+            thinking_mode=False,
             # List specific categories to evaluate, or None for all
             eval_categories=[
                 RewardBenchCategory.FACTUALITY,
@@ -380,6 +380,20 @@ class PairwiseJudgementEnv(BaseEnv):
 
     def process_judgement(self, judgment: str, track_metrics: bool = True) -> str:
         """Extract judgment from model response."""
+        # Debug: Check judgment type and content
+        if judgment is None:
+            print(f"DEBUG: judgment is None in process_judgement")
+            if track_metrics:
+                self.error_count += 1
+                self.total_judgments += 1
+            return "format_error"
+        elif not isinstance(judgment, str):
+            print(f"DEBUG: judgment is not a string in process_judgement. Type: {type(judgment)}, Value: {judgment}")
+            if track_metrics:
+                self.error_count += 1
+                self.total_judgments += 1
+            return "format_error"
+        
         if self.config.thinking_mode:
             # Check for exactly one pair of think tags using pre-compiled patterns
             think_open_count = len(self._think_pattern.findall(judgment))
@@ -571,6 +585,9 @@ class PairwiseJudgementEnv(BaseEnv):
 
         except Exception as e:
             print(f"Error preparing evaluation item: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            print(f"DEBUG: item keys: {list(item.keys()) if item else 'item is None'}")
+            print(f"DEBUG: item id: {item.get('id', 'no_id') if item else 'no_item'}")
             return None, None
 
     async def collect_trajectories(self, item: Item) -> Tuple[ScoredDataGroup, List]:
@@ -662,6 +679,11 @@ class PairwiseJudgementEnv(BaseEnv):
 
         except Exception as e:
             print(f"Error in score method: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            print(f"DEBUG: rollout_group_data length: {len(rollout_group_data) if rollout_group_data else 'None'}")
+            if rollout_group_data:
+                print(f"DEBUG: first item type: {type(rollout_group_data[0])}")
+                print(f"DEBUG: first item length: {len(rollout_group_data[0]) if rollout_group_data[0] else 'None'}")
             return None
 
     async def rollout_and_score_eval(self, test_item: dict) -> dict:
@@ -674,6 +696,9 @@ class PairwiseJudgementEnv(BaseEnv):
                 return await self._rollout_and_score_choice(test_item)
         except Exception as e:
             print(f"Error in rollout_and_score_eval: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            print(f"DEBUG: test_item keys: {list(test_item.keys()) if test_item else 'test_item is None'}")
+            print(f"DEBUG: test_item id: {test_item.get('id', 'no_id') if test_item else 'no_test_item'}")
             return {"score": 0.0, "sample": None}
 
     async def _rollout_and_score_choice(self, test_item: dict) -> dict:
@@ -694,6 +719,15 @@ class PairwiseJudgementEnv(BaseEnv):
                 return {"score": 0.0, "sample": None}
 
             model_response = completion.choices[0].message.content
+            
+            # Debug: Check model_response type and content
+            if model_response is None:
+                print(f"DEBUG: model_response is None for test_item: {test_item.get('id', 'unknown')}")
+                return {"score": 0.0, "sample": None}
+            elif not isinstance(model_response, str):
+                print(f"DEBUG: model_response is not a string. Type: {type(model_response)}, Value: {model_response}")
+                return {"score": 0.0, "sample": None}
+            
             predicted_answer = self.process_judgement(
                 model_response, track_metrics=False
             )
@@ -702,6 +736,15 @@ class PairwiseJudgementEnv(BaseEnv):
 
             # Extract question and answer choices from the user message
             user_content = messages[1]["content"]
+            
+            # Debug: Check user_content type and content
+            if user_content is None:
+                print(f"DEBUG: user_content is None for test_item: {test_item.get('id', 'unknown')}")
+                return {"score": 0.0, "sample": None}
+            elif not isinstance(user_content, str):
+                print(f"DEBUG: user_content is not a string. Type: {type(user_content)}, Value: {user_content}")
+                return {"score": 0.0, "sample": None}
+            
             question_match = self._question_pattern.search(user_content)
             question = (
                 question_match.group(1).strip()
@@ -759,6 +802,23 @@ class PairwiseJudgementEnv(BaseEnv):
 
         except Exception as e:
             print(f"Error in choice evaluation: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            print(f"DEBUG: test_item keys: {list(test_item.keys()) if test_item else 'test_item is None'}")
+            print(f"DEBUG: test_item id: {test_item.get('id', 'no_id') if test_item else 'no_test_item'}")
+            
+            # Try to get more context about what variables exist
+            try:
+                print(f"DEBUG: completion exists: {completion is not None}")
+                if completion and hasattr(completion, 'choices'):
+                    print(f"DEBUG: completion.choices length: {len(completion.choices)}")
+                    if completion.choices:
+                        print(f"DEBUG: completion.choices[0].message exists: {hasattr(completion.choices[0], 'message')}")
+                        if hasattr(completion.choices[0], 'message'):
+                            print(f"DEBUG: completion.choices[0].message.content type: {type(completion.choices[0].message.content)}")
+                            print(f"DEBUG: completion.choices[0].message.content value: {completion.choices[0].message.content}")
+            except Exception as debug_e:
+                print(f"DEBUG: Error in debug info: {debug_e}")
+            
             return {"score": 0.0, "sample": None}
 
     async def _rollout_and_score_ties(self, test_item: dict) -> dict:
@@ -833,6 +893,9 @@ class PairwiseJudgementEnv(BaseEnv):
 
         except Exception as e:
             print(f"Error in ties evaluation: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            print(f"DEBUG: test_item keys: {list(test_item.keys()) if test_item else 'test_item is None'}")
+            print(f"DEBUG: test_item id: {test_item.get('id', 'no_id') if test_item else 'no_test_item'}")
             return {"score": 0.0, "sample": None}
 
     def _prepare_ties_eval_item(self, item: dict) -> List[Tuple[Tuple, str, bool]]:
@@ -866,6 +929,9 @@ class PairwiseJudgementEnv(BaseEnv):
 
         except Exception as e:
             print(f"Error preparing ties eval item: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
+            print(f"DEBUG: item keys: {list(item.keys()) if item else 'item is None'}")
+            print(f"DEBUG: item id: {item.get('id', 'no_id') if item else 'no_item'}")
             return []
 
     def _create_rating_prompt(self, question: str, response: str) -> Tuple:
@@ -916,6 +982,14 @@ Notes:
         Examples that don't work:
         - "I give this a 5 out of 10" (doesn't end with just the number)
         """
+        # Debug: Check judgment type and content
+        if judgment is None:
+            print(f"DEBUG: judgment is None in _process_rating_judgment")
+            return -1
+        elif not isinstance(judgment, str):
+            print(f"DEBUG: judgment is not a string in _process_rating_judgment. Type: {type(judgment)}, Value: {judgment}")
+            return -1
+        
         if self.config.thinking_mode:
             # Extract content after </think> tags
             match = self._think_content_pattern.search(judgment)
@@ -1354,8 +1428,10 @@ Notes:
                     if question_match:
                         question_info = question_match.group(1).strip()
                     break
-        except Exception:
+        except Exception as e:
             # Fallback to placeholder if extraction fails
+            print(f"DEBUG: Exception in add_rollouts_for_wandb question extraction: {e}")
+            print(f"DEBUG: Exception type: {type(e)}")
             question_info = "extraction_failed"
 
         # Keep a reasonable number of rollouts
@@ -1389,7 +1465,9 @@ Notes:
                 predicted_judgment = self.process_judgement(
                     model_response, track_metrics=False
                 )
-            except Exception:
+            except Exception as e:
+                print(f"DEBUG: Exception in add_rollouts_for_wandb judgment parsing: {e}")
+                print(f"DEBUG: Exception type: {type(e)}")
                 predicted_judgment = "parse_error"
 
             current_rollouts.append(
