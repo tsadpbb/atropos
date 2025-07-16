@@ -982,7 +982,7 @@ class PairwiseJudgementEnv(BaseEnv):
                             continue
                         else:
                             print(
-                                f"DEBUG: model_response is not a string after {max_retries} attempts. Type: {type(model_response)}, Value: {model_response}" # noqa
+                                f"DEBUG: model_response is not a string after {max_retries} attempts. Type: {type(model_response)}, Value: {model_response}"  # noqa
                             )
                             return {"score": 0.0, "sample": None}
 
