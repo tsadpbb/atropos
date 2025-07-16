@@ -338,7 +338,7 @@ class PairwiseJudgementEnv(BaseEnv):
             total_steps=2000,
             batch_size=1024,
             steps_per_eval=25,
-            max_token_length=1024 * 32,
+            max_token_length=1024 * 8,
             inference_weight=1.0,
             wandb_name="pairwise_judgment",
             eval_handling=EvalHandlingEnum.LIMIT_TRAIN,
@@ -982,7 +982,7 @@ class PairwiseJudgementEnv(BaseEnv):
                             continue
                         else:
                             print(
-                                f"DEBUG: model_response is not a string after {max_retries} attempts. Type: {type(model_response)}, Value: {model_response}"
+                                f"DEBUG: model_response is not a string after {max_retries} attempts. Type: {type(model_response)}, Value: {model_response}" # noqa
                             )
                             return {"score": 0.0, "sample": None}
 
