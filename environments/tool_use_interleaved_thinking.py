@@ -24,9 +24,9 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import aiohttp
 import httpx
+import wandb
 from datasets import Dataset, load_dataset
 
-import wandb
 from atroposlib.envs.base import (
     APIServerConfig,
     BaseEnv,
